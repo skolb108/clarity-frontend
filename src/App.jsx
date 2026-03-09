@@ -344,6 +344,30 @@ export default function Clarity() {
   const bottomRef      = useRef(null);
   const recognitionRef = useRef(null);
   const pageRef        = useRef(null);
+  
+  // ── DEV shortcut: CMD + SHIFT + K → skip to result
+useEffect(() => {
+
+  const handleKey = (e) => {
+
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "k") {
+
+      const dummyAnswers = QUESTIONS.map(q => ({
+        question: q,
+        answer: "Testantwort"
+      }));
+
+      runAnalysis(dummyAnswers);
+
+    }
+
+  };
+
+  window.addEventListener("keydown", handleKey);
+
+  return () => window.removeEventListener("keydown", handleKey);
+
+}, []);
 
   const SR = typeof window !== "undefined"
     ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
