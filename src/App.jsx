@@ -494,6 +494,7 @@ useEffect(() => {
     answersRef.current = updatedAnswers;
 
     const nextIndex = currentQIndex + 1;
+    const midInsight = nextIndex === 7 || nextIndex === 9;
 
     if (nextIndex >= QUESTIONS.length) {
       // All 12 done — analyse
@@ -510,9 +511,11 @@ try {
       content: `
 Du bist ein ruhiger, empathischer Gesprächspartner.
 
-Wenn der Nutzer ähnliche Dinge mehrfach erwähnt,
-oder ein Muster erkennbar wird,
-kannst du das vorsichtig spiegeln.
+Wenn mehrere Antworten ein Muster zeigen,
+kannst du dieses kurz zusammenfassen.
+
+Wenn du bereits mehrere Antworten gesehen hast,
+darfst du eine kurze Zwischen-Reflexion geben.
 
 Der Nutzer beantwortet Reflexionsfragen über sein Leben.
 
@@ -541,7 +544,7 @@ Die letzte Antwort des Nutzers:
 ${text}
 
 Hier sind seine letzten Antworten im Gespräch:
-${JSON.stringify(answersRef.current.slice(-5))}
+${JSON.stringify(answersRef.current)}
 
 Wenn du ein Muster erkennst zwischen mehreren Antworten,
 darfst du es kurz erwähnen.
