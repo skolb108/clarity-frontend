@@ -135,9 +135,15 @@ const GLOBAL_CSS = `
     padding: 120px 40px 180px;
   }
   #c-topbar {
-    position: sticky; top: 0; z-index: 100; background: transparent;
-    padding: 22px 0 0; transition: background 0.5s ease, backdrop-filter 0.5s ease;
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: transparent;
+  padding: 22px 0 0;
+  transition: background 0.5s ease, backdrop-filter 0.5s ease;
+}
   #c-topbar.opaque {
     background: rgba(240,237,232,0.75);
     backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -192,7 +198,7 @@ const GLOBAL_CSS = `
   @media (max-width: 600px) {
     #c-input-bar { width: calc(100% - 32px); margin-bottom: 16px; border-radius: 14px; }
     #c-input-bar textarea { font-size: 16px; }
-    #c-page { padding: 0 20px 100px; }
+    #c-page { padding: 160px 40px 180px; }
     #c-hero-h1 { font-size: 36px !important; }
     #c-hero-sub { font-size: 24px !important; }
   }
