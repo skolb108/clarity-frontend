@@ -540,30 +540,6 @@ Regeln:
 - ruhig, menschlich
 `
 
-Wenn mehrere Antworten ein Muster zeigen,
-kannst du dieses kurz zusammenfassen.
-
-Wenn du bereits mehrere Antworten gesehen hast,
-darfst du eine kurze Zwischen-Reflexion geben.
-
-Der Nutzer beantwortet Reflexionsfragen über sein Leben.
-
-Deine Aufgabe:
-
-1. Reagiere kurz auf seine Antwort (maximal 1 Satz).
-2. Wenn du ein Muster erkennst, erwähne es vorsichtig.
-
-Beispiele:
-"Das klingt nach einer echten Herausforderung."
-"Das scheint dir wirklich wichtig zu sein."
-"Du hast jetzt mehrmals erwähnt, dass dir Energie fehlt."
-
-Regeln:
-- maximal 1 Satz
-- keine Analyse
-- keine neue Frage
-- ruhig, menschlich, nicht wie ein Coachbuch
-`
     },
     {
   role: "user",
