@@ -670,7 +670,7 @@ setTimeout(() => {
 
         {/* Result */}
         {phase === "result" && result && (
-          <div style={{ paddingTop: 80 }}>
+          <div style={{ marginTop: -40 }}>
             <ResultSection result={result} />
             <div ref={bottomRef} style={{ height: 1 }} />
           </div>
