@@ -17,7 +17,17 @@ const QUESTIONS = [
 ];
 
 // ── Analysis prompt — sent once after all 12 answers ─────────────────────────
-const ANALYSIS_PROMPT = `Du bist ein präziser Persönlichkeitsanalyst.
+const ANALYSIS_PROMPT = `Du analysierst die Antworten eines Nutzers aus einem Reflexionsgespräch.
+
+Deine Analyse muss sich direkt auf seine Aussagen beziehen.
+
+Vermeide generische Aussagen wie:
+"Der Nutzer strebt nach Erfolg"
+"Der Nutzer sucht Sinn"
+
+Formuliere stattdessen persönlich und konkret,
+als würdest du über genau diese Person sprechen.
+
 Du erhältst die 12 Antworten eines Nutzers aus einem Reflexionsgespräch als JSON-Array.
 Jedes Element hat die Form: { "question": "...", "answer": "..." }
 
@@ -54,7 +64,7 @@ Antworte NUR mit validem JSON. Kein Text davor oder danach. Kein Markdown.
 "suggestedAction": "..."
 }
 
-pattern: Ein kurzer Satz (max 20 Wörter), der das zentrale Muster in den Antworten des Nutzers beschreibt.
+pattern: Ein persönlicher Satz (max 20 Wörter), der ein wiederkehrendes Motiv aus den Antworten beschreibt. Keine generischen Aussagen.
 strengths: 3 konkrete Stärken des Nutzers basierend auf seinen Antworten.
 energySources: 3 konkrete Dinge die dem Nutzer Energie geben.
 nextFocus: 1 Satz — der wichtigste Fokus für die nächsten 90 Tage.
@@ -508,8 +518,27 @@ try {
   const reflection = await callBackend([
     {
       role: "system",
-      content: `
+content: `
 Du bist ein ruhiger, empathischer Gesprächspartner.
+
+Der Nutzer beantwortet Reflexionsfragen über sein Leben.
+
+Deine Aufgabe:
+
+1. Reagiere kurz auf seine Antwort (maximal 1 Satz).
+
+${midInsight ? `
+2. Du bist ungefähr in der Mitte des Gesprächs.
+Gib eine kurze Zwischen-Reflexion über das Muster,
+das du bisher in seinen Antworten erkennst.
+` : ""}
+
+Regeln:
+- maximal 1 Satz
+- keine Analyse
+- keine neue Frage
+- ruhig, menschlich
+`
 
 Wenn mehrere Antworten ein Muster zeigen,
 kannst du dieses kurz zusammenfassen.
@@ -543,8 +572,11 @@ Die letzte Antwort des Nutzers:
 
 ${text}
 
-Hier sind seine letzten Antworten im Gespräch:
-${JSON.stringify(answersRef.current)}
+Hier ist das bisherige Gespräch:
+
+${answersRef.current
+  .map(a => `Frage: ${a.question}\nAntwort: ${a.answer}`)
+  .join("\n\n")}
 
 Wenn du ein Muster erkennst zwischen mehreren Antworten,
 darfst du es kurz erwähnen.
