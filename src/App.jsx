@@ -508,12 +508,6 @@ setTimeout(() => {
   }, 80);
 
 }, 900);
-        setCurrentQIndex(nextIndex);
-        setTimeout(() => {
-          bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-          inputRef.current?.focus();
-        }, 80);
-      }, 700);
     }
   };
 
