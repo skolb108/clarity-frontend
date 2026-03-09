@@ -137,11 +137,13 @@ const GLOBAL_CSS = `
   #c-topbar {
   position: fixed;
   top: 0;
-  left: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 680px;
   z-index: 100;
   background: transparent;
-  padding: 22px 0 0;
+  padding: 22px 40px 0;
   transition: background 0.5s ease, backdrop-filter 0.5s ease;
 }
   #c-topbar.opaque {
@@ -450,8 +452,11 @@ useEffect(() => {
     setPhase("result");
 
     setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 200);
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}, 200);
 
   }, 2000);
 
