@@ -447,11 +447,67 @@ export default function Clarity() {
       // All 12 done — analyse
       await runAnalysis(updatedAnswers);
     } else {
-      // Show next question after a short pause
-      setIsTyping(true);
-      setTimeout(() => {
-        setIsTyping(false);
-        setMessages(prev => [...prev, { role: "assistant", content: QUESTIONS[nextIndex] }]);
+// AI reflection + next question
+setIsTyping(true);
+
+try {
+
+  const reflection = await callBackend([
+    {
+      role: "system",
+      content: `
+Du bist ein ruhiger, empathischer Gesprächspartner.
+
+Der Nutzer beantwortet Reflexionsfragen über sein Leben.
+
+Deine Aufgabe:
+1. Reagiere kurz auf seine Antwort (1 Satz).
+2. Spiegel etwas daraus.
+3. Kling natürlich, menschlich, ruhig.
+
+Beispiele Ton:
+"Das ist interessant."
+"Das höre ich öfter."
+"Das klingt nach einer echten Herausforderung."
+"Das scheint dir wirklich wichtig zu sein."
+
+Maximal 1 Satz.
+Keine Analyse.
+Keine neue Frage.
+`
+    },
+    {
+      role: "user",
+      content: text
+    }
+  ]);
+
+  setMessages(prev => [
+    ...prev,
+    { role: "assistant", content: reflection }
+  ]);
+
+} catch (err) {
+  console.error("Reflection error:", err);
+}
+
+setTimeout(() => {
+
+  setMessages(prev => [
+    ...prev,
+    { role: "assistant", content: QUESTIONS[nextIndex] }
+  ]);
+
+  setCurrentQIndex(nextIndex);
+
+  setIsTyping(false);
+
+  setTimeout(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    inputRef.current?.focus();
+  }, 80);
+
+}, 900);
         setCurrentQIndex(nextIndex);
         setTimeout(() => {
           bottomRef.current?.scrollIntoView({ behavior: "smooth" });
