@@ -417,7 +417,10 @@ export default function Clarity() {
           setAnalysing(false);
           setResult(parsed);
           setPhase("result");
-        }, 2000);
+
+setTimeout(() => {
+  bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+}, 200);
       } else {
         throw new Error("No JSON in response");
       }
