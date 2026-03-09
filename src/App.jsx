@@ -477,9 +477,16 @@ Keine neue Frage.
 `
     },
     {
-      role: "user",
-      content: text
-    }
+  role: "user",
+  content: `
+Die letzte Antwort des Nutzers:
+
+${text}
+
+Hier sind seine bisherigen Antworten:
+${JSON.stringify(answersRef.current.slice(-3))}
+`
+}
   ]);
 
   setMessages(prev => [
