@@ -510,6 +510,10 @@ try {
       content: `
 Du bist ein ruhiger, empathischer Gesprächspartner.
 
+Wenn der Nutzer ähnliche Dinge mehrfach erwähnt,
+oder ein Muster erkennbar wird,
+kannst du das vorsichtig spiegeln.
+
 Der Nutzer beantwortet Reflexionsfragen über sein Leben.
 
 Deine Aufgabe:
@@ -536,8 +540,11 @@ Die letzte Antwort des Nutzers:
 
 ${text}
 
-Hier sind seine bisherigen Antworten:
-${JSON.stringify(answersRef.current.slice(-3))}
+Hier sind seine letzten Antworten im Gespräch:
+${JSON.stringify(answersRef.current.slice(-5))}
+
+Wenn du ein Muster erkennst zwischen mehreren Antworten,
+darfst du es kurz erwähnen.
 `
 }
   ]);
