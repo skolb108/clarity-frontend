@@ -412,18 +412,22 @@ export default function Clarity() {
       const e = clean.lastIndexOf("}");
 
       if (s !== -1 && e !== -1) {
-        const parsed = JSON.parse(clean.substring(s, e + 1));
-        setTimeout(() => {
-          setAnalysing(false);
-          setResult(parsed);
-          setPhase("result");
+  const parsed = JSON.parse(clean.substring(s, e + 1));
 
-setTimeout(() => {
-  bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-}, 200);
-      } else {
-        throw new Error("No JSON in response");
-      }
+  setTimeout(() => {
+    setAnalysing(false);
+    setResult(parsed);
+    setPhase("result");
+
+    setTimeout(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 200);
+
+  }, 2000);
+
+} else {
+  throw new Error("No JSON in response");
+}
     } catch (err) {
       console.error("Analysis error:", err);
       setAnalysing(false);
