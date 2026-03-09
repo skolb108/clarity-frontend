@@ -47,12 +47,14 @@ Antworte NUR mit validem JSON. Kein Text davor oder danach. Kein Markdown.
     "Direction": number,
     "Action": number
   },
-  "strengths": ["...", "...", "..."],
-  "energySources": ["...", "...", "..."],
-  "nextFocus": "...",
-  "suggestedAction": "..."
+  "pattern": "...",
+"strengths": ["...", "...", "..."],
+"energySources": ["...", "...", "..."],
+"nextFocus": "...",
+"suggestedAction": "..."
 }
 
+pattern: Ein kurzer Satz (max 20 Wörter), der das zentrale Muster in den Antworten des Nutzers beschreibt.
 strengths: 3 konkrete Stärken des Nutzers basierend auf seinen Antworten.
 energySources: 3 konkrete Dinge die dem Nutzer Energie geben.
 nextFocus: 1 Satz — der wichtigste Fokus für die nächsten 90 Tage.
@@ -282,6 +284,14 @@ function ResultSection({ result }) {
       <div style={{ fontSize: 22, fontWeight: 400, color: "#000", lineHeight: 1.6, marginBottom: 48 }}>
         Hier ist, was ich in deinen Antworten erkenne.
       </div>
+      <div style={{
+  fontSize: 18,
+  lineHeight: 1.6,
+  marginBottom: 40,
+  opacity: 0.8
+}}>
+  {result.pattern}
+</div>
       <div style={{ fontSize: 14, letterSpacing: "0.3em", color: "#000", marginBottom: 36, textTransform: "uppercase", opacity: 0.45 }}>Dein Klarheitsprofil</div>
       <div style={{ marginBottom: 60 }}>
         {Object.entries(result.scores).map(([label, value]) => (
