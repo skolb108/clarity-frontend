@@ -132,7 +132,7 @@ const GLOBAL_CSS = `
   #c-page {
     position: relative; z-index: 1; width: 100%; max-width: 680px;
     min-height: 100vh; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    padding: 0 40px 180px;
+    padding: 120px 40px 180px;
   }
   #c-topbar {
     position: sticky; top: 0; z-index: 100; background: transparent;
