@@ -983,15 +983,50 @@ export default function Clarity() {
   };
 
   // ── Backend call ───────────────────────────────────────────────────────────
+  // ── Shared fetch helper — 25s AbortController timeout ───────────────────────
+  const fetchWithTimeout = async (url, body, timeoutMs = 25000) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify(body),
+      });
+      clearTimeout(timer);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
+  };
+
+  // ── Reflection endpoint ────────────────────────────────────────────────────
   const callBackend = async (messages) => {
-    const res = await fetch("https://clarity-backend-production-108.up.railway.app/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages }),
-    });
-    const data = await res.json();
+    const data = await fetchWithTimeout(
+      "https://clarity-backend-production-108.up.railway.app/api/chat",
+      { messages }
+    );
     console.log("Backend response:", data);
     return data.reply || data.message || null;
+  };
+
+  // ── Analysis endpoint — /api/analyze returns guaranteed JSON ──────────────
+  const callAnalysisBackend = async (messages) => {
+    const data = await fetchWithTimeout(
+      "https://clarity-backend-production-108.up.railway.app/api/analyze",
+      { messages }
+    );
+    console.log("Analysis response:", data);
+    // Unwrap if backend wraps result
+    if (data && typeof data === "object" && !data.scores) {
+      if (data.result && typeof data.result === "object") return data.result;
+      if (typeof data.reply   === "string") return JSON.parse(data.reply);
+      if (typeof data.message === "string") return JSON.parse(data.message);
+    }
+    return data;
   };
 
   // ── Analysis: send all 12 answers at once ──────────────────────────────────
@@ -1003,21 +1038,13 @@ export default function Clarity() {
     try {
       const contextBlock = formatAnswersAsContext(answers);
 
-      const reply = await callBackend([
+      const parsed = await callAnalysisBackend([
         { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
         {
           role: "user",
           content: `Hier sind die Antworten aus dem Reflexionsgespräch:\n\n${contextBlock}`,
         },
       ]);
-
-      const clean = (reply || "").replace(/```json|```/g, "").trim();
-      const start = clean.indexOf("{");
-      const end   = clean.lastIndexOf("}");
-
-      if (start === -1 || end === -1) throw new Error("No JSON in response");
-
-      const parsed = JSON.parse(clean.substring(start, end + 1));
 
       await delay(2000);
       setAnalysing(false);
@@ -1027,6 +1054,13 @@ export default function Clarity() {
     } catch (err) {
       console.error("Analysis error:", err);
       setAnalysing(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Clarity hatte gerade ein Problem. Versuche es bitte noch einmal.",
+        },
+      ]);
     }
   };
 
@@ -1083,7 +1117,14 @@ export default function Clarity() {
       }
     } catch (err) {
       console.error("Reflection error:", err);
-      // Continue to next question even if reflection fails
+      // Show error in chat, then continue to next question
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Clarity hatte gerade ein Problem. Versuche es bitte noch einmal.",
+        },
+      ]);
     }
 
     // Show next question
