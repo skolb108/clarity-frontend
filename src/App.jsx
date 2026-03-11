@@ -224,516 +224,276 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // ── Global CSS ─────────────────────────────────────────────────────────────────
 const GLOBAL_CSS = `
-  *, *::before, *::after { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; background: #f2f4f8; }
-  body { display: flex; justify-content: center; min-height: 100vh; }
-  #root { width: 100%; display: flex; justify-content: center; align-items: flex-start; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    margin: 0; padding: 0;
+    background: linear-gradient(180deg, #f8f9fb, #eef2f7);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+  #root { width: 100%; min-height: 100vh; }
 
-  /* ── Layer 1: AI Nebula background ───────────────────────────────────────── */
+  /* ── Animated background — nebula / atmosphere / strips ──────────────────── */
   #c-nebula {
     position: fixed; inset: 0; z-index: 1; pointer-events: none;
     background: linear-gradient(145deg, #f8f9fb 0%, #f2f4f8 45%, #edf1f6 100%);
-    overflow: hidden;
-    transition: opacity 2.5s ease;
+    overflow: hidden; transition: opacity 2.5s ease;
   }
-  /* Splash: full vivid nebula bleeds around the glass panel */
-  /* Chat:   dims so content reads clearly                   */
-  #c-nebula.chat-mode { opacity: 0.28; }
-
-  /* Thinking: each blob accelerates independently + expands */
+  #c-nebula.chat-mode { opacity: 0.22; }
   #c-nebula.thinking .c-blob   { transform: scale(1.1) !important; }
   #c-nebula.thinking .c-blob-1 { animation-duration: 22s !important; opacity: 0.9; }
   #c-nebula.thinking .c-blob-2 { animation-duration: 18s !important; opacity: 0.8; }
   #c-nebula.thinking .c-blob-3 { animation-duration: 20s !important; opacity: 0.75; }
   #c-nebula.thinking .c-blob-4 { animation-duration: 26s !important; opacity: 0.70; }
 
-  /* ── Gradient strips — AI awakening on splash ─────────────────────────────
-     6 diagonal light waves, large blur, clearly visible, slow sweep          */
   #c-strips {
     position: fixed; inset: 0; z-index: 1;
     overflow: hidden; pointer-events: none;
     opacity: 1; transition: opacity 2s ease;
   }
   #c-strips.fade-out { opacity: 0; }
-
-  .c-strip {
-    position: absolute;
-    width: 220%;
-    left: -60%;
-    will-change: transform;
-  }
-  /* Strip 1 — steel blue, upper band */
-  .c-strip-1 {
-    top: 8%; height: 180px;
-    filter: blur(90px); opacity: 0.75;
+  .c-strip { position: absolute; width: 220%; left: -60%; will-change: transform; }
+  .c-strip-1 { top: 8%; height: 180px; filter: blur(90px); opacity: 0.75;
     background: linear-gradient(90deg, transparent 0%, #7aa2ff 20%, #9fd3ff 50%, #c7d7ff 80%, transparent 100%);
-    animation: stripMove1 28s ease-in-out infinite;
-  }
-  /* Strip 2 — periwinkle / sky, mid upper */
-  .c-strip-2 {
-    top: 28%; height: 140px;
-    filter: blur(80px); opacity: 0.65;
+    animation: stripMove1 28s ease-in-out infinite; }
+  .c-strip-2 { top: 28%; height: 140px; filter: blur(80px); opacity: 0.65;
     background: linear-gradient(90deg, transparent 0%, #a6c8ff 20%, #7aa2ff 55%, #c7d7ff 85%, transparent 100%);
-    animation: stripMove2 36s ease-in-out infinite;
-  }
-  /* Strip 3 — sky blue, center */
-  .c-strip-3 {
-    top: 48%; height: 200px;
-    filter: blur(120px); opacity: 0.80;
+    animation: stripMove2 36s ease-in-out infinite; }
+  .c-strip-3 { top: 48%; height: 200px; filter: blur(120px); opacity: 0.80;
     background: linear-gradient(90deg, transparent 0%, #9fd3ff 15%, #a6c8ff 50%, #9fd3ff 85%, transparent 100%);
-    animation: stripMove3 22s ease-in-out infinite;
-  }
-  /* Strip 4 — ice blue, lower mid */
-  .c-strip-4 {
-    top: 62%; height: 130px;
-    filter: blur(100px); opacity: 0.60;
+    animation: stripMove3 22s ease-in-out infinite; }
+  .c-strip-4 { top: 62%; height: 130px; filter: blur(100px); opacity: 0.60;
     background: linear-gradient(90deg, transparent 0%, #c7d7ff 25%, #9fd3ff 60%, #7aa2ff 90%, transparent 100%);
-    animation: stripMove4 32s ease-in-out infinite;
-  }
-  /* Strip 5 — soft blue, lower */
-  .c-strip-5 {
-    top: 78%; height: 160px;
-    filter: blur(110px); opacity: 0.70;
+    animation: stripMove4 32s ease-in-out infinite; }
+  .c-strip-5 { top: 78%; height: 160px; filter: blur(110px); opacity: 0.70;
     background: linear-gradient(90deg, transparent 0%, #7aa2ff 20%, #a6c8ff 50%, #9fd3ff 80%, transparent 100%);
-    animation: stripMove5 26s ease-in-out infinite;
-  }
-  /* Strip 6 — wide full-bleed glow, very bottom */
-  .c-strip-6 {
-    top: 88%; height: 240px;
-    filter: blur(140px); opacity: 0.55;
+    animation: stripMove5 26s ease-in-out infinite; }
+  .c-strip-6 { top: 88%; height: 240px; filter: blur(140px); opacity: 0.55;
     background: linear-gradient(90deg, #c7d7ff 0%, #7aa2ff 30%, #9fd3ff 60%, #a6c8ff 100%);
-    animation: stripMove6 40s ease-in-out infinite;
+    animation: stripMove6 40s ease-in-out infinite; }
+
+  @keyframes stripMove1 { 0%,100%{transform:translateX(-25%) rotate(-3deg);} 50%{transform:translateX(15%) rotate(-2deg);} }
+  @keyframes stripMove2 { 0%,100%{transform:translateX(20%) rotate(4deg);} 50%{transform:translateX(-18%) rotate(3deg);} }
+  @keyframes stripMove3 { 0%,100%{transform:translateX(-10%) rotate(-2deg);} 50%{transform:translateX(22%) rotate(-1deg);} }
+  @keyframes stripMove4 { 0%,100%{transform:translateX(15%) rotate(5deg);} 50%{transform:translateX(-20%) rotate(4deg);} }
+  @keyframes stripMove5 { 0%,100%{transform:translateX(-18%) rotate(-3deg);} 50%{transform:translateX(12%) rotate(-2deg);} }
+  @keyframes stripMove6 { 0%,100%{transform:translateX(10%) rotate(2deg);} 50%{transform:translateX(-15%) rotate(1deg);} }
+
+  #c-atmosphere { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .c-atmo { position: absolute; border-radius: 50%; will-change: transform; }
+  .c-atmo-1 { width: 140vw; height: 140vw; top: -20%; left: -20%; filter: blur(120px); opacity: 0.22;
+    background: radial-gradient(circle at 50% 50%, rgba(122,162,255,0.60) 0%, rgba(122,162,255,0.20) 50%, transparent 72%);
+    animation: floatAtmo1 130s linear infinite; }
+  .c-atmo-2 { width: 120vw; height: 120vw; top: 40%; left: 30%; filter: blur(110px); opacity: 0.18;
+    background: radial-gradient(circle at 50% 50%, rgba(159,211,255,0.55) 0%, rgba(159,211,255,0.15) 50%, transparent 72%);
+    animation: floatAtmo2 150s linear infinite; }
+  @keyframes floatAtmo1 { 0%{transform:translate(0,0) rotate(0deg);} 25%{transform:translate(10vw,8vh) rotate(2deg);} 50%{transform:translate(18vw,-4vh) rotate(0deg);} 75%{transform:translate(8vw,12vh) rotate(-2deg);} 100%{transform:translate(0,0) rotate(0deg);} }
+  @keyframes floatAtmo2 { 0%{transform:translate(0,0) rotate(0deg);} 33%{transform:translate(-12vw,-8vh) rotate(-3deg);} 66%{transform:translate(-6vw,10vh) rotate(-1deg);} 100%{transform:translate(0,0) rotate(0deg);} }
+
+  .c-blob { position: absolute; border-radius: 50%; will-change: transform; transition: opacity 1.6s ease; }
+  .c-blob-1 { width: 120vw; height: 120vw; top: -15%; left: -20%; filter: blur(110px);
+    background: radial-gradient(circle at 50% 50%, rgba(122,162,255,0.48) 0%, rgba(122,162,255,0.14) 42%, transparent 68%);
+    animation: nebulaFloat1 80s ease-in-out infinite; }
+  .c-blob-2 { width: 90vw; height: 90vw; top: 15%; left: 55%; filter: blur(90px);
+    background: radial-gradient(circle at 50% 50%, rgba(159,211,255,0.50) 0%, rgba(159,211,255,0.13) 44%, transparent 68%);
+    animation: nebulaFloat2 62s ease-in-out infinite; }
+  .c-blob-3 { width: 85vw; height: 85vw; top: 52%; left: 5%; filter: blur(100px);
+    background: radial-gradient(circle at 50% 50%, rgba(166,200,255,0.45) 0%, rgba(166,200,255,0.12) 46%, transparent 68%);
+    animation: nebulaFloat3 98s ease-in-out infinite; }
+  .c-blob-4 { width: 78vw; height: 78vw; top: 25%; left: 48%; filter: blur(95px);
+    background: radial-gradient(circle at 50% 50%, rgba(199,215,255,0.50) 0%, rgba(199,215,255,0.13) 48%, transparent 68%);
+    animation: nebulaFloat4 112s ease-in-out infinite; }
+  @keyframes nebulaFloat1 { 0%{transform:translate(0,0) scale(1) rotate(0deg);} 18%{transform:translate(28vw,-6vh) scale(1.05) rotate(2deg);} 36%{transform:translate(52vw,8vh) scale(0.97) rotate(4deg);} 55%{transform:translate(42vw,42vh) scale(1.04) rotate(2deg);} 73%{transform:translate(12vw,52vh) scale(0.97) rotate(-1deg);} 88%{transform:translate(-8vw,28vh) scale(1.02) rotate(-3deg);} 100%{transform:translate(0,0) scale(1) rotate(0deg);} }
+  @keyframes nebulaFloat2 { 0%{transform:translate(0,0) scale(1) rotate(0deg);} 16%{transform:translate(-18vw,22vh) scale(1.06) rotate(-3deg);} 33%{transform:translate(-38vw,48vh) scale(0.94) rotate(-6deg);} 50%{transform:translate(-28vw,68vh) scale(1.03) rotate(-4deg);} 66%{transform:translate(-5vw,55vh) scale(0.97) rotate(-1deg);} 83%{transform:translate(14vw,28vh) scale(1.04) rotate(2deg);} 100%{transform:translate(0,0) scale(1) rotate(0deg);} }
+  @keyframes nebulaFloat3 { 0%{transform:translate(0,0) scale(1) rotate(0deg);} 22%{transform:translate(22vw,-28vh) scale(1.06) rotate(3deg);} 44%{transform:translate(48vw,-18vh) scale(0.95) rotate(5deg);} 66%{transform:translate(38vw,18vh) scale(1.04) rotate(3deg);} 84%{transform:translate(15vw,10vh) scale(0.98) rotate(1deg);} 100%{transform:translate(0,0) scale(1) rotate(0deg);} }
+  @keyframes nebulaFloat4 { 0%{transform:translate(0,0) scale(1) rotate(0deg);} 20%{transform:translate(-24vw,-18vh) scale(1.05) rotate(-3deg);} 42%{transform:translate(-44vw,8vh) scale(0.96) rotate(-6deg);} 64%{transform:translate(-32vw,32vh) scale(1.06) rotate(-4deg);} 84%{transform:translate(-12vw,20vh) scale(0.98) rotate(-2deg);} 100%{transform:translate(0,0) scale(1) rotate(0deg);} }
+
+  /* ── General animations ─────────────────────────────────────────────────── */
+  @keyframes fadeUp   { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:translateY(0);} }
+  @keyframes fadeIn   { from{opacity:0;} to{opacity:1;} }
+
+  @keyframes analysisPulse {
+    0%,100% { transform: scale(1);    opacity: 0.75; }
+    50%      { transform: scale(1.12); opacity: 1;    }
   }
 
-  @keyframes stripMove1 {
-    0%   { transform: translateX(-25%) rotate(-3deg); }
-    50%  { transform: translateX(15%)  rotate(-2deg); }
-    100% { transform: translateX(-25%) rotate(-3deg); }
+  @keyframes waveBounce {
+    0%, 100% { transform: translateY(0);    opacity: 0.45; }
+    40%       { transform: translateY(-5px); opacity: 1;    }
   }
-  @keyframes stripMove2 {
-    0%   { transform: translateX(20%)  rotate(4deg); }
-    50%  { transform: translateX(-18%) rotate(3deg); }
-    100% { transform: translateX(20%)  rotate(4deg); }
+  .c-wave-dot {
+    display: inline-block;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: linear-gradient(135deg, #4F8CFF, #7C5CFF);
+    animation: waveBounce 0.8s ease-in-out infinite;
   }
-  @keyframes stripMove3 {
-    0%   { transform: translateX(-10%) rotate(-2deg); }
-    50%  { transform: translateX(22%)  rotate(-1deg); }
-    100% { transform: translateX(-10%) rotate(-2deg); }
-  }
-  @keyframes stripMove4 {
-    0%   { transform: translateX(15%)  rotate(5deg); }
-    50%  { transform: translateX(-20%) rotate(4deg); }
-    100% { transform: translateX(15%)  rotate(5deg); }
-  }
-  @keyframes stripMove5 {
-    0%   { transform: translateX(-18%) rotate(-3deg); }
-    50%  { transform: translateX(12%)  rotate(-2deg); }
-    100% { transform: translateX(-18%) rotate(-3deg); }
-  }
-  @keyframes stripMove6 {
-    0%   { transform: translateX(10%)  rotate(2deg); }
-    50%  { transform: translateX(-15%) rotate(1deg); }
-    100% { transform: translateX(10%)  rotate(2deg); }
-  }
+  .c-wave-dot:nth-child(2) { animation-delay: 0.15s; }
+  .c-wave-dot:nth-child(3) { animation-delay: 0.30s; }
 
-  /* ── Atmosphere layer — deep background glow, z-index 0 ────────────────────
-     Very large, very slow, very soft — creates AI depth beneath the blobs      */
-  #c-atmosphere {
-    position: fixed; inset: 0; z-index: 0;
-    pointer-events: none; overflow: hidden;
-  }
-  .c-atmo {
-    position: absolute; border-radius: 50%;
-    will-change: transform;
-  }
-  /* Atmo 1 — dominant blue field, upper-left anchor */
-  .c-atmo-1 {
-    width: 140vw; height: 140vw;
-    top: -20%; left: -20%;
-    filter: blur(120px);
-    opacity: 0.22;
-    background: radial-gradient(circle at 50% 50%,
-      rgba(122, 162, 255, 0.60) 0%,
-      rgba(122, 162, 255, 0.20) 50%,
-      transparent 72%
-    );
-    animation: floatAtmo1 130s linear infinite;
-  }
-  /* Atmo 2 — lighter blue, lower-right counterpoint */
-  .c-atmo-2 {
-    width: 120vw; height: 120vw;
-    top: 40%; left: 30%;
-    filter: blur(110px);
-    opacity: 0.18;
-    background: radial-gradient(circle at 50% 50%,
-      rgba(159, 211, 255, 0.55) 0%,
-      rgba(159, 211, 255, 0.15) 50%,
-      transparent 72%
-    );
-    animation: floatAtmo2 150s linear infinite;
-  }
-  @keyframes floatAtmo1 {
-    0%   { transform: translate(0vw, 0vh)    rotate(0deg);   }
-    25%  { transform: translate(10vw, 8vh)   rotate(2deg);   }
-    50%  { transform: translate(18vw, -4vh)  rotate(0deg);   }
-    75%  { transform: translate(8vw, 12vh)   rotate(-2deg);  }
-    100% { transform: translate(0vw, 0vh)    rotate(0deg);   }
-  }
-  @keyframes floatAtmo2 {
-    0%   { transform: translate(0vw, 0vh)    rotate(0deg);   }
-    33%  { transform: translate(-12vw, -8vh) rotate(-3deg);  }
-    66%  { transform: translate(-6vw, 10vh)  rotate(-1deg);  }
-    100% { transform: translate(0vw, 0vh)    rotate(0deg);   }
-  }
-
-  /* ── Motion blobs — z-index 1, visible movement ──────────────────────────── */
-  .c-blob {
-    position: absolute;
-    border-radius: 50%;
-    will-change: transform;
-    transition: opacity 1.6s ease;
-  }
-
-  /* A — primary blue, 120vw, slow horizontal drift + scale breathing */
-  .c-blob-1 {
-    width: 120vw; height: 120vw;
-    top: -15%; left: -20%;
-    filter: blur(110px);
-    background: radial-gradient(circle at 50% 50%,
-      rgba(122, 162, 255, 0.48) 0%,
-      rgba(122, 162, 255, 0.14) 42%,
-      transparent 68%
-    );
-    animation: nebulaFloat1 80s ease-in-out infinite;
-  }
-
-  /* B — sky blue, 90vw, full circular orbit */
-  .c-blob-2 {
-    width: 90vw; height: 90vw;
-    top: 15%; left: 55%;
-    filter: blur(90px);
-    background: radial-gradient(circle at 50% 50%,
-      rgba(159, 211, 255, 0.50) 0%,
-      rgba(159, 211, 255, 0.13) 44%,
-      transparent 68%
-    );
-    animation: nebulaFloat2 62s ease-in-out infinite;
-  }
-
-  /* C — steel blue, 85vw, vertical breathing drift */
-  .c-blob-3 {
-    width: 85vw; height: 85vw;
-    top: 52%; left: 5%;
-    filter: blur(100px);
-    background: radial-gradient(circle at 50% 50%,
-      rgba(166, 200, 255, 0.45) 0%,
-      rgba(166, 200, 255, 0.12) 46%,
-      transparent 68%
-    );
-    animation: nebulaFloat3 98s ease-in-out infinite;
-  }
-
-  /* D — ice blue, 78vw, slow diagonal rotation + horizontal glide */
-  .c-blob-4 {
-    width: 78vw; height: 78vw;
-    top: 25%; left: 48%;
-    filter: blur(95px);
-    background: radial-gradient(circle at 50% 50%,
-      rgba(199, 215, 255, 0.50) 0%,
-      rgba(199, 215, 255, 0.13) 48%,
-      transparent 68%
-    );
-    animation: nebulaFloat4 112s ease-in-out infinite;
-  }
-
-  /* A: slow horizontal drift right→left + gentle scale breathing               */
-  @keyframes nebulaFloat1 {
-    0%   { transform: translate(0vw,   0vh)   scale(1)    rotate(0deg);  }
-    18%  { transform: translate(28vw, -6vh)   scale(1.05) rotate(2deg);  }
-    36%  { transform: translate(52vw,  8vh)   scale(0.97) rotate(4deg);  }
-    55%  { transform: translate(42vw, 42vh)   scale(1.04) rotate(2deg);  }
-    73%  { transform: translate(12vw, 52vh)   scale(0.97) rotate(-1deg); }
-    88%  { transform: translate(-8vw, 28vh)   scale(1.02) rotate(-3deg); }
-    100% { transform: translate(0vw,   0vh)   scale(1)    rotate(0deg);  }
-  }
-
-  /* B: large full circular orbit — sweeps the whole right half of screen       */
-  @keyframes nebulaFloat2 {
-    0%   { transform: translate(0vw,   0vh)   scale(1)    rotate(0deg);  }
-    16%  { transform: translate(-18vw, 22vh)  scale(1.06) rotate(-3deg); }
-    33%  { transform: translate(-38vw, 48vh)  scale(0.94) rotate(-6deg); }
-    50%  { transform: translate(-28vw, 68vh)  scale(1.03) rotate(-4deg); }
-    66%  { transform: translate(-5vw,  55vh)  scale(0.97) rotate(-1deg); }
-    83%  { transform: translate(14vw,  28vh)  scale(1.04) rotate(2deg);  }
-    100% { transform: translate(0vw,   0vh)   scale(1)    rotate(0deg);  }
-  }
-
-  /* C: vertical breathing — rises from bottom, climbs toward top, returns      */
-  @keyframes nebulaFloat3 {
-    0%   { transform: translate(0vw,   0vh)   scale(1)    rotate(0deg);  }
-    22%  { transform: translate(22vw, -28vh)  scale(1.06) rotate(3deg);  }
-    44%  { transform: translate(48vw, -18vh)  scale(0.95) rotate(5deg);  }
-    66%  { transform: translate(38vw,  18vh)  scale(1.04) rotate(3deg);  }
-    84%  { transform: translate(15vw,  10vh)  scale(0.98) rotate(1deg);  }
-    100% { transform: translate(0vw,   0vh)   scale(1)    rotate(0deg);  }
-  }
-
-  /* D: slow diagonal glide + rotation — upper-right to lower-left arc          */
-  @keyframes nebulaFloat4 {
-    0%   { transform: translate(0vw,   0vh)   scale(1)    rotate(0deg);  }
-    20%  { transform: translate(-24vw,-18vh)  scale(1.05) rotate(-3deg); }
-    42%  { transform: translate(-44vw,  8vh)  scale(0.96) rotate(-6deg); }
-    64%  { transform: translate(-32vw, 32vh)  scale(1.06) rotate(-4deg); }
-    84%  { transform: translate(-12vw, 20vh)  scale(0.98) rotate(-2deg); }
-    100% { transform: translate(0vw,   0vh)   scale(1)    rotate(0deg);  }
-  }
-
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* ── Fixed glass shell — Apple Liquid Glass ─────────────────────────────── */
-  #c-shell {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 720px; max-width: 92vw;
-    height: 86vh;
-    z-index: 10;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    background: rgba(255, 255, 255, 0.28);
-    backdrop-filter: blur(70px); -webkit-backdrop-filter: blur(70px);
-    border-radius: 32px;
-    border: 1px solid rgba(255, 255, 255, 0.7);
-    box-shadow:
-      0 60px 160px rgba(0, 0, 0, 0.22),
-      0 12px 40px  rgba(0, 0, 0, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9),
-      inset 0 -1px 0 rgba(255, 255, 255, 0.25);
-    overflow: hidden;
-    /* ambient light highlight driven by JS mouse tracking */
-    --lx: 50%; --ly: 50%;
-  }
-
-  /* Glass edge refraction — VisionOS-style rim light, masked to edges only */
-  #c-shell::before {
-    content: "";
-    position: absolute; inset: 0;
-    border-radius: 32px;
-    pointer-events: none;
-    z-index: 3;
-    background: linear-gradient(
-      180deg,
-      rgba(255,255,255,0.65) 0%,
-      rgba(255,255,255,0.15) 100%
-    );
-    mask-image: radial-gradient(circle at center, transparent 65%, black 100%);
-    -webkit-mask-image: radial-gradient(circle at center, transparent 65%, black 100%);
-  }
-
-  /* Glass refraction — two radial highlights simulate light bending */
-  #c-shell::after {
-    content: "";
-    position: absolute; inset: 0;
-    border-radius: 32px;
-    pointer-events: none;
-    z-index: 2;
-    background:
-      radial-gradient(1200px 400px at -20% -10%, rgba(255,255,255,0.55), transparent 60%),
-      radial-gradient(800px 300px at 120% 120%,  rgba(255,255,255,0.20), transparent 60%),
-      radial-gradient(600px 400px at var(--lx) var(--ly), rgba(255,255,255,0.16), transparent 55%);
-    mix-blend-mode: overlay;
-    transition: background 0.08s ease;
-  }
-
-  /* Focus glow — radial behind the glass panel, pulses when input active */
-  #c-focus-glow {
-    position: fixed;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 720px; max-width: 92vw;
-    height: 86vh;
-    z-index: 9;
-    pointer-events: none;
-    border-radius: 48px;
-    background: radial-gradient(600px circle at center, rgba(122,162,255,0.22), transparent 70%);
-    opacity: 0;
-    transition: opacity 0.6s ease;
-    will-change: opacity;
-  }
-  #c-focus-glow.active { animation: focusPulse 3s ease-in-out infinite; }
-  @keyframes focusPulse {
-    0%, 100% { opacity: 0;    }
-    50%       { opacity: 0.35; }
-  }
-
-  /* Breathing keyframe — used when isTyping/analysing */
-  @keyframes nebulaBreath {
-    0%, 100% { transform: scale(1);    opacity: 0.35; }
-    50%       { transform: scale(1.05); opacity: 0.42; }
-  }
-  #c-nebula.breathing { animation: nebulaBreath 6s ease-in-out infinite; }
-
-  /* ── Layer 4: Scrollable content inside shell ───────────────────────────── */
-  #c-scroll {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    overflow-y: auto;
-    padding: 140px 40px 200px;
-    -webkit-overflow-scrolling: touch;
-  }
-  #c-scroll::-webkit-scrollbar { display: none; }
-  #c-scroll { scrollbar-width: none; }
-
-  /* ── Topbar — absolute inside shell, gradient fade ──────────────────────── */
-  #c-topbar {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 110px;
-    z-index: 20;
-    background: linear-gradient(rgba(255,255,255,0.55), rgba(255,255,255,0));
-    padding: 22px 40px 0;
-    border-radius: 32px 32px 0 0;
-    pointer-events: none;
-    transition: background 0.5s ease;
-  }
-  #c-topbar.opaque {
-    background: linear-gradient(rgba(255,255,255,0.75), rgba(255,255,255,0));
-  }
-  #c-logo {
-    font-size: 11px; letter-spacing: 0.35em; color: #666;
-    text-align: center; margin-bottom: 14px;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    pointer-events: none;
-  }
-  #c-progress-track {
-    width: 100%; height: 3px;
-    background: rgba(0,0,0,0.08);
-    overflow: hidden; opacity: 0; transition: opacity 0.6s ease;
-    border-radius: 2px;
-  }
-  #c-progress-track.show { opacity: 1; }
-  #c-progress-fill {
-    height: 3px; background: rgba(0,0,0,0.55); width: 0%;
-    transition: width 400ms ease; border-radius: 2px;
-  }
-  #c-question-label {
-    font-size: 10px; letter-spacing: 0.15em; color: #000;
-    text-transform: uppercase; opacity: 0; padding: 10px 0 0; transition: opacity 0.6s ease;
-  }
-  #c-question-label.show { opacity: 0.4; }
-
-  /* ── Hero ────────────────────────────────────────────────────────────────── */
-  #c-hero {
-    text-align: center; padding: 56px 0 64px; opacity: 1; max-height: 800px;
-    overflow: hidden; transition: opacity 1.2s ease, max-height 1.2s ease, padding 1.2s ease;
-  }
-  #c-hero.faded { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; pointer-events: none; }
-
-  /* ── Input bar ───────────────────────────────────────────────────────────── */
-  #c-input-bar {
-    position: absolute;
-    bottom: 24px; left: 40px; right: 40px;
-    background: rgba(255, 255, 255, 0.74);
-    backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-    box-shadow:
-      0 10px 40px rgba(0, 0, 0, 0.12),
-      0 2px 8px  rgba(0, 0, 0, 0.05),
-      inset 0 1px 0 rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.65);
-    border-radius: 22px;
-    padding: 10px 10px 10px 22px;
-    display: flex; align-items: center; gap: 8px; z-index: 30;
-  }
-  #c-input-bar textarea {
-    flex: 1; border: none; outline: none; font-size: 18px;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    color: #111; background: transparent; resize: none;
-    line-height: 1.55; max-height: 140px; overflow-y: auto;
-    padding: 6px 0; align-self: flex-end;
-  }
-  #c-input-bar textarea::placeholder { color: rgba(0,0,0,0.28); }
-
-  /* ── Circular icon buttons ────────────────────────────────────────────────── */
-  .c-btn-circle {
-    width: 42px; height: 42px;
-    min-width: 42px;
-    border-radius: 50%;
-    border: 1px solid rgba(0,0,0,0.09);
-    background: rgba(255,255,255,0.82);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.9);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; flex-shrink: 0;
-    transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
-    will-change: transform;
-    padding: 0;
-  }
-  .c-btn-circle:hover {
-    transform: scale(1.08);
-    background: rgba(255,255,255,0.98);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,1);
-  }
-  .c-btn-circle:active { transform: scale(0.93); }
-
-  /* Mic: grey → red when listening */
-  .c-btn-mic { color: #aaa; }
-  .c-btn-mic:hover { color: #777; }
-  .c-btn-mic.listening {
-    background: rgba(255,50,50,0.10);
-    border-color: rgba(255,50,50,0.22);
-    color: #e33;
-  }
-
-  /* Send: dark pill */
-  .c-btn-send {
-    background: rgba(14,14,14,0.90);
-    border-color: transparent;
-    color: #fff;
-  }
-  .c-btn-send:hover {
-    background: rgba(0,0,0,1);
-    transform: scale(1.08);
-  }
-
-  /* ── Chat bubbles ────────────────────────────────────────────────────────── */
   .c-fade-up { animation: fadeUp 0.6s ease forwards; opacity: 0; }
+
+  /* ── Fullscreen app layer ────────────────────────────────────────────────── */
+  #c-app {
+    position: relative; z-index: 10;
+    min-height: 100vh; width: 100%;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── Sticky progress header ─────────────────────────────────────────────── */
+  #c-progress-header {
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(248,249,251,0.90);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    padding: 14px 24px 12px;
+  }
+  #c-progress-header-inner {
+    max-width: 680px; margin: 0 auto;
+  }
+  #c-progress-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 9px;
+  }
+  #c-progress-logo { font-size: 10px; letter-spacing: 0.38em; color: #000; opacity: 0.35; text-transform: uppercase; }
+  #c-progress-label { font-size: 11px; color: #000; opacity: 0.4; letter-spacing: 0.06em; }
+  #c-progress-track-new {
+    height: 6px; border-radius: 4px;
+    background: rgba(0,0,0,0.10); overflow: hidden;
+  }
+  #c-progress-fill-new {
+    height: 6px; border-radius: 4px;
+    background: linear-gradient(90deg, #4F8CFF, #7C5CFF);
+    width: 0%; transition: width 400ms ease;
+  }
+
+  /* ── Chat content ────────────────────────────────────────────────────────── */
+  #c-chat-content {
+    max-width: 680px; margin: 0 auto;
+    padding: 40px 24px 160px;
+  }
+
+  /* User bubble */
   .c-user-bubble { display: flex; justify-content: flex-end; margin-bottom: 28px; }
   .c-user-bubble-inner {
-    background: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: rgba(255,255,255,0.82);
+    border: 1px solid rgba(255,255,255,0.7);
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     border-radius: 18px 18px 4px 18px;
-    padding: 14px 18px; max-width: 80%; font-size: 18px; color: #111; line-height: 1.6;
+    padding: 14px 18px; max-width: 80%;
+    font-size: 17px; color: #111; line-height: 1.6;
   }
 
-  /* ── Responsive — mobile-first premium layout ───────────────────────────── */
+  /* ── Fixed input bar ────────────────────────────────────────────────────── */
+  #c-input-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+    background: rgba(248,249,251,0.94);
+    backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+    border-top: 1px solid rgba(0,0,0,0.07);
+    padding: 12px 16px 20px;
+  }
+  #c-input-inner {
+    max-width: 680px; margin: 0 auto;
+    display: flex; align-items: flex-end; gap: 10px;
+  }
+  #c-input-bar textarea {
+    flex: 1; border: 1px solid rgba(0,0,0,0.10); outline: none;
+    font-size: 16px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #111; background: rgba(255,255,255,0.80);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    resize: none; line-height: 1.55;
+    max-height: 120px; overflow-y: auto;
+    padding: 12px 16px; border-radius: 16px;
+    transition: border-color 200ms;
+  }
+  #c-input-bar textarea:focus { border-color: rgba(79,140,255,0.40); }
+  #c-input-bar textarea::placeholder { color: rgba(0,0,0,0.28); }
+
+  /* Circular icon buttons */
+  .c-btn-circle {
+    width: 44px; height: 44px; min-width: 44px;
+    border-radius: 50%; border: 1px solid rgba(0,0,0,0.10);
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0; padding: 0;
+    transition: transform 0.16s ease, background 0.16s ease;
+    will-change: transform;
+  }
+  .c-btn-circle:hover  { transform: scale(1.08); background: rgba(255,255,255,1); }
+  .c-btn-circle:active { transform: scale(0.93); }
+  .c-btn-mic { color: #aaa; }
+  .c-btn-mic.listening { background: rgba(255,50,50,0.10); border-color: rgba(255,50,50,0.22); color: #e33; }
+  .c-btn-send { background: rgba(14,14,14,0.92); border-color: transparent; color: #fff; }
+  .c-btn-send:hover { background: #000; }
+
+  /* ── Mobile ─────────────────────────────────────────────────────────────── */
   @media (max-width: 600px) {
-    #c-shell {
-      height: 92vh;
-      border-radius: 22px;
-      backdrop-filter: blur(50px); -webkit-backdrop-filter: blur(50px);
-    }
-    #c-shell::before { border-radius: 22px; }
-    #c-shell::after  { border-radius: 22px; }
-    #c-scroll { padding: 120px 20px 220px; }
-    #c-topbar { padding: 18px 20px 0; border-radius: 22px 22px 0 0; }
-    #c-input-bar {
-      left: 12px; right: 12px; bottom: 14px;
-      border-radius: 16px;
-      padding: 8px 8px 8px 16px;
-      gap: 6px;
-    }
-    #c-input-bar textarea { font-size: 16px; }
-    .c-btn-circle { width: 36px; height: 36px; min-width: 36px; }
-    #c-hero-h1 { font-size: 34px !important; }
-    #c-hero-sub { font-size: 22px !important; }
-    #c-focus-glow { height: 92vh; border-radius: 36px; }
+    #c-chat-content { padding: 32px 16px 160px; }
+    #c-input-bar    { padding: 10px 12px 16px; }
+    #c-progress-header { padding: 12px 16px 10px; }
+  }
+
+  /* ── Part 6: Hero button animated gradient ──────────────────────────────── */
+  @keyframes btnGradientShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .c-hero-btn {
+    background: linear-gradient(135deg, #4F8CFF, #7C5CFF, #4F8CFF);
+    background-size: 200% 200%;
+    animation: btnGradientShift 3s ease infinite;
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  .c-hero-btn:hover { transform: scale(1.03); box-shadow: 0 14px 44px rgba(79,140,255,0.38); }
+  @media (hover: none) { .c-hero-btn:hover { transform: none; } }
+
+  /* ── Part 7: Hero fade-out transition ───────────────────────────────────── */
+  .c-hero-fading {
+    opacity: 0 !important;
+    transform: translateY(-8px) !important;
+    transition: opacity 400ms ease, transform 400ms ease !important;
+    pointer-events: none;
+  }
+  .c-chat-fadein {
+    animation: fadeIn 400ms ease forwards;
+  }
+
+  /* ── Part 3/4/5: Insight card system ────────────────────────────────────── */
+  .c-insight-card {
+    border-radius: 16px;
+    padding: 18px 20px;
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .c-insight-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .c-insight-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.85;
+  }
+  .c-insight-card-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .c-insight-card-body {
+    font-size: 14px;
+    line-height: 1.68;
+    opacity: 0.68;
   }
 `;
 
-// ── Helper components ──────────────────────────────────────────────────────────
+// ── Helper components ────────────────────────────────────────────────────────── ──────────────────────────────────────────────────────────
 function InjectCSS() {
   useEffect(() => {
     const prev = document.getElementById("c-global-css");
@@ -765,30 +525,163 @@ function SplashDot({ index }) {
 }
 
 function ThinkingDots() {
-  const [step, setStep] = useState(0);
-  useEffect(() => {
-    const iv = setInterval(() => setStep((s) => (s + 1) % 4), 500);
-    return () => clearInterval(iv);
-  }, []);
   return (
     <div style={{ marginBottom: 32 }}>
-      <div style={{ fontSize: 13, color: "#000", letterSpacing: "0.06em", marginBottom: 10 }}>
+      <div style={{
+        fontSize: 12, color: "#000", opacity: 0.38,
+        letterSpacing: "0.10em", textTransform: "uppercase", marginBottom: 12,
+      }}>
         Clarity denkt
       </div>
-      <div style={{ display: "flex", gap: 7 }}>
-        {[0, 1, 2].map((i) => (
-          <span
-            key={i}
-            style={{
-              fontSize: 11,
-              color: "#000",
-              opacity: step > i ? 1 : 0.15,
-              transition: "opacity 0.3s",
-            }}
-          >
-            ●
-          </span>
-        ))}
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <span className="c-wave-dot" />
+        <span className="c-wave-dot" />
+        <span className="c-wave-dot" />
+      </div>
+    </div>
+  );
+}
+
+// ── Hero Screen ───────────────────────────────────────────────────────────────
+function HeroScreen({ onStart }) {
+  const [vis,    setVis]    = useState(false);
+  const [fading, setFading] = useState(false); // Part 7 — fade-out on start
+
+  useEffect(() => { const t = setTimeout(() => setVis(true), 80); return () => clearTimeout(t); }, []);
+
+  // Part 7 — trigger 400ms fade-out, then call onStart
+  const handleStart = () => {
+    setFading(true);
+    setTimeout(() => onStart(), 400);
+  };
+
+  return (
+    <div
+      className={fading ? "c-hero-fading" : ""}
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "24px",
+        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        textAlign: "center",
+        position: "relative",
+        zIndex: 10,
+        opacity: vis ? 1 : 0,
+        transform: vis ? "none" : "translateY(16px)",
+        transition: "opacity 600ms ease, transform 600ms ease",
+      }}>
+
+      {/* Wordmark */}
+      <div style={{
+        fontSize: 11, letterSpacing: "0.42em", textTransform: "uppercase",
+        color: "#000", opacity: 0.35, marginBottom: 52,
+      }}>
+        Clarity
+      </div>
+
+      {/* Headline */}
+      <h1 style={{
+        fontSize: "clamp(40px, 9vw, 68px)",
+        fontWeight: 700,
+        letterSpacing: "-0.03em",
+        lineHeight: 1.06,
+        color: "#000",
+        marginBottom: 20,
+        maxWidth: 480,
+      }}>
+        Mehr Klarheit.
+      </h1>
+
+      {/* Subline */}
+      <p style={{
+        fontSize: "clamp(16px, 3.5vw, 20px)",
+        color: "#000",
+        opacity: 0.55,
+        lineHeight: 1.65,
+        marginBottom: 52,
+        maxWidth: 360,
+      }}>
+        In einem kurzen Gespräch erkennst du, was dir wirklich wichtig ist.
+      </p>
+
+      {/* Part 6 — CTA button: animated gradient */}
+      <button
+        className="c-hero-btn"
+        onClick={handleStart}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "64px",
+          padding: "0 36px",
+          color: "#fff",
+          border: "none",
+          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+          fontSize: "18px",
+          fontWeight: 600,
+          borderRadius: "18px",
+          cursor: "pointer",
+          marginBottom: 16,
+          boxShadow: "0 10px 36px rgba(79,140,255,0.30)",
+          minWidth: 220,
+        }}
+      >
+        Gespräch starten
+      </button>
+
+      {/* Microcopy */}
+      <div style={{
+        fontSize: 13, color: "#000", opacity: 0.42,
+        letterSpacing: "0.02em", lineHeight: 1.5,
+      }}>
+        Kostenlos · Kein Account · ca. 10 Minuten
+      </div>
+
+      {/* Trust signal */}
+      <div style={{
+        fontSize: 13, color: "#000", opacity: 0.6,
+        marginTop: 10, letterSpacing: "0.01em",
+      }}>
+        Bereits über 1.000 Gespräche geführt
+      </div>
+
+    </div>
+  );
+}
+
+// ── Analysis Screen — full-screen overlay while AI processes answers ──────────
+function AnalysisScreen() {
+  const [vis, setVis] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setVis(true), 60); return () => clearTimeout(t); }, []);
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 100,
+      display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      background: "linear-gradient(180deg, #f8f9fb 0%, #eef2f7 100%)",
+      fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+      opacity: vis ? 1 : 0,
+      transition: "opacity 400ms ease",
+    }}>
+      {/* Pulsing gradient orb — 80px per spec */}
+      <div style={{
+        width: 80, height: 80, borderRadius: "50%",
+        background: "linear-gradient(135deg, #4F8CFF, #7C5CFF)",
+        marginBottom: 36,
+        animation: "analysisPulse 2s ease-in-out infinite",
+        boxShadow: "0 0 48px rgba(79,140,255,0.40)",
+      }} />
+
+      <div style={{
+        fontSize: 16, color: "#000", opacity: 0.60,
+        letterSpacing: "0.02em", lineHeight: 1.6,
+        textAlign: "center", maxWidth: 280,
+      }}>
+        Clarity analysiert deine Antworten…
       </div>
     </div>
   );
@@ -819,109 +712,365 @@ function generateProfileLink(result) {
   }
 }
 
-// ── Share card — rendered off-screen, exported via html-to-image ──────────────
-function ClarityShareCard({ result, cardRef }) {
-  const BAR_MAX = 25;
+// ── Shared profile constants — single source of truth for all three views ────
+const SCORE_COLORS = {
+  Clarity:   "#4F8CFF",
+  Energy:    "#FF8A4F",
+  Strength:  "#9C6BFF",
+  Direction: "#3DDC97",
+  Action:    "#FF5A6F",
+};
+const SCORE_ORDER = ["Clarity", "Energy", "Strength", "Direction", "Action"];
+// Clarity Score Scale: raw (0–20) × 3, capped at 75 (psychological room to grow)
+const scorePct = (v) => Math.min(Math.round(v * 3), 75);
+
+// ── ScoreIcon — minimal SVG icon for each clarity dimension ───────────────────
+function ScoreIcon({ label, color, size = 18 }) {
+  const sw = "1.8", slc = "round", slj = "round";
+  if (label === "Clarity") return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap={slc} strokeLinejoin={slj} opacity="0.85">
+      <circle cx="12" cy="12" r="10"/>
+      <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+    </svg>
+  );
+  if (label === "Energy") return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap={slc} strokeLinejoin={slj} opacity="0.85">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </svg>
+  );
+  if (label === "Strength") return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap={slc} strokeLinejoin={slj} opacity="0.85">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  );
+  if (label === "Direction") return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap={slc} strokeLinejoin={slj} opacity="0.85">
+      <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+      <line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+      <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+    </svg>
+  );
+  if (label === "Action") return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap={slc} strokeLinejoin={slj} opacity="0.85">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+      <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+    </svg>
+  );
+  return null;
+}
+
+// ── ClarityProfileView ─────────────────────────────────────────────────────────
+// THE single source of truth rendered in all three views:
+//   1. ResultSection (animated, result screen)
+//   2. ClarityPublicProfile (/p/… page)
+//   3. ClarityShareWrapper (html-to-image capture)
+//
+// Props
+//   result     — full or partial result object; missing fields are skipped
+//   heroVis    — header/hero visible (default true)
+//   barsOn     — score bars filled + progress card visible (default true)
+//   insightVis — insight / strengths / action visible (default true)
+//   isStatic   — skip ALL CSS transitions (required for html-to-image capture)
+function ClarityProfileView({
+  result,
+  heroVis    = true,
+  barsOn     = true,
+  insightVis = true,
+  isStatic   = false,
+}) {
+  const primaryMode  = Array.isArray(result?.identityModes) && result.identityModes[0];
+  // Only render scores that are present, in canonical order
+  const scoreEntries = result?.scores
+    ? SCORE_ORDER.filter((k) => result.scores[k] != null).map((k) => [k, result.scores[k]])
+    : [];
+
+  // Builds a transition style string — returns {} when isStatic (for share capture)
+  const tr = (props, ms, delay = 0) =>
+    isStatic ? {} : { transition: `${props} ${ms}ms ease${delay ? ` ${delay}ms` : ""}` };
 
   return (
-    <div
-      ref={cardRef}
-      style={{
-        width: 480,
-        background: "#fff",
-        borderRadius: 24,
-        padding: "48px 44px 40px",
-        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-        boxShadow: "0 4px 40px rgba(0,0,0,0.08)",
-        color: "#000",
-      }}
-    >
-      {/* Header */}
-      <div style={{ marginBottom: 36 }}>
-        <div style={{ fontSize: 11, letterSpacing: "0.35em", textTransform: "uppercase", opacity: 0.45, marginBottom: 18 }}>
-          CLARITY PROFILE
+    <div style={{ fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
+
+      {/* ── HERO ─────────────────────────────────────────────────────────────── */}
+      <div style={{
+        background: "linear-gradient(180deg, #f8f9fb 0%, #eef2f7 100%)",
+        padding: "80px 24px 64px",
+        textAlign: "center",
+        borderBottom: "1px solid rgba(0,0,0,0.06)",
+        opacity: heroVis ? 1 : 0,
+        transform: heroVis ? "none" : "translateY(16px)",
+        ...tr("opacity, transform", 600),
+      }}>
+        <div style={{
+          fontSize: 10, letterSpacing: "0.42em", textTransform: "uppercase",
+          color: "#000", opacity: 0.38, marginBottom: 22,
+        }}>
+          Dein Clarity-Profil
         </div>
-        {result.summary && (
-          <div style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.5, color: "#000" }}>
+
+        {primaryMode && (
+          <>
+            <div style={{
+              fontSize: "clamp(36px, 9vw, 60px)", fontWeight: 700,
+              letterSpacing: "-0.025em", color: "#000", lineHeight: 1.0, marginBottom: 14,
+            }}>
+              {primaryMode.type.toUpperCase()}
+            </div>
+            <div style={{ fontSize: 13, color: "#000", opacity: 0.42, letterSpacing: "0.12em" }}>
+              {primaryMode.confidence}% Übereinstimmung
+            </div>
+          </>
+        )}
+
+        {/* Vergleich card — people icon, blue gradient */}
+        <div style={{ maxWidth: 480, margin: "20px auto 0" }}>
+          <div style={{
+            background: "linear-gradient(135deg, rgba(79,140,255,0.09) 0%, rgba(124,92,255,0.07) 100%)",
+            border: "1px solid rgba(79,140,255,0.18)",
+            borderRadius: 16, padding: "18px 20px",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F8CFF" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" opacity="0.85">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase", color: "#4F8CFF" }}>
+                Vergleich mit anderen Nutzern
+              </span>
+            </div>
+            <div style={{ fontSize: 14, color: "#000", opacity: 0.65, lineHeight: 1.65 }}>
+              Du liegst aktuell im oberen 35% aller Teilnehmenden.
+            </div>
+          </div>
+        </div>
+
+        {result?.summary && (
+          <div style={{
+            fontSize: 17, color: "#000", opacity: 0.65, lineHeight: 1.65,
+            marginTop: 28, maxWidth: 480, marginLeft: "auto", marginRight: "auto",
+          }}>
             {result.summary}
+          </div>
+        )}
+
+        {result?.confidence != null && (
+          <div style={{ fontSize: 11, color: "#000", opacity: 0.3, letterSpacing: "0.12em", marginTop: 16 }}>
+            Analysequalität: {result.confidence}%
           </div>
         )}
       </div>
 
-      {/* Identity modes */}
-      {Array.isArray(result.identityModes) && result.identityModes.length > 0 && (
-        <div style={{ marginBottom: 32, paddingBottom: 28, borderBottom: "1px solid #f0f0f0" }}>
-          {result.identityModes.map((mode, i) => (
-            <div key={mode.type} style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: i < result.identityModes.length - 1 ? 6 : 0 }}>
-              <div style={{ fontSize: i === 0 ? 28 : 17, fontWeight: i === 0 ? 700 : 500, letterSpacing: "-0.01em" }}>
-                {mode.type}
+      {/* ── SCORE DASHBOARD ──────────────────────────────────────────────────── */}
+      {scoreEntries.length > 0 && (
+        <div style={{
+          maxWidth: 600, margin: "0 auto", padding: "52px 24px 0",
+          opacity: barsOn ? 1 : 0,
+          transform: barsOn ? "none" : "translateY(16px)",
+          ...tr("opacity, transform", 600),
+        }}>
+          <div style={{
+            fontSize: 10, letterSpacing: "0.38em", textTransform: "uppercase",
+            color: "#000", opacity: 0.35, marginBottom: 32, textAlign: "center",
+          }}>
+            Dein Klarheitsprofil
+          </div>
+
+          {scoreEntries.map(([label, value]) => {
+            const pct = scorePct(value);
+            const col = SCORE_COLORS[label] || "#000";
+            return (
+              <div key={label} style={{ marginBottom: 22 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <ScoreIcon label={label} color={col} size={18} />
+                    <span style={{ fontSize: 12, letterSpacing: "0.08em", color: "#000", opacity: 0.65 }}>
+                      {label}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: col }}>{pct}%</span>
+                </div>
+                <div style={{ height: 12, borderRadius: 8, background: "rgba(0,0,0,0.06)", overflow: "hidden" }}>
+                  <div style={{
+                    height: 12, borderRadius: 8, background: col,
+                    width: barsOn ? `${pct}%` : "0%",
+                    boxShadow: barsOn ? `0 0 8px ${col}4D` : "none",
+                    ...(isStatic ? {} : { transition: "width 0.9s cubic-bezier(0.22,1,0.36,1)" }),
+                  }} />
+                </div>
               </div>
-              <div style={{ fontSize: 11, opacity: 0.35, letterSpacing: "0.06em" }}>
-                {mode.confidence}%
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── PROGRESS POTENTIAL — trending-up icon, blue card ─────────────────── */}
+      <div style={{
+        maxWidth: 600, margin: "0 auto", padding: "24px 24px 0",
+        opacity: barsOn ? 1 : 0,
+        ...tr("opacity", 600, 200),
+      }}>
+        <div style={{
+          background: "linear-gradient(135deg, rgba(79,140,255,0.09) 0%, rgba(124,92,255,0.07) 100%)",
+          border: "1px solid rgba(79,140,255,0.18)",
+          borderRadius: 16, padding: "18px 20px",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4F8CFF" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" opacity="0.85">
+              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+              <polyline points="17 6 23 6 23 12"/>
+            </svg>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase", color: "#4F8CFF" }}>
+              Dein Fortschrittspotenzial
+            </span>
+          </div>
+          <div style={{ fontSize: 14, color: "#000", opacity: 0.65, lineHeight: 1.68 }}>
+            Viele Menschen starten in diesem Bereich bei etwa 40–60%.{" "}
+            Mit den richtigen Gewohnheiten kannst du über 90% erreichen.
+          </div>
+        </div>
+      </div>
+
+      {/* ── INSIGHT ──────────────────────────────────────────────────────────── */}
+      {result?.pattern && (
+        <div style={{
+          maxWidth: 600, margin: "0 auto", padding: "44px 24px 0",
+          opacity: insightVis ? 1 : 0,
+          transform: insightVis ? "none" : "translateY(12px)",
+          ...tr("opacity, transform", 600),
+        }}>
+          <div style={{ fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase", color: "#000", opacity: 0.38, marginBottom: 14 }}>
+            Insight
+          </div>
+          <div style={{ fontSize: 16, lineHeight: 1.55, opacity: 0.88, color: "#000" }}>
+            {result.pattern}
+          </div>
+        </div>
+      )}
+
+      {/* ── STRENGTHS / ENERGY SOURCES / NEXT FOCUS ──────────────────────────── */}
+      {(result?.strengths?.length || result?.energySources?.length || result?.nextFocus) && (
+        <div style={{
+          maxWidth: 600, margin: "44px auto 0", padding: "0 24px",
+          opacity: insightVis ? 1 : 0,
+          ...tr("opacity", 600, 100),
+        }}>
+          {[
+            { title: "Deine Stärken",        items: result?.strengths },
+            { title: "Deine Energiequellen", items: result?.energySources },
+            { title: "Dein nächster Fokus",  items: result?.nextFocus ? [result.nextFocus] : null },
+          ].map(({ title, items }) => items?.length ? (
+            <div key={title} style={{ marginBottom: 32 }}>
+              <div style={{ fontSize: 10, letterSpacing: "0.28em", textTransform: "uppercase", color: "#000", opacity: 0.38, marginBottom: 12 }}>
+                {title}
               </div>
+              {items.map((s, i) => (
+                <div key={i} style={{ fontSize: 15, color: "#000", lineHeight: 1.75, opacity: 0.85 }}>— {s}</div>
+              ))}
             </div>
-          ))}
+          ) : null)}
         </div>
       )}
 
-      {/* Score bars */}
-      {result.scores && (
-        <div style={{ marginBottom: 32, paddingBottom: 28, borderBottom: "1px solid #f0f0f0" }}>
-          {Object.entries(result.scores).map(([label, value]) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", marginBottom: 10, gap: 12 }}>
-              <div style={{ fontSize: 10, letterSpacing: "0.08em", opacity: 0.5, width: 68, flexShrink: 0 }}>
-                {label}
-              </div>
-              <div style={{ flex: 1, height: 2, background: "#ebebeb" }}>
-                <div style={{ height: 2, background: "#000", width: `${(value / BAR_MAX) * 100}%` }} />
-              </div>
-              <div style={{ fontSize: 10, opacity: 0.4, width: 22, textAlign: "right", flexShrink: 0 }}>
-                {value}
-              </div>
+      {/* ── TODAY'S ACTION — rocket icon, soft red card ───────────────────────── */}
+      {result?.suggestedAction && (
+        <div style={{
+          maxWidth: 600, margin: "24px auto 0", padding: "0 24px",
+          opacity: insightVis ? 1 : 0,
+          transform: insightVis ? "none" : "translateY(10px)",
+          ...tr("opacity, transform", 600, 150),
+        }}>
+          <div style={{
+            background: "linear-gradient(135deg, rgba(255,90,111,0.09) 0%, rgba(255,138,79,0.08) 100%)",
+            border: "1px solid rgba(255,90,111,0.20)",
+            borderRadius: 16, padding: "18px 20px",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
+              <ScoreIcon label="Action" color="#FF5A6F" size={20} />
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase", color: "#FF5A6F" }}>
+                Deine Aufgabe für heute
+              </span>
             </div>
-          ))}
+            <div style={{ fontSize: 15, color: "#000", lineHeight: 1.65, opacity: 0.82 }}>
+              {result.suggestedAction}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Pattern */}
-      {result.pattern && (
-        <div style={{ fontSize: 13, lineHeight: 1.65, opacity: 0.65, marginBottom: 32 }}>
-          {result.pattern}
-        </div>
-      )}
+    </div>
+  );
+}
 
-      {/* Footer */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
-        <div style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 600, opacity: 0.75 }}>
-          clarity.ai
-        </div>
-        <div style={{ fontSize: 10, letterSpacing: "0.04em", opacity: 0.38 }}>
-          Generated with Clarity AI
-        </div>
+// ── ClarityShareWrapper — 1200 × 1600 container for html-to-image capture ─────
+// Renders ClarityProfileView with isStatic=true (no transitions) so html-to-image
+// captures a fully-rendered, pixel-perfect version of the profile.
+function ClarityShareWrapper({ result, wrapperRef }) {
+  return (
+    <div
+      ref={wrapperRef}
+      style={{
+        width: 1200,
+        minHeight: 1600,
+        background: "linear-gradient(180deg, #f8f9fb 0%, #eef2f7 100%)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+      }}
+    >
+      {/* Centered profile content at 700px max-width */}
+      <div style={{ width: "100%", maxWidth: 700 }}>
+        <ClarityProfileView
+          result={result}
+          heroVis={true}
+          barsOn={true}
+          insightVis={true}
+          isStatic={true}
+        />
+      </div>
+
+      {/* Footer wordmark */}
+      <div style={{
+        fontSize: 11, letterSpacing: "0.38em", textTransform: "uppercase",
+        color: "#000", opacity: 0.20, marginTop: 56, paddingBottom: 72,
+      }}>
+        clarity.ai
       </div>
     </div>
   );
 }
 
 function ResultSection({ result }) {
-  const [vis, setVis]               = useState(false);
-  const [barsOn, setBarsOn]         = useState(false);
-  const [hover, setHover]           = useState(false);
-  const [hoverImg, setHoverImg]     = useState(false);
-  const [hoverLink, setHoverLink]   = useState(false);
-  const [hoverNative, setHoverNative] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [generating, setGenerating] = useState(false);
-
-  const cardRef = useRef(null);
+  // Staggered micro-reward animation states
+  const [vis,          setVis]          = useState(false);   // outer wrapper
+  const [heroVis,      setHeroVis]      = useState(false);   // 1. header
+  const [barsOn,       setBarsOn]       = useState(false);   // 2. score bars
+  const [insightVis,   setInsightVis]   = useState(false);   // 3. insight + rest
+  const [copiedLink,   setCopiedLink]   = useState(false);
+  const [generating,   setGenerating]   = useState(false);
+  const [shareConfirm, setShareConfirm] = useState(false);
+  const [hoverCta,     setHoverCta]     = useState(false);
+  const [hoverImg,     setHoverImg]     = useState(false);
+  const [hoverLink,    setHoverLink]    = useState(false);
+  const [hoverNative,  setHoverNative]  = useState(false);
+  const shareWrapperRef = useRef(null);  // ← points to ClarityShareWrapper (1200×1600)
 
   useEffect(() => {
-    const t1 = setTimeout(() => setVis(true), 60);
-    const t2 = setTimeout(() => setBarsOn(true), 700);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    // Scroll to top so reveal animation is fully in view
+    window.scrollTo({ top: 0, behavior: "instant" });
+    // Staggered reveal: title → 0ms, bars → 300ms, insights → 700ms
+    const t0 = setTimeout(() => setVis(true),        0);
+    const t1 = setTimeout(() => setHeroVis(true),    0);
+    const t2 = setTimeout(() => setBarsOn(true),     300);
+    const t3 = setTimeout(() => setInsightVis(true), 700);
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
-  // ── Copy profile link to clipboard ────────────────────────────────────────
+  // ── Share handlers ──────────────────────────────────────────────────────────
   const copyProfileLink = async () => {
     const link = generateProfileLink(result);
     try {
@@ -931,265 +1080,171 @@ function ResultSection({ result }) {
     } catch (_) {}
   };
 
-  // ── Native share — URL + summary text ─────────────────────────────────────
   const nativeShare = async () => {
     const profileLink = generateProfileLink(result);
-    const shareData = {
-      title: "Mein Clarity Profil",
-      text: result.summary || "Mein persönliches Klarheitsprofil von Clarity.",
-      url: profileLink,
-    };
+    const shareData = { title: "Mein Clarity Profil", text: result.summary || "Mein persönliches Klarheitsprofil von Clarity.", url: profileLink };
     if (navigator.share) {
       try { await navigator.share(shareData); }
-      catch (e) { /* user cancelled */ }
+      catch (e) { /* cancelled */ }
     } else {
-      // Fallback: copy link
-      try {
-        await navigator.clipboard.writeText(profileLink);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2200);
-      } catch (_) {}
+      try { await navigator.clipboard.writeText(profileLink); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2200); }
+      catch (_) {}
     }
   };
 
-  // ── Generate & share/download PNG card ─────────────────────────────────────
   const generateShareImage = async () => {
-    if (!cardRef.current || generating) return;
+    if (!shareWrapperRef.current || generating) return;
     setGenerating(true);
     try {
       const { toPng: _toPng } = await import("html-to-image");
-      const dataUrl = await _toPng(cardRef.current, {
+      // Capture at full 1200×1600 resolution (pixelRatio: 1 — already large)
+      const dataUrl = await _toPng(shareWrapperRef.current, {
         cacheBust: true,
-        pixelRatio: 2,
-        style: { borderRadius: "24px" },
+        pixelRatio: 1,
+        style: { borderRadius: "0px" },
       });
-
-      // Try native share with file (mobile)
       if (navigator.share && navigator.canShare) {
         try {
           const blob = await (await fetch(dataUrl)).blob();
           const file = new File([blob], "clarity-profile.png", { type: "image/png" });
-          if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ title: "Mein Clarity Profil", files: [file] });
-            setGenerating(false);
-            return;
-          }
-        } catch (e) { /* fall through to download */ }
+          if (navigator.canShare({ files: [file] })) { await navigator.share({ title: "Mein Clarity Profil", files: [file] }); setGenerating(false); return; }
+        } catch (e) { /* fall through */ }
       }
-
-      // Fallback: trigger download
-      const a = document.createElement("a");
-      a.download = "clarity-profile.png";
-      a.href = dataUrl;
-      a.click();
+      const a = document.createElement("a"); a.download = "clarity-profile.png"; a.href = dataUrl; a.click();
+      setShareConfirm(true);
+      setTimeout(() => setShareConfirm(false), 3500);
     } catch (err) {
-      console.error("Share card generation failed:", err);
-      // Fallback: copy profile link instead of plain text
       const profileLink = generateProfileLink(result);
-      try {
-        await navigator.clipboard.writeText(profileLink);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2200);
-      } catch (_) {}
-    } finally {
-      setGenerating(false);
-    }
+      try { await navigator.clipboard.writeText(profileLink); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2200); }
+      catch (_) {}
+    } finally { setGenerating(false); }
   };
 
-  return (
-    <div
+  const BTN = (label, onClick, hover, setHover, opts = {}) => (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      disabled={opts.disabled}
       style={{
-        opacity: vis ? 1 : 0,
-        transform: vis ? "none" : "translateY(20px)",
-        transition: "opacity 600ms ease, transform 600ms ease",
+        border: `1px solid ${hover ? "transparent" : "rgba(0,0,0,0.18)"}`,
+        background: hover ? "#000" : (opts.dark ? "#000" : "#fff"),
+        color: hover ? "#fff" : (opts.dark ? "#fff" : "#000"),
+        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        fontSize: 13, letterSpacing: "0.14em",
+        padding: "16px 32px", borderRadius: 4,
+        cursor: opts.disabled ? "wait" : "pointer",
+        transition: "background 200ms, color 200ms, border 200ms",
+        opacity: opts.disabled ? 0.55 : 1,
+        width: "100%", maxWidth: 340,
+        ...opts.style,
       }}
     >
-      <div style={{ fontSize: 22, fontWeight: 400, color: "#000", lineHeight: 1.6, marginBottom: 48 }}>
-        Hier ist, was ich in deinen Antworten erkenne.
-      </div>
+      {label}
+    </button>
+  );
 
-      {/* Summary — one-sentence situational overview */}
-      {result.summary && (
-        <div style={{ fontSize: 20, fontWeight: 500, color: "#000", lineHeight: 1.55, marginBottom: 12 }}>
-          {result.summary}
+  return (
+    <div style={{
+      fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+      opacity: vis ? 1 : 0,
+      transform: vis ? "none" : "translateY(24px)",
+      transition: "opacity 700ms ease, transform 700ms ease",
+      paddingBottom: 80,
+    }}>
+
+      {/* ── PROFILE VIEW — ClarityProfileView is the single source of truth ─── */}
+      <ClarityProfileView
+        result={result}
+        heroVis={heroVis}
+        barsOn={barsOn}
+        insightVis={insightVis}
+        isStatic={false}
+      />
+
+      {/* ── NEXT STEP CTA — Part 4: marginBottom 32 before this divider ──────── */}
+      <div style={{
+        maxWidth: 600, margin: "32px auto 0", padding: "48px 24px 52px",
+        textAlign: "center",
+        borderTop: "1px solid rgba(0,0,0,0.07)",
+      }}>
+        <div style={{
+          fontSize: 22, fontWeight: 600, color: "#000",
+          letterSpacing: "-0.01em", marginBottom: 8, lineHeight: 1.3,
+        }}>
+          Willst du tiefer gehen?
         </div>
-      )}
-
-      {/* Confidence label */}
-      {result.confidence != null && (
-        <div style={{ fontSize: 11, letterSpacing: "0.18em", color: "#000", opacity: 0.4, textTransform: "uppercase", marginBottom: 36 }}>
-          Analysequalität: {result.confidence}%
+        <div style={{ fontSize: 15, color: "#000", opacity: 0.50, marginBottom: 28, lineHeight: 1.5 }}>
+          Entdecke, was wirklich möglich ist.
         </div>
-      )}
-
-      {/* Identity modes */}
-      {Array.isArray(result.identityModes) && result.identityModes.length > 0 && (
-        <div style={{ marginBottom: 44 }}>
-          <div style={{ fontSize: 10, letterSpacing: "0.3em", color: "#000", opacity: 0.4, textTransform: "uppercase", marginBottom: 14 }}>
-            Du befindest dich gerade in
-          </div>
-          {result.identityModes.map((mode) => (
-            <div key={mode.type} style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8 }}>
-              <div style={{ fontSize: 22, fontWeight: 600, color: "#000", letterSpacing: "-0.01em" }}>
-                {mode.type}
-              </div>
-              <div style={{ fontSize: 11, letterSpacing: "0.12em", color: "#000", opacity: 0.38 }}>
-                {mode.confidence}%
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div style={{ fontSize: 18, lineHeight: 1.6, marginBottom: 40, opacity: 0.8 }}>
-        {result.pattern}
-      </div>
-
-      <div style={{ fontSize: 14, letterSpacing: "0.3em", color: "#000", marginBottom: 36, textTransform: "uppercase", opacity: 0.45 }}>
-        Dein Klarheitsprofil
-      </div>
-
-      <div style={{ marginBottom: 60 }}>
-        {Object.entries(result.scores).map(([label, value]) => (
-          <div key={label} style={{ display: "flex", alignItems: "center", marginBottom: 20, gap: 16 }}>
-            <div style={{ fontSize: 12, letterSpacing: "0.08em", color: "#000", width: 80, flexShrink: 0 }}>
-              {label}
-            </div>
-            <div style={{ flex: 1, height: 3, background: "#ddd", overflow: "hidden" }}>
-              <div
-                style={{
-                  height: 3,
-                  background: "#000",
-                  width: barsOn ? `${value}%` : "0%",
-                  transition: "width 1s ease",
-                }}
-              />
-            </div>
-            <div style={{ fontSize: 12, color: "#000", width: 28, textAlign: "right", flexShrink: 0 }}>
-              {value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 40, marginBottom: 60 }}>
-        {[
-          { title: "Deine Stärken",        items: result.strengths },
-          { title: "Deine Energiequellen", items: result.energySources },
-          { title: "Dein nächster Fokus",  items: [result.nextFocus] },
-        ].map(({ title, items }) => (
-          <div key={title}>
-            <div style={{ fontSize: 10, letterSpacing: "0.22em", color: "#000", marginBottom: 16, textTransform: "uppercase" }}>
-              {title}
-            </div>
-            {items?.map((s, i) => (
-              <div key={i} style={{ fontSize: 14, color: "#000", lineHeight: 1.8 }}>— {s}</div>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      <div style={{ borderTop: "1px solid #ddd", paddingTop: 44, marginBottom: 60, textAlign: "center" }}>
-        <div style={{ fontSize: 10, letterSpacing: "0.25em", color: "#000", marginBottom: 18, textTransform: "uppercase" }}>
-          Deine Aufgabe für heute
-        </div>
-        <div style={{ fontSize: 20, fontWeight: 400, color: "#000", lineHeight: 1.55 }}>
-          {result.suggestedAction}
-        </div>
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginBottom: 80 }}>
-        {/* CTA */}
         <button
-          onMouseEnter={() => setHover(true)}
-          onMouseLeave={() => setHover(false)}
+          onMouseEnter={() => setHoverCta(true)}
+          onMouseLeave={() => setHoverCta(false)}
           style={{
-            border: "1px solid #000",
-            background: hover ? "#000" : "transparent",
-            color: hover ? "#fff" : "#000",
-            fontFamily: "inherit",
-            fontSize: 13,
-            letterSpacing: "0.2em",
-            padding: "18px 36px",
-            cursor: "pointer",
-            transition: "background 200ms, color 200ms",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            height: 56, padding: "0 32px",
+            background: hoverCta ? "#1a1a1a" : "#000",
+            color: "#fff", border: "none",
+            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            fontSize: 16, fontWeight: 600, borderRadius: 16, cursor: "pointer",
+            transition: "background 200ms, transform 150ms",
+            transform: hoverCta ? "scale(1.03)" : "scale(1)",
+            boxShadow: "0 8px 28px rgba(0,0,0,0.18)",
+            marginBottom: 12,
           }}
         >
-          Clarity System starten – kostenlos
+          Clarity System starten
         </button>
+        <div style={{ fontSize: 13, color: "#000", opacity: 0.45, letterSpacing: "0.01em" }}>
+          7 Tage kostenlos testen
+        </div>
+      </div>
 
-        {/* 1 — Profil als Bild teilen */}
-        <button
-          onClick={generateShareImage}
-          onMouseEnter={() => setHoverImg(true)}
-          onMouseLeave={() => setHoverImg(false)}
-          disabled={generating}
-          style={{
-            border: "1px solid #000",
-            background: hoverImg ? "#000" : "#fff",
-            color: hoverImg ? "#fff" : "#000",
-            fontFamily: "inherit",
-            fontSize: 13,
-            letterSpacing: "0.2em",
-            padding: "18px 36px",
-            cursor: generating ? "wait" : "pointer",
-            transition: "background 200ms, color 200ms",
-            opacity: generating ? 0.6 : 1,
-          }}
-        >
-          {generating ? "Wird erstellt…" : "Profil als Bild teilen"}
-        </button>
-
-        {/* 2 — Profil-Link kopieren */}
-        <button
-          onClick={copyProfileLink}
-          onMouseEnter={() => setHoverLink(true)}
-          onMouseLeave={() => setHoverLink(false)}
-          style={{
-            border: "1px solid #000",
-            background: hoverLink ? "#000" : "#fff",
-            color: hoverLink ? "#fff" : "#000",
-            fontFamily: "inherit",
-            fontSize: 13,
-            letterSpacing: "0.2em",
-            padding: "18px 36px",
-            cursor: "pointer",
-            transition: "background 200ms, color 200ms",
-          }}
-        >
-          {copiedLink ? "✓ Link kopiert" : "Profil-Link kopieren"}
-        </button>
-
-        {/* 3 — Profil teilen (native share / link fallback) */}
-        <button
-          onClick={nativeShare}
-          onMouseEnter={() => setHoverNative(true)}
-          onMouseLeave={() => setHoverNative(false)}
-          style={{
-            border: "1px solid #000",
-            background: hoverNative ? "#000" : "#fff",
-            color: hoverNative ? "#fff" : "#000",
-            fontFamily: "inherit",
-            fontSize: 13,
-            letterSpacing: "0.2em",
-            padding: "18px 36px",
-            cursor: "pointer",
-            transition: "background 200ms, color 200ms",
-          }}
-        >
+      {/* ── SHARE SECTION ────────────────────────────────────────────────────── */}
+      <div style={{
+        maxWidth: 600, margin: "0 auto", padding: "36px 24px 0",
+        borderTop: "1px solid rgba(0,0,0,0.07)", textAlign: "center",
+      }}>
+        <div style={{
+          fontSize: 10, letterSpacing: "0.35em", textTransform: "uppercase",
+          color: "#000", opacity: 0.35, marginBottom: 24,
+        }}>
           Profil teilen
-        </button>
+        </div>
+
+        {/* Share confirmation toast */}
+        {shareConfirm && (
+          <div style={{
+            maxWidth: 340, width: "100%",
+            background: "linear-gradient(135deg, rgba(61,220,151,0.11), rgba(79,140,255,0.09))",
+            border: "1px solid rgba(61,220,151,0.28)",
+            borderRadius: 12, padding: "14px 18px", marginBottom: 16, textAlign: "left",
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#000", marginBottom: 3 }}>
+              Profilbild gespeichert.
+            </div>
+            <div style={{ fontSize: 12, color: "#000", opacity: 0.52, lineHeight: 1.55 }}>
+              Teile dein Klarheitsprofil mit Freunden.
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          {BTN(generating ? "Wird erstellt…" : "Profilbild teilen", generateShareImage, hoverImg, setHoverImg, { disabled: generating })}
+          {BTN(copiedLink ? "✓ Link kopiert" : "Profil-Link kopieren", copyProfileLink, hoverLink, setHoverLink)}
+          {BTN("Profil teilen", nativeShare, hoverNative, setHoverNative)}
+        </div>
       </div>
 
-      {/* Hidden share card — rendered off-screen for html-to-image export */}
+      {/* Hidden share wrapper — rendered off-screen at 1200×1600 for html-to-image */}
       <div style={{ position: "absolute", left: -9999, top: 0, pointerEvents: "none" }}>
-        <ClarityShareCard result={result} cardRef={cardRef} />
+        <ClarityShareWrapper result={result} wrapperRef={shareWrapperRef} />
       </div>
     </div>
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────────
+// ── Main component ───────────────────────────────────────────────────────────── ─────────────────────────────────────────────────────────────
 function Clarity() {
   const [phase,          setPhase]        = useState("splash");
   const [messages,       setMessages]     = useState([]);
@@ -1238,12 +1293,6 @@ function Clarity() {
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, []);
-
-  // ── Auto-start ─────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const t = setTimeout(() => beginTransition(), 5200);
-    return () => clearTimeout(t);
   }, []);
 
   // ── Parallax depth + ambient glass light ────────────────────────────────────
@@ -1296,14 +1345,13 @@ function Clarity() {
   }, []);
 
   const beginTransition = () => {
-    setHeroFaded(true);
     document.getElementById("c-strips")?.classList.add("fade-out");
+    setSphereChat(true);
+    // Short delay for strip fade-out before chat begins
     setTimeout(() => {
-      setSphereChat(true);
-      setTopbarOpaque(true);
       setPhase("chat");
       startIntroSequence();
-    }, 1800);
+    }, 600);
   };
 
   const startIntroSequence = () => {
@@ -1416,7 +1464,7 @@ function Clarity() {
       setAnalysing(false);
       setResult(parsed);
       setPhase("result");
-      setTimeout(() => { const sc = document.getElementById("c-scroll"); if (sc) sc.scrollTo({ top: 0, behavior: "smooth" }); }, 200);
+      setTimeout(() => { window.scrollTo({ top: 0, behavior: "smooth" }); }, 200);
     } catch (err) {
       console.error("Analysis error:", err);
       setAnalysing(false);
@@ -1556,7 +1604,6 @@ function Clarity() {
   const answersCollected = answersRef.current.length;
   const pct              = Math.min((answersCollected / 12) * 100, 100);
   const displayQNum      = Math.min(answersCollected + 1, 12);
-  const showProgress     = phase === "chat" || phase === "result";
   const showInput        = phase === "chat" && inputReady && !isTyping && !analysing;
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -1564,6 +1611,7 @@ function Clarity() {
     <>
       <InjectCSS />
 
+      {/* Animated background layers */}
       <div id="c-strips">
         <div className="c-strip c-strip-1" />
         <div className="c-strip c-strip-2" />
@@ -1572,133 +1620,108 @@ function Clarity() {
         <div className="c-strip c-strip-5" />
         <div className="c-strip c-strip-6" />
       </div>
-
       <div id="c-atmosphere">
         <div className="c-atmo c-atmo-1" />
         <div className="c-atmo c-atmo-2" />
       </div>
-
-      <div id="c-nebula" className={[sphereChatMode ? "chat-mode" : "", (isTyping || analysing) ? "thinking breathing" : ""].filter(Boolean).join(" ")}>
+      <div
+        id="c-nebula"
+        className={[
+          sphereChatMode ? "chat-mode" : "",
+          (isTyping || analysing) ? "thinking" : "",
+        ].filter(Boolean).join(" ")}
+      >
         <div className="c-blob c-blob-1" />
         <div className="c-blob c-blob-2" />
         <div className="c-blob c-blob-3" />
         <div className="c-blob c-blob-4" />
       </div>
 
-      <div
-        id="c-focus-glow"
-        className={(inputFocused || isTyping || analysing) ? "active" : ""}
-      />
+      {/* Analysis overlay — full-screen, shown when AI is processing */}
+      {analysing && <AnalysisScreen />}
 
-      <div id="c-shell" ref={pageRef}>
+      {/* Fullscreen app layout */}
+      <div id="c-app">
 
-        {/* Topbar — absolute inside glass shell */}
-        <div id="c-topbar" className={topbarOpaque ? "opaque" : ""}>
-          <div id="c-logo">CLARITY</div>
-          <div id="c-progress-track" className={showProgress ? "show" : ""}>
-            <div id="c-progress-fill" style={{ width: `${pct}%` }} />
-          </div>
-          <div id="c-question-label" className={showProgress ? "show" : ""}>
-            Frage {displayQNum} von 12
-          </div>
-        </div>
+        {/* ── SPLASH: Hero Screen ──────────────────────────────────────── */}
+        {phase === "splash" && (
+          <HeroScreen onStart={beginTransition} />
+        )}
 
-        {/* Scrollable content layer */}
-        <div id="c-scroll">
+        {/* ── CHAT — Part 7: fades in after hero fade-out ────────────────── */}
+        {phase === "chat" && (
+          <div className="c-chat-fadein" style={{ flex: 1 }}>
 
-          {/* Hero (splash) */}
-          <div id="c-hero" className={heroFaded ? "faded" : ""}>
-            <div
-              id="c-hero-h1"
-              style={{
-                fontSize: 56,
-                fontWeight: 700,
-                color: "#000",
-                lineHeight: 1.15,
-                marginBottom: 20,
-                letterSpacing: "-0.03em",
-                textAlign: "center",
-              }}
-            >
-              Ein Gespräch, das dein Leben verändern kann.
-            </div>
-            <div
-              id="c-hero-sub"
-              style={{
-                fontSize: 38,
-                color: "#000",
-                marginBottom: 40,
-                lineHeight: 1.5,
-                fontWeight: 400,
-                textAlign: "center",
-              }}
-            >
-              Finde in 10 Minuten heraus, was du wirklich willst.
-            </div>
-            <div style={{ fontSize: 25, color: "rgb(116,123,139)", lineHeight: 1.75, textAlign: "center" }}>
-              Die meisten Menschen funktionieren einfach – aber wissen nicht mehr, warum.
-            </div>
-            {/* Splash loading indicator */}
-            {phase === "splash" && !heroFaded && (
-              <div style={{ marginTop: 52, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                <div style={{ fontSize: 11, letterSpacing: "0.25em", textTransform: "uppercase", opacity: 0.55, color: "#555", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-                  Clarity macht sich bereit
+            {/* Sticky progress header */}
+            <div id="c-progress-header">
+              <div id="c-progress-header-inner">
+                <div id="c-progress-meta">
+                  <span id="c-progress-logo">Clarity</span>
+                  <span id="c-progress-label">Frage {displayQNum} von 12</span>
                 </div>
-                <div style={{ display: "flex", gap: 7 }}>
-                  {[0, 1, 2].map((i) => (
-                    <SplashDot key={i} index={i} />
-                  ))}
+                <div id="c-progress-track-new">
+                  <div id="c-progress-fill-new" style={{ width: `${pct}%` }} />
                 </div>
               </div>
-            )}
-          </div>
+            </div>
 
-          {/* Chat */}
-          {phase === "chat" && (
-            <div style={{ paddingTop: 48 }}>
-              <div style={{ fontSize: 22, fontWeight: 400, color: "#000", lineHeight: 1.75, marginBottom: 36 }}>
-                {INTRO_CHUNKS.slice(0, visibleChunks).map((chunk, i) => (
-                  <p key={i} className="c-fade-up" style={{ margin: "0 0 24px 0" }}>
-                    {chunk}
-                  </p>
-                ))}
+            {/* Chat messages */}
+            <div id="c-chat-content">
+
+              {/* Intro sequence */}
+              <div style={{ marginBottom: 16 }}>
+                {INTRO_CHUNKS.slice(0, visibleChunks).map((chunk, i) => {
+                  const isFirstQuestion = i === INTRO_CHUNKS.length - 1;
+                  const isFirstLine     = i === 0;
+                  return isFirstQuestion ? (
+                    <p key={i} className="c-fade-up" style={{
+                      fontSize: 28, fontWeight: 600, color: "#000",
+                      lineHeight: 1.3, margin: "32px 0 24px 0",
+                    }}>
+                      {chunk}
+                    </p>
+                  ) : isFirstLine ? (
+                    <p key={i} className="c-fade-up" style={{
+                      fontSize: 15, fontWeight: 400, color: "#000",
+                      opacity: 0.45, lineHeight: 1.65, margin: "0 0 16px 0",
+                    }}>
+                      {chunk}
+                    </p>
+                  ) : (
+                    <p key={i} className="c-fade-up" style={{
+                      fontSize: 19, fontWeight: 400, color: "#000",
+                      opacity: 0.75, lineHeight: 1.72, margin: "0 0 20px 0",
+                    }}>
+                      {chunk}
+                    </p>
+                  );
+                })}
               </div>
 
+              {/* Message list */}
               {messages.map((msg, i) =>
                 msg.role === "user" ? (
                   <div key={i} className="c-user-bubble">
                     <div className="c-user-bubble-inner">{msg.content}</div>
                   </div>
                 ) : msg.type === "reflection" ? (
-                  // Mid-insight block — visually distinguished
-                  <div
-                    key={i}
-                    className="c-fade-up"
-                    style={{ marginTop: 8, marginBottom: 40, paddingLeft: 16, borderLeft: "2px solid #bbb" }}
-                  >
+                  <div key={i} className="c-fade-up"
+                    style={{ marginTop: 8, marginBottom: 40, paddingLeft: 16, borderLeft: "2px solid rgba(0,0,0,0.15)" }}>
                     <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "#999", textTransform: "uppercase", marginBottom: 8 }}>
                       Beobachtung
                     </div>
-                    <div style={{ fontSize: 17, fontStyle: "italic", color: "#444", lineHeight: 1.7, fontWeight: 400 }}>
+                    <div style={{ fontSize: 17, fontStyle: "italic", color: "#444", lineHeight: 1.7 }}>
                       {msg.content}
                     </div>
                   </div>
                 ) : msg.isQuestion ? (
-                  // Next question — full visual weight
-                  <div
-                    key={i}
-                    className="c-fade-up"
-                    style={{ fontSize: 22, fontWeight: 400, color: "#000", lineHeight: 1.75, marginBottom: 36 }}
-                  >
+                  <div key={i} className="c-fade-up"
+                    style={{ fontSize: 21, fontWeight: 400, color: "#000", lineHeight: 1.72, marginBottom: 36 }}>
                     {msg.content}
                   </div>
                 ) : (
-                  // Normal reflection — lighter, smaller
-                  <div
-                    key={i}
-                    className="c-fade-up"
-                    style={{ fontSize: 20, fontWeight: 400, color: "#000", opacity: 0.85, lineHeight: 1.7, marginBottom: 36 }}
-                  >
+                  <div key={i} className="c-fade-up"
+                    style={{ fontSize: 18, fontWeight: 400, color: "#000", opacity: 0.78, lineHeight: 1.7, marginBottom: 36 }}>
                     {msg.content}
                   </div>
                 )
@@ -1706,39 +1729,32 @@ function Clarity() {
 
               {isTyping && <ThinkingDots />}
 
-              {analysing && (
-                <div
-                  className="c-fade-up"
-                  style={{ fontSize: 18, color: "#000", letterSpacing: "0.02em", marginBottom: 32, opacity: 0.65 }}
-                >
-                  Clarity analysiert deine Antworten…
-                </div>
-              )}
-
               <div ref={bottomRef} style={{ height: 1 }} />
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Result */}
-          {phase === "result" && result && (
-            <div style={{ paddingTop: 0 }}>
-              <ResultSection result={result} />
-              <div ref={bottomRef} style={{ height: 1 }} />
-            </div>
-          )}
+        {/* ── RESULT ───────────────────────────────────────────────────── */}
+        {phase === "result" && result && (
+          <div>
+            <ResultSection result={result} />
+            <div ref={bottomRef} style={{ height: 1 }} />
+          </div>
+        )}
 
-        </div>{/* /#c-scroll */}
+      </div>{/* /#c-app */}
 
-        {/* Input bar — absolute at bottom of glass shell */}
-        {showInput && (
-          <div id="c-input-bar">
+      {/* Fixed input bar — rendered outside c-app so it overlays everything */}
+      {showInput && (
+        <div id="c-input-bar">
+          <div id="c-input-inner">
             <textarea
               ref={inputRef}
               value={input}
               onChange={(e) => {
                 setInput(e.target.value);
                 e.target.style.height = "auto";
-                e.target.style.height = Math.min(e.target.scrollHeight, 140) + "px";
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -1755,13 +1771,11 @@ function Clarity() {
                 aria-label={isListening ? "Stop" : "Mikrofon"}
               >
                 {isListening ? (
-                  /* stop square */
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                     <rect x="3" y="3" width="10" height="10" rx="2"/>
                   </svg>
                 ) : (
-                  /* mic icon */
-                  <svg width="16" height="18" viewBox="0 0 16 18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="14" height="16" viewBox="0 0 16 18" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="5" y="1" width="6" height="10" rx="3"/>
                     <path d="M2 8a6 6 0 0 0 12 0"/>
                     <line x1="8" y1="14" x2="8" y2="17"/>
@@ -1770,20 +1784,15 @@ function Clarity() {
                 )}
               </button>
             )}
-            <button
-              onClick={sendMessage}
-              className="c-btn-circle c-btn-send"
-              aria-label="Senden"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <button onClick={sendMessage} className="c-btn-circle c-btn-send" aria-label="Senden">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="8" y1="13" x2="8" y2="3"/>
                 <polyline points="4,7 8,3 12,7"/>
               </svg>
             </button>
           </div>
-        )}
-
-      </div>{/* /#c-shell */}
+        </div>
+      )}
     </>
   );
 }
@@ -1794,7 +1803,7 @@ function Clarity() {
 
 /**
  * Parses a profile slug like "explorer-82-clarity17-energy14"
- * into structured data.
+ * into structured data. Unchanged — do not modify this parsing logic.
  */
 function parseProfileSlug(slug) {
   try {
@@ -1803,15 +1812,12 @@ function parseProfileSlug(slug) {
     const clarityScore = clarityMatch ? parseInt(clarityMatch[1], 10) : null;
     const energyScore  = energyMatch  ? parseInt(energyMatch[1],  10) : null;
 
-    // Everything before "clarityXX" holds the mode slug + confidence
-    // e.g. "explorer-82-"  or "stability-seeker-76-"
     const scoresIndex = slug.search(/clarity\d+/i);
     const modeSection = slug.substring(0, scoresIndex).replace(/-$/, "");
     const lastDash    = modeSection.lastIndexOf("-");
     const rawType     = modeSection.substring(0, lastDash);
     const confidence  = parseInt(modeSection.substring(lastDash + 1), 10);
 
-    // "stability-seeker" → "Stability Seeker"
     const modeType = rawType
       .split("-")
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
@@ -1823,23 +1829,26 @@ function parseProfileSlug(slug) {
   }
 }
 
+// ── ClarityPublicProfile — public /p/… page ────────────────────────────────────
+// Now uses ClarityProfileView for 100% visual consistency with the result screen.
+// Only Clarity + Energy scores are available from the URL slug; other dimensions
+// are not encoded in the share link, so only those two bars are shown.
 function ClarityPublicProfile({ slug }) {
   const { modeType, confidence, clarityScore, energyScore } = parseProfileSlug(slug);
-  const BAR_MAX  = 25;
   const OG_IMAGE = "https://cla-ri-ty.netlify.app/og-default.png";
-  const [barsOn, setBarsOn] = useState(false);
+  const [barsOn,   setBarsOn]   = useState(false);
+  const [hoverCta, setHoverCta] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setBarsOn(true), 300);
+    const t = setTimeout(() => setBarsOn(true), 400);
     return () => clearTimeout(t);
   }, []);
 
-  // Full meta-tag suite for OG + Twitter share previews
+  // OG / Twitter meta tags (logic unchanged)
   useEffect(() => {
     const title = `Clarity Profil – ${modeType}`;
     const desc  = "Ein kurzer AI-Dialog zeigt dir, was dir wirklich wichtig ist.";
     document.title = title;
-
     const setMeta = (attr, name, content) => {
       let el = document.querySelector(`meta[${attr}="${name}"]`);
       if (!el) { el = document.createElement("meta"); el.setAttribute(attr, name); document.head.appendChild(el); }
@@ -1857,146 +1866,72 @@ function ClarityPublicProfile({ slug }) {
     setMeta("name",     "twitter:image",       OG_IMAGE);
   }, [modeType]);
 
-  const scores = [
-    clarityScore != null && { label: "Clarity", value: clarityScore },
-    energyScore  != null && { label: "Energy",  value: energyScore  },
-  ].filter(Boolean);
+  // Build a partial result object from the URL slug data.
+  // ClarityProfileView gracefully skips any missing sections.
+  const partialScores = {};
+  if (clarityScore != null) partialScores.Clarity = clarityScore;
+  if (energyScore  != null) partialScores.Energy  = energyScore;
 
-  // Part 1: spec-exact layout styles
-  const pageStyle = {
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "linear-gradient(145deg,#f8f9fb 0%,#f2f4f8 45%,#edf1f6 100%)",
-    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-  };
-
-  const columnStyle = {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    width: "100%",
-    maxWidth: 640,
-    padding: "60px 30px",
+  const partialResult = {
+    identityModes: [{ type: modeType, confidence }],
+    scores: Object.keys(partialScores).length > 0 ? partialScores : null,
+    // summary, pattern, strengths, etc. are not in the URL — rendered as absent
   };
 
   return (
-    <div style={pageStyle}>
-      <div style={columnStyle}>
+    <div style={{
+      minHeight: "100vh", width: "100%",
+      background: "linear-gradient(180deg, #f8f9fb 0%, #eef2f7 100%)",
+      fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    }}>
 
-        {/* Wordmark */}
+      {/* ── PROFILE VIEW — identical component as result screen ──────────────── */}
+      <ClarityProfileView
+        result={partialResult}
+        heroVis={true}
+        barsOn={barsOn}
+        insightVis={true}
+        isStatic={false}
+      />
+
+      {/* ── CTA — invite viewer to create their own profile ──────────────────── */}
+      <div style={{
+        maxWidth: 640, margin: "48px auto 0",
+        padding: "56px 24px 80px", textAlign: "center",
+        borderTop: "1px solid rgba(0,0,0,0.07)",
+      }}>
         <div style={{
-          fontSize: 11,
-          letterSpacing: "0.38em",
-          textTransform: "uppercase",
-          color: "#000",
-          opacity: 0.32,
-          marginBottom: 48,
+          fontSize: 18, fontWeight: 500, color: "#000",
+          opacity: 0.75, marginBottom: 28, lineHeight: 1.5,
         }}>
-          Clarity
+          Finde heraus, was du wirklich willst.
         </div>
-
-        {/* Profile card — maxWidth 520, centered */}
-        <div style={{
-          width: "100%",
-          maxWidth: 520,
-          background: "#fff",
-          borderRadius: 24,
-          border: "1px solid rgba(0,0,0,0.06)",
-          boxShadow: "0 32px 100px rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.05)",
-          padding: "48px 44px 40px",
-          marginBottom: 32,
-        }}>
-
-          {/* Label */}
-          <div style={{
-            fontSize: 9,
-            letterSpacing: "0.35em",
-            textTransform: "uppercase",
-            color: "#000",
-            opacity: 0.35,
-            marginBottom: 32,
-          }}>
-            Clarity Profil
-          </div>
-
-          {/* Identity mode */}
-          <div style={{ marginBottom: scores.length ? 36 : 40 }}>
-            <div style={{
-              fontSize: 40,
-              fontWeight: 700,
-              letterSpacing: "-0.025em",
-              color: "#000",
-              lineHeight: 1.05,
-              marginBottom: 10,
-            }}>
-              {modeType}
-            </div>
-            {confidence != null && (
-              <div style={{ fontSize: 12, letterSpacing: "0.12em", color: "#000", opacity: 0.38 }}>
-                {confidence}% Übereinstimmung
-              </div>
-            )}
-          </div>
-
-          {/* Score bars */}
-          {scores.length > 0 && (
-            <div style={{ borderTop: "1px solid #f0f0f0", paddingTop: 28 }}>
-              {scores.map(({ label, value }) => (
-                <div key={label} style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, letterSpacing: "0.08em", color: "#000", opacity: 0.45, width: 68, flexShrink: 0 }}>
-                    {label}
-                  </div>
-                  <div style={{ flex: 1, height: 2, background: "#ebebeb" }}>
-                    <div style={{
-                      height: 2,
-                      background: "#000",
-                      width: barsOn ? `${Math.min((value / BAR_MAX) * 100, 100)}%` : "0%",
-                      transition: "width 1s ease",
-                    }} />
-                  </div>
-                  <div style={{ fontSize: 10, color: "#000", opacity: 0.38, width: 22, textAlign: "right", flexShrink: 0 }}>
-                    {value}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Card footer */}
-          <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 4 }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.25em", textTransform: "uppercase", fontWeight: 600, color: "#000", opacity: 0.6 }}>
-              clarity.ai
-            </div>
-            <div style={{ fontSize: 10, color: "#000", opacity: 0.32 }}>
-              Finde heraus, was du wirklich willst.
-            </div>
-          </div>
-        </div>
-
-        {/* CTA */}
         <button
           onClick={() => { window.location.href = "/"; }}
-          onMouseEnter={(e) => { e.currentTarget.style.background = "#222"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "#000"; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "#1a1a1a";
+            e.currentTarget.style.transform  = "scale(1.03)";
+            setHoverCta(true);
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "#000";
+            e.currentTarget.style.transform  = "scale(1)";
+            setHoverCta(false);
+          }}
           style={{
-            border: "none",
-            background: "#000",
-            color: "#fff",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            height: 48, padding: "0 28px",
+            background: "#000", color: "#fff", border: "none",
             fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-            fontSize: 13,
-            letterSpacing: "0.18em",
-            padding: "18px 36px",
-            borderRadius: 3,
-            cursor: "pointer",
-            transition: "background 200ms",
+            fontSize: 15, fontWeight: 600, borderRadius: 12, cursor: "pointer",
+            transition: "background 200ms, transform 180ms",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
           }}
         >
           Dein eigenes Klarheitsprofil erstellen
         </button>
-
       </div>
+
     </div>
   );
 }
