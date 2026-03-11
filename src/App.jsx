@@ -28,10 +28,57 @@ const INTRO_CHUNKS = [
 // ── Prompts ────────────────────────────────────────────────────────────────────
 
 /**
+ * Signal memory helpers — lightweight keyword frequency tracking.
+ * Extracts meaningful words from user answers, filters German stopwords,
+ * and surfaces repeated themes to the reflection AI.
+ */
+const GERMAN_STOPWORDS = new Set([
+  "aber", "alle", "allem", "allen", "aller", "alles", "also", "andere", "anderen",
+  "anderem", "anderer", "anderes", "auch", "bein", "beim", "beide", "beiden",
+  "bereits", "besonders", "bien", "bin", "bist", "bitte", "brauche", "braucht",
+  "dabei", "damit", "dann", "darin", "dass", "davon", "dazu", "dein", "deine",
+  "deinen", "deiner", "deines", "denen", "denn", "dieser", "diese", "diesen",
+  "diesem", "dieses", "doch", "dort", "durch", "eher", "eigen", "eigene",
+  "eigenen", "eine", "einem", "einen", "einer", "eines", "einige", "einmal",
+  "etwas", "euch", "euer", "eure", "ganz", "gerade", "genau", "gibt", "ging",
+  "gute", "guten", "haben", "hatte", "hatten", "habe", "hier", "hinter",
+  "immer", "ihnen", "ihrer", "ihrem", "ihres", "ihren", "jahre", "jetzt",
+  "kann", "keine", "keinen", "keiner", "kommt", "könnte", "könnt", "lange",
+  "machen", "macht", "meine", "meinen", "meiner", "meines", "meinem", "mich",
+  "mehr", "meist", "mich", "muss", "müssen", "nach", "nicht", "nichts", "noch",
+  "oder", "ohne", "sehr", "sich", "sind", "soll", "sollen", "sollte", "somit",
+  "sonst", "sogar", "teil", "trotz", "über", "unter", "viel", "viele", "vielen",
+  "vielleicht", "vom", "voll", "wann", "ware", "wäre", "weil", "weiß", "welche",
+  "welchen", "welchem", "welches", "wenn", "werde", "werden", "wirklich",
+  "wurde", "wurden", "zwar", "zwischen",
+]);
+
+/**
+ * Extracts meaningful lowercase words (>4 chars, not stopwords) from a string.
+ */
+const extractKeywords = (text) =>
+  text
+    .toLowerCase()
+    .replace(/[^a-züäöß\s]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 4 && !GERMAN_STOPWORDS.has(w));
+
+/**
+ * Returns the top N keywords from signalsRef.keywords that appear >= minCount times.
+ * Sorted by frequency descending.
+ */
+const getTopSignals = (keywordMap, topN = 3, minCount = 2) =>
+  Object.entries(keywordMap)
+    .filter(([, count]) => count >= minCount)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, topN)
+    .map(([word]) => word);
+
+/**
  * Builds the reflection system prompt.
  * midInsight = true at question 8 (nextIndex 7) and question 10 (nextIndex 9).
  */
-const buildReflectionSystemPrompt = (midInsight) => {
+const buildReflectionSystemPrompt = (midInsight, topSignals = []) => {
   const base = `Du bist ein ruhiger, aufmerksamer Gesprächspartner – kein Coach, kein Therapeut.
 Der Nutzer beantwortet gerade Reflexionsfragen über sein Leben.
 Du reagierst kurz und menschlich auf seine letzte Antwort.`;
@@ -58,20 +105,25 @@ Strenge Regeln:
 - Menschlich, geerdet, direkt.
 - Wenn du ein Muster über mehrere Antworten siehst, darfst du es kurz benennen.`;
 
-  return `${base}${midBlock}${rules}`;
+  const signalsBlock = topSignals.length > 0
+    ? `\n\nWICHTIGE WIEDERKEHRENDE THEMEN: ${topSignals.join(", ")}\nWenn eines dieser Themen in der aktuellen Antwort auftaucht oder sich häuft, darfst du es kurz benennen.`
+    : "";
+
+  return `${base}${midBlock}${rules}${signalsBlock}`;
 };
 
 /**
  * Formats collected answers as "Frage / Antwort" blocks for better AI context.
  */
 const formatAnswersAsContext = (answers) =>
-  answers.map((a) => `Frage: ${a.question}\nAntwort: ${a.answer}`).join("\n\n");
+  JSON.stringify({ answers }, null, 2);
 
 /**
  * Analysis system prompt — speaks directly to the user using "du".
  * Never uses "der Nutzer" or third-person constructions in the output fields.
  */
 const ANALYSIS_SYSTEM_PROMPT = `Du analysierst die Antworten aus einem Reflexionsgespräch.
+Du erhältst die Daten als strukturiertes JSON-Objekt mit einem "answers"-Array.
 
 WICHTIG: Sprich die Person in allen Ausgabefeldern direkt mit "du" an.
 Verwende NIEMALS Formulierungen wie "der Nutzer", "seine Gedanken", "er strebt" oder ähnliche Dritte-Person-Konstruktionen.
@@ -108,6 +160,11 @@ Antworte NUR mit validem JSON. Kein Text davor oder danach. Kein Markdown.
     "Direction": number,
     "Action": number
   },
+  "confidence": number,
+  "identityModes": [
+    { "type": "...", "confidence": number }
+  ],
+  "summary": "...",
   "pattern": "...",
   "strengths": ["...", "...", "..."],
   "energySources": ["...", "...", "..."],
@@ -116,11 +173,51 @@ Antworte NUR mit validem JSON. Kein Text davor oder danach. Kein Markdown.
 }
 
 Feldbeschreibungen (alle in direkter "du"-Ansprache):
+confidence: Ganzzahl zwischen 40 und 95. Niedrig wenn Antworten kurz, vage oder widersprüchlich sind. Hoch wenn Antworten konkret, konsistent und detailliert sind. Vermeide runde 10er-Schritte.
+identityModes: Array mit 1–2 Einträgen. Wähle ausschließlich aus diesen Typen:
+  • Creator — Starker Drang, etwas Neues zu erschaffen, eigene Ideen umzusetzen, kreativ zu gestalten. Zeigt sich in Aussagen über Projekte, Inhalte, Produkte oder kreative Arbeit.
+  • Builder — Fokus auf Aufbau, Systeme, Strukturen oder ein Unternehmen. Denkt in Phasen, Ressourcen und langfristiger Skalierung.
+  • Explorer — Suche nach Bedeutung, neuen Erfahrungen oder dem eigenen Weg. Noch keine klare Richtung, aber starke Neugier und Offenheit.
+  • Stability Seeker — Sicherheit, Struktur und Kontinuität stehen im Vordergrund. Veränderung wird als Risiko erlebt, nicht als Chance.
+  • Transition Phase — Steht eindeutig an einem Wendepunkt zwischen zwei Lebensphasen. Alte Identität lässt los, neue noch nicht gefunden.
+  • Burnout Risk — Deutliche Anzeichen von Erschöpfung, Energieverlust oder Überforderung. Mehrere Drainer, wenig Erholung, hohe Dauerbelastung.
+  • Hidden Opportunity — Erkennbares ungenutztes Potenzial, das der Person selbst noch nicht vollständig bewusst ist. Stärken werden systematisch unterschätzt.
+  Confidence je Modus: Ganzzahl 40–95. Nur 2 Modi wenn beide mit Confidence ≥ 55 belegbar sind.
+summary: Genau 1 Satz (max 16 Wörter), der die Situation der Person präzise auf den Punkt bringt. Direkte "du"-Ansprache. Beispiel: "Du stehst gerade zwischen Sicherheit und dem Wunsch nach mehr Selbstbestimmung."
 pattern: 1 persönlicher Satz (max 20 Wörter), der ein wiederkehrendes Motiv aus deinen Antworten beschreibt. Beginnt mit "In deinen Antworten..." oder "Du hast mehrfach...".
 strengths: 3 konkrete Stärken basierend auf dem, was du gesagt hast. Keine generischen Begriffe.
 energySources: 3 konkrete Dinge, die dir Energie geben – direkt aus deinen Antworten.
 nextFocus: 1 Satz – dein wichtigster Fokus für die nächsten 90 Tage.
 suggestedAction: 1 konkreter, kleiner Schritt den du heute tun kannst.`;
+
+/**
+ * Step 1 of 2 — Signal extraction prompt.
+ * Runs before the main analysis to pull structured signals from raw answers.
+ * The extracted signals are injected into the analysis prompt as additional context,
+ * giving the model pre-processed insight anchors rather than raw text alone.
+ */
+const SIGNAL_EXTRACTION_PROMPT = `Du analysierst die Antworten aus einem Reflexionsgespräch und extrahierst strukturierte Signale.
+
+Du erhältst ein JSON-Objekt mit einem "answers"-Array. Lies alle Antworten sorgfältig.
+
+Deine Aufgabe: Erkenne wiederkehrende Muster, Werte und Spannungsfelder. Drücke jeden Punkt als kurzen, konkreten deutschen Begriff oder Halbsatz aus (2–6 Wörter). Keine vollständigen Sätze. Keine generischen Begriffe wie "Erfolg" oder "Glück".
+
+Antworte NUR mit validem JSON. Kein Text davor oder danach. Kein Markdown.
+
+{
+  "values": [],
+  "motivations": [],
+  "energySources": [],
+  "frictions": [],
+  "strengthSignals": []
+}
+
+Feldbeschreibungen:
+values: 2–4 Kernwerte die sich durch die Antworten ziehen. Beispiele: ["Selbstbestimmung", "Familie absichern", "Sichtbarkeit"].
+motivations: 2–4 konkrete Antriebe. Beispiele: ["eigenes Projekt aufbauen", "weniger Fremdbestimmung"].
+energySources: 2–4 Dinge die der Person nachweislich Energie geben, direkt aus den Antworten. Beispiele: ["kreatives Arbeiten allein", "Gespräche mit Gleichgesinnten"].
+frictions: 2–4 Hemmnisse oder Spannungsfelder. Beispiele: ["zu viel Verantwortung im Job", "Angst vor finanziellem Risiko"].
+strengthSignals: 2–4 belegte Stärken oder Fähigkeiten. Beispiele: ["strukturiertes Denken", "Menschen begeistern können"].`;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -697,12 +794,126 @@ function ThinkingDots() {
   );
 }
 
+// ── Share helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Generates a shareable slug-style profile URL from the result.
+ * Format: /p/{mode}-{modeConfidence}-clarity{score}-energy{score}
+ * Example: /p/explorer-82-clarity17-energy14
+ */
+function generateProfileLink(result) {
+  try {
+    const mode = Array.isArray(result.identityModes) && result.identityModes[0];
+    const modeSlug  = mode
+      ? `${mode.type.toLowerCase().replace(/\s+/g, "-")}-${mode.confidence}`
+      : "profile";
+    const clarity = result.scores?.Clarity ?? 0;
+    const energy  = result.scores?.Energy  ?? 0;
+    const path = `/p/${modeSlug}-clarity${clarity}-energy${energy}`;
+    const base = window.location.hostname.includes("localhost")
+      ? "http://localhost:5173"
+      : "https://cla-ri-ty.netlify.app";
+    return base + path;
+  } catch (_) {
+    return window.location.origin + "/p/profile";
+  }
+}
+
+// ── Share card — rendered off-screen, exported via html-to-image ──────────────
+function ClarityShareCard({ result, cardRef }) {
+  const BAR_MAX = 25;
+
+  return (
+    <div
+      ref={cardRef}
+      style={{
+        width: 480,
+        background: "#fff",
+        borderRadius: 24,
+        padding: "48px 44px 40px",
+        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        boxShadow: "0 4px 40px rgba(0,0,0,0.08)",
+        color: "#000",
+      }}
+    >
+      {/* Header */}
+      <div style={{ marginBottom: 36 }}>
+        <div style={{ fontSize: 11, letterSpacing: "0.35em", textTransform: "uppercase", opacity: 0.45, marginBottom: 18 }}>
+          CLARITY PROFILE
+        </div>
+        {result.summary && (
+          <div style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.5, color: "#000" }}>
+            {result.summary}
+          </div>
+        )}
+      </div>
+
+      {/* Identity modes */}
+      {Array.isArray(result.identityModes) && result.identityModes.length > 0 && (
+        <div style={{ marginBottom: 32, paddingBottom: 28, borderBottom: "1px solid #f0f0f0" }}>
+          {result.identityModes.map((mode, i) => (
+            <div key={mode.type} style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: i < result.identityModes.length - 1 ? 6 : 0 }}>
+              <div style={{ fontSize: i === 0 ? 28 : 17, fontWeight: i === 0 ? 700 : 500, letterSpacing: "-0.01em" }}>
+                {mode.type}
+              </div>
+              <div style={{ fontSize: 11, opacity: 0.35, letterSpacing: "0.06em" }}>
+                {mode.confidence}%
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Score bars */}
+      {result.scores && (
+        <div style={{ marginBottom: 32, paddingBottom: 28, borderBottom: "1px solid #f0f0f0" }}>
+          {Object.entries(result.scores).map(([label, value]) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", marginBottom: 10, gap: 12 }}>
+              <div style={{ fontSize: 10, letterSpacing: "0.08em", opacity: 0.5, width: 68, flexShrink: 0 }}>
+                {label}
+              </div>
+              <div style={{ flex: 1, height: 2, background: "#ebebeb" }}>
+                <div style={{ height: 2, background: "#000", width: `${(value / BAR_MAX) * 100}%` }} />
+              </div>
+              <div style={{ fontSize: 10, opacity: 0.4, width: 22, textAlign: "right", flexShrink: 0 }}>
+                {value}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Pattern */}
+      {result.pattern && (
+        <div style={{ fontSize: 13, lineHeight: 1.65, opacity: 0.65, marginBottom: 32 }}>
+          {result.pattern}
+        </div>
+      )}
+
+      {/* Footer */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}>
+        <div style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 600, opacity: 0.75 }}>
+          clarity.ai
+        </div>
+        <div style={{ fontSize: 10, letterSpacing: "0.04em", opacity: 0.38 }}>
+          Generated with Clarity AI
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ResultSection({ result }) {
   const [vis, setVis]               = useState(false);
   const [barsOn, setBarsOn]         = useState(false);
   const [hover, setHover]           = useState(false);
-  const [hoverShare, setHoverShare] = useState(false);
-  const [copied, setCopied]         = useState(false);
+  const [hoverImg, setHoverImg]     = useState(false);
+  const [hoverLink, setHoverLink]   = useState(false);
+  const [hoverNative, setHoverNative] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  const cardRef = useRef(null);
 
   useEffect(() => {
     const t1 = setTimeout(() => setVis(true), 60);
@@ -710,33 +921,78 @@ function ResultSection({ result }) {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
-  const buildShareText = () => {
-    const scores = Object.entries(result.scores)
-      .map(([label, value]) => `${label}: ${value}`)
-      .join("\n");
-    return `Mein Klarheitsprofil von Clarity:\n\n${scores}\n\nMein nächster Fokus:\n${result.nextFocus}\n\nTeste dein eigenes Profil: Clarity`;
+  // ── Copy profile link to clipboard ────────────────────────────────────────
+  const copyProfileLink = async () => {
+    const link = generateProfileLink(result);
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2200);
+    } catch (_) {}
   };
 
-  const handleShare = async () => {
-    const text = buildShareText();
+  // ── Native share — URL + summary text ─────────────────────────────────────
+  const nativeShare = async () => {
+    const profileLink = generateProfileLink(result);
+    const shareData = {
+      title: "Mein Clarity Profil",
+      text: result.summary || "Mein persönliches Klarheitsprofil von Clarity.",
+      url: profileLink,
+    };
     if (navigator.share) {
-      try { await navigator.share({ title: "Mein Clarity Profil", text }); }
-      catch (e) { /* cancelled */ }
+      try { await navigator.share(shareData); }
+      catch (e) { /* user cancelled */ }
     } else {
+      // Fallback: copy link
       try {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2200);
-      } catch (e) {
-        const el = document.createElement("textarea");
-        el.value = text;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand("copy");
-        document.body.removeChild(el);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2200);
+        await navigator.clipboard.writeText(profileLink);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2200);
+      } catch (_) {}
+    }
+  };
+
+  // ── Generate & share/download PNG card ─────────────────────────────────────
+  const generateShareImage = async () => {
+    if (!cardRef.current || generating) return;
+    setGenerating(true);
+    try {
+      const { toPng: _toPng } = await import("html-to-image");
+      const dataUrl = await _toPng(cardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        style: { borderRadius: "24px" },
+      });
+
+      // Try native share with file (mobile)
+      if (navigator.share && navigator.canShare) {
+        try {
+          const blob = await (await fetch(dataUrl)).blob();
+          const file = new File([blob], "clarity-profile.png", { type: "image/png" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: "Mein Clarity Profil", files: [file] });
+            setGenerating(false);
+            return;
+          }
+        } catch (e) { /* fall through to download */ }
       }
+
+      // Fallback: trigger download
+      const a = document.createElement("a");
+      a.download = "clarity-profile.png";
+      a.href = dataUrl;
+      a.click();
+    } catch (err) {
+      console.error("Share card generation failed:", err);
+      // Fallback: copy profile link instead of plain text
+      const profileLink = generateProfileLink(result);
+      try {
+        await navigator.clipboard.writeText(profileLink);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2200);
+      } catch (_) {}
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -751,6 +1007,39 @@ function ResultSection({ result }) {
       <div style={{ fontSize: 22, fontWeight: 400, color: "#000", lineHeight: 1.6, marginBottom: 48 }}>
         Hier ist, was ich in deinen Antworten erkenne.
       </div>
+
+      {/* Summary — one-sentence situational overview */}
+      {result.summary && (
+        <div style={{ fontSize: 20, fontWeight: 500, color: "#000", lineHeight: 1.55, marginBottom: 12 }}>
+          {result.summary}
+        </div>
+      )}
+
+      {/* Confidence label */}
+      {result.confidence != null && (
+        <div style={{ fontSize: 11, letterSpacing: "0.18em", color: "#000", opacity: 0.4, textTransform: "uppercase", marginBottom: 36 }}>
+          Analysequalität: {result.confidence}%
+        </div>
+      )}
+
+      {/* Identity modes */}
+      {Array.isArray(result.identityModes) && result.identityModes.length > 0 && (
+        <div style={{ marginBottom: 44 }}>
+          <div style={{ fontSize: 10, letterSpacing: "0.3em", color: "#000", opacity: 0.4, textTransform: "uppercase", marginBottom: 14 }}>
+            Du befindest dich gerade in
+          </div>
+          {result.identityModes.map((mode) => (
+            <div key={mode.type} style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8 }}>
+              <div style={{ fontSize: 22, fontWeight: 600, color: "#000", letterSpacing: "-0.01em" }}>
+                {mode.type}
+              </div>
+              <div style={{ fontSize: 11, letterSpacing: "0.12em", color: "#000", opacity: 0.38 }}>
+                {mode.confidence}%
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ fontSize: 18, lineHeight: 1.6, marginBottom: 40, opacity: 0.8 }}>
         {result.pattern}
@@ -810,6 +1099,7 @@ function ResultSection({ result }) {
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14, marginBottom: 80 }}>
+        {/* CTA */}
         <button
           onMouseEnter={() => setHover(true)}
           onMouseLeave={() => setHover(false)}
@@ -827,14 +1117,38 @@ function ResultSection({ result }) {
         >
           Clarity System starten – kostenlos
         </button>
+
+        {/* 1 — Profil als Bild teilen */}
         <button
-          onClick={handleShare}
-          onMouseEnter={() => setHoverShare(true)}
-          onMouseLeave={() => setHoverShare(false)}
+          onClick={generateShareImage}
+          onMouseEnter={() => setHoverImg(true)}
+          onMouseLeave={() => setHoverImg(false)}
+          disabled={generating}
           style={{
             border: "1px solid #000",
-            background: hoverShare ? "#000" : "#fff",
-            color: hoverShare ? "#fff" : "#000",
+            background: hoverImg ? "#000" : "#fff",
+            color: hoverImg ? "#fff" : "#000",
+            fontFamily: "inherit",
+            fontSize: 13,
+            letterSpacing: "0.2em",
+            padding: "18px 36px",
+            cursor: generating ? "wait" : "pointer",
+            transition: "background 200ms, color 200ms",
+            opacity: generating ? 0.6 : 1,
+          }}
+        >
+          {generating ? "Wird erstellt…" : "Profil als Bild teilen"}
+        </button>
+
+        {/* 2 — Profil-Link kopieren */}
+        <button
+          onClick={copyProfileLink}
+          onMouseEnter={() => setHoverLink(true)}
+          onMouseLeave={() => setHoverLink(false)}
+          style={{
+            border: "1px solid #000",
+            background: hoverLink ? "#000" : "#fff",
+            color: hoverLink ? "#fff" : "#000",
             fontFamily: "inherit",
             fontSize: 13,
             letterSpacing: "0.2em",
@@ -843,15 +1157,40 @@ function ResultSection({ result }) {
             transition: "background 200ms, color 200ms",
           }}
         >
-          {copied ? "✓ Kopiert" : "Profil teilen"}
+          {copiedLink ? "✓ Link kopiert" : "Profil-Link kopieren"}
         </button>
+
+        {/* 3 — Profil teilen (native share / link fallback) */}
+        <button
+          onClick={nativeShare}
+          onMouseEnter={() => setHoverNative(true)}
+          onMouseLeave={() => setHoverNative(false)}
+          style={{
+            border: "1px solid #000",
+            background: hoverNative ? "#000" : "#fff",
+            color: hoverNative ? "#fff" : "#000",
+            fontFamily: "inherit",
+            fontSize: 13,
+            letterSpacing: "0.2em",
+            padding: "18px 36px",
+            cursor: "pointer",
+            transition: "background 200ms, color 200ms",
+          }}
+        >
+          Profil teilen
+        </button>
+      </div>
+
+      {/* Hidden share card — rendered off-screen for html-to-image export */}
+      <div style={{ position: "absolute", left: -9999, top: 0, pointerEvents: "none" }}>
+        <ClarityShareCard result={result} cardRef={cardRef} />
       </div>
     </div>
   );
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
-export default function Clarity() {
+function Clarity() {
   const [phase,          setPhase]        = useState("splash");
   const [messages,       setMessages]     = useState([]);
   const [input,          setInput]        = useState("");
@@ -864,6 +1203,9 @@ export default function Clarity() {
 
   // Collected answers: [{ question, answer }]
   const answersRef = useRef([]);
+
+  // Lightweight keyword frequency map — tracks repeated themes across answers
+  const signalsRef = useRef({ keywords: {} });
 
   // UI state
   const [isListening,    setIsListening]  = useState(false);
@@ -1038,12 +1380,36 @@ export default function Clarity() {
     try {
       const contextBlock = formatAnswersAsContext(answers);
 
+      // ── Step 1: Signal extraction ──────────────────────────────────────────
+      // Attempt to extract structured signals from the raw answers.
+      // On failure we fall back to the single-step path so the user always
+      // receives a result even if the extraction call times out or errors.
+      let signalsBlock = null;
+      try {
+        const signalsRaw = await callAnalysisBackend([
+          { role: "system", content: SIGNAL_EXTRACTION_PROMPT },
+          {
+            role: "user",
+            content: `Hier sind die Antworten aus dem Reflexionsgespräch:\n\n${contextBlock}`,
+          },
+        ]);
+        // signalsRaw is already a parsed object (callAnalysisBackend returns JSON)
+        signalsBlock = JSON.stringify(signalsRaw, null, 2);
+        console.log("Signal extraction complete:", signalsRaw);
+      } catch (signalErr) {
+        console.warn("Signal extraction failed — falling back to single-step analysis:", signalErr.message);
+      }
+
+      // ── Step 2: Insight generation ─────────────────────────────────────────
+      // Build the user message. If signals are available, inject them
+      // as additional context so the analysis model has pre-processed anchors.
+      const userContent = signalsBlock
+        ? `ANTWORTEN:\n\n${contextBlock}\n\nEXTRAHIERTE SIGNALE:\n\n${signalsBlock}`
+        : `Hier sind die Antworten aus dem Reflexionsgespräch:\n\n${contextBlock}`;
+
       const parsed = await callAnalysisBackend([
         { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: `Hier sind die Antworten aus dem Reflexionsgespräch:\n\n${contextBlock}`,
-        },
+        { role: "user", content: userContent },
       ]);
 
       await delay(2000);
@@ -1079,6 +1445,12 @@ export default function Clarity() {
     const updatedAnswers = [...answersRef.current, { question: questionText, answer: trimmed }];
     answersRef.current   = updatedAnswers;
 
+    // Update signal memory — increment frequency counts for keywords in this answer
+    const words = extractKeywords(trimmed);
+    words.forEach((word) => {
+      signalsRef.current.keywords[word] = (signalsRef.current.keywords[word] || 0) + 1;
+    });
+
     const nextIndex  = currentQIndex + 1;
 
     // All 12 answered — run final analysis
@@ -1093,14 +1465,20 @@ export default function Clarity() {
     setIsTyping(true);
 
     try {
+      const topSignals = getTopSignals(signalsRef.current.keywords);
+
+      const userContent = topSignals.length > 0
+        ? `Aktuelle Antwort: ${trimmed}\n\nWIEDERKEHRENDE THEMEN: ${topSignals.join(", ")}\n\nBisheriges Gespräch:\n\n${formatAnswersAsContext(updatedAnswers)}`
+        : `Aktuelle Antwort: ${trimmed}\n\nBisheriges Gespräch:\n\n${formatAnswersAsContext(updatedAnswers)}`;
+
       const reflection = await callBackend([
         {
           role: "system",
-          content: buildReflectionSystemPrompt(midInsight),
+          content: buildReflectionSystemPrompt(midInsight, topSignals),
         },
         {
           role: "user",
-          content: `Aktuelle Antwort: ${trimmed}\n\nBisheriges Gespräch:\n\n${formatAnswersAsContext(updatedAnswers)}`,
+          content: userContent,
         },
       ]);
 
@@ -1408,4 +1786,228 @@ export default function Clarity() {
       </div>{/* /#c-shell */}
     </>
   );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PUBLIC PROFILE PAGE — rendered when path starts with /p/
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Parses a profile slug like "explorer-82-clarity17-energy14"
+ * into structured data.
+ */
+function parseProfileSlug(slug) {
+  try {
+    const clarityMatch = slug.match(/clarity(\d+)/i);
+    const energyMatch  = slug.match(/energy(\d+)/i);
+    const clarityScore = clarityMatch ? parseInt(clarityMatch[1], 10) : null;
+    const energyScore  = energyMatch  ? parseInt(energyMatch[1],  10) : null;
+
+    // Everything before "clarityXX" holds the mode slug + confidence
+    // e.g. "explorer-82-"  or "stability-seeker-76-"
+    const scoresIndex = slug.search(/clarity\d+/i);
+    const modeSection = slug.substring(0, scoresIndex).replace(/-$/, "");
+    const lastDash    = modeSection.lastIndexOf("-");
+    const rawType     = modeSection.substring(0, lastDash);
+    const confidence  = parseInt(modeSection.substring(lastDash + 1), 10);
+
+    // "stability-seeker" → "Stability Seeker"
+    const modeType = rawType
+      .split("-")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+
+    return { modeType, confidence: isNaN(confidence) ? null : confidence, clarityScore, energyScore };
+  } catch (_) {
+    return { modeType: "Explorer", confidence: null, clarityScore: null, energyScore: null };
+  }
+}
+
+function ClarityPublicProfile({ slug }) {
+  const { modeType, confidence, clarityScore, energyScore } = parseProfileSlug(slug);
+  const BAR_MAX  = 25;
+  const OG_IMAGE = "https://cla-ri-ty.netlify.app/og-default.png";
+  const [barsOn, setBarsOn] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setBarsOn(true), 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Full meta-tag suite for OG + Twitter share previews
+  useEffect(() => {
+    const title = `Clarity Profil – ${modeType}`;
+    const desc  = "Ein kurzer AI-Dialog zeigt dir, was dir wirklich wichtig ist.";
+    document.title = title;
+
+    const setMeta = (attr, name, content) => {
+      let el = document.querySelector(`meta[${attr}="${name}"]`);
+      if (!el) { el = document.createElement("meta"); el.setAttribute(attr, name); document.head.appendChild(el); }
+      el.setAttribute("content", content);
+    };
+    setMeta("name",     "description",         desc);
+    setMeta("property", "og:type",             "website");
+    setMeta("property", "og:title",            title);
+    setMeta("property", "og:description",      desc);
+    setMeta("property", "og:image",            OG_IMAGE);
+    setMeta("property", "og:url",              window.location.href);
+    setMeta("name",     "twitter:card",        "summary_large_image");
+    setMeta("name",     "twitter:title",       title);
+    setMeta("name",     "twitter:description", desc);
+    setMeta("name",     "twitter:image",       OG_IMAGE);
+  }, [modeType]);
+
+  const scores = [
+    clarityScore != null && { label: "Clarity", value: clarityScore },
+    energyScore  != null && { label: "Energy",  value: energyScore  },
+  ].filter(Boolean);
+
+  // Part 1: spec-exact layout styles
+  const pageStyle = {
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "linear-gradient(145deg,#f8f9fb 0%,#f2f4f8 45%,#edf1f6 100%)",
+    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+  };
+
+  const columnStyle = {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    width: "100%",
+    maxWidth: 640,
+    padding: "60px 30px",
+  };
+
+  return (
+    <div style={pageStyle}>
+      <div style={columnStyle}>
+
+        {/* Wordmark */}
+        <div style={{
+          fontSize: 11,
+          letterSpacing: "0.38em",
+          textTransform: "uppercase",
+          color: "#000",
+          opacity: 0.32,
+          marginBottom: 48,
+        }}>
+          Clarity
+        </div>
+
+        {/* Profile card — maxWidth 520, centered */}
+        <div style={{
+          width: "100%",
+          maxWidth: 520,
+          background: "#fff",
+          borderRadius: 24,
+          border: "1px solid rgba(0,0,0,0.06)",
+          boxShadow: "0 32px 100px rgba(0,0,0,0.10), 0 4px 20px rgba(0,0,0,0.05)",
+          padding: "48px 44px 40px",
+          marginBottom: 32,
+        }}>
+
+          {/* Label */}
+          <div style={{
+            fontSize: 9,
+            letterSpacing: "0.35em",
+            textTransform: "uppercase",
+            color: "#000",
+            opacity: 0.35,
+            marginBottom: 32,
+          }}>
+            Clarity Profil
+          </div>
+
+          {/* Identity mode */}
+          <div style={{ marginBottom: scores.length ? 36 : 40 }}>
+            <div style={{
+              fontSize: 40,
+              fontWeight: 700,
+              letterSpacing: "-0.025em",
+              color: "#000",
+              lineHeight: 1.05,
+              marginBottom: 10,
+            }}>
+              {modeType}
+            </div>
+            {confidence != null && (
+              <div style={{ fontSize: 12, letterSpacing: "0.12em", color: "#000", opacity: 0.38 }}>
+                {confidence}% Übereinstimmung
+              </div>
+            )}
+          </div>
+
+          {/* Score bars */}
+          {scores.length > 0 && (
+            <div style={{ borderTop: "1px solid #f0f0f0", paddingTop: 28 }}>
+              {scores.map(({ label, value }) => (
+                <div key={label} style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                  <div style={{ fontSize: 10, letterSpacing: "0.08em", color: "#000", opacity: 0.45, width: 68, flexShrink: 0 }}>
+                    {label}
+                  </div>
+                  <div style={{ flex: 1, height: 2, background: "#ebebeb" }}>
+                    <div style={{
+                      height: 2,
+                      background: "#000",
+                      width: barsOn ? `${Math.min((value / BAR_MAX) * 100, 100)}%` : "0%",
+                      transition: "width 1s ease",
+                    }} />
+                  </div>
+                  <div style={{ fontSize: 10, color: "#000", opacity: 0.38, width: 22, textAlign: "right", flexShrink: 0 }}>
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Card footer */}
+          <div style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ fontSize: 10, letterSpacing: "0.25em", textTransform: "uppercase", fontWeight: 600, color: "#000", opacity: 0.6 }}>
+              clarity.ai
+            </div>
+            <div style={{ fontSize: 10, color: "#000", opacity: 0.32 }}>
+              Finde heraus, was du wirklich willst.
+            </div>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <button
+          onClick={() => { window.location.href = "/"; }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#222"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#000"; }}
+          style={{
+            border: "none",
+            background: "#000",
+            color: "#fff",
+            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            fontSize: 13,
+            letterSpacing: "0.18em",
+            padding: "18px 36px",
+            borderRadius: 3,
+            cursor: "pointer",
+            transition: "background 200ms",
+          }}
+        >
+          Dein eigenes Klarheitsprofil erstellen
+        </button>
+
+      </div>
+    </div>
+  );
+}
+
+// ── Route-aware app entry point ────────────────────────────────────────────────
+// Renders the public profile page for /p/* URLs, the main chat app for everything else.
+export default function App() {
+  const pathname = window.location.pathname;
+  if (pathname.startsWith("/p/")) {
+    const slug = pathname.slice(3); // strip "/p/"
+    return <ClarityPublicProfile slug={slug} />;
+  }
+  return <Clarity />;
 }
