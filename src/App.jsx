@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 
 // ── Questions — frontend controls the order, AI never generates them ──────────
 const QUESTIONS = [
@@ -329,7 +329,22 @@ const GLOBAL_CSS = `
   .c-wave-dot:nth-child(2) { animation-delay: 0.15s; }
   .c-wave-dot:nth-child(3) { animation-delay: 0.30s; }
 
-  .c-fade-up { animation: fadeUp 0.6s ease forwards; opacity: 0; }
+  .c-fade-up { animation: fadeUp 0.4s ease forwards; opacity: 0; }
+
+  /* ── Hero fade-in — 300ms ease-out, no layout shift ─────────────────────── */
+  @keyframes heroFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .c-hero-fadein {
+    animation: heroFadeIn 300ms ease-out forwards;
+  }
+
+  /* ── Respect reduced-motion preference (accessibility + low-end devices) ── */
+  @media (prefers-reduced-motion: reduce) {
+    .c-blob, .c-strip, .c-atmo     { animation: none !important; }
+    .c-wave-dot                     { animation: none !important; opacity: 0.6; }
+    .c-fade-up                      { animation: none; opacity: 1; transform: none; }
+    .c-hero-fadein                  { animation: none; opacity: 1; }
+    @keyframes btnGradientShift     { 0%, 100% { background-position: 0% 50%; } }
+  }
 
   /* ── Fullscreen app layer ────────────────────────────────────────────────── */
   #c-app {
@@ -338,20 +353,21 @@ const GLOBAL_CSS = `
     display: flex; flex-direction: column;
   }
 
-  /* ── Sticky progress header ─────────────────────────────────────────────── */
+  /* ── Sticky progress header — white, 60px, shadow ──────────────────────── */
   #c-progress-header {
     position: sticky; top: 0; z-index: 20;
-    background: rgba(248,249,251,0.90);
-    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-    border-bottom: 1px solid rgba(0,0,0,0.06);
-    padding: 14px 24px 12px;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    padding: 0 24px;
+    height: 60px;
+    display: flex; flex-direction: column; justify-content: center;
   }
   #c-progress-header-inner {
-    max-width: 680px; margin: 0 auto;
+    max-width: 680px; margin: 0 auto; width: 100%;
   }
   #c-progress-meta {
     display: flex; justify-content: space-between; align-items: center;
-    margin-bottom: 9px;
+    margin-bottom: 7px;
   }
   #c-progress-logo { font-size: 10px; letter-spacing: 0.38em; color: #000; opacity: 0.35; text-transform: uppercase; }
   #c-progress-label { font-size: 11px; color: #000; opacity: 0.4; letter-spacing: 0.06em; }
@@ -368,7 +384,8 @@ const GLOBAL_CSS = `
   /* ── Chat content ────────────────────────────────────────────────────────── */
   #c-chat-content {
     max-width: 680px; margin: 0 auto;
-    padding: 40px 24px 160px;
+    /* bottom pad = input bar height + iOS safe area so no content hides behind bar */
+    padding: 32px 24px calc(160px + env(safe-area-inset-bottom, 0px));
   }
 
   /* User bubble */
@@ -379,16 +396,16 @@ const GLOBAL_CSS = `
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     border-radius: 18px 18px 4px 18px;
     padding: 14px 18px; max-width: 80%;
-    font-size: 17px; color: #111; line-height: 1.6;
+    font-size: 18px; color: #111; line-height: 1.6;
   }
 
-  /* ── Fixed input bar ────────────────────────────────────────────────────── */
+  /* ── Fixed input bar — iOS safe area sits above home indicator ─────────── */
   #c-input-bar {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
     background: rgba(248,249,251,0.94);
     backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
     border-top: 1px solid rgba(0,0,0,0.07);
-    padding: 12px 16px 20px;
+    padding: 12px 16px calc(20px + env(safe-area-inset-bottom, 0px));
   }
   #c-input-inner {
     max-width: 680px; margin: 0 auto;
@@ -428,9 +445,9 @@ const GLOBAL_CSS = `
 
   /* ── Mobile ─────────────────────────────────────────────────────────────── */
   @media (max-width: 600px) {
-    #c-chat-content { padding: 32px 16px 160px; }
-    #c-input-bar    { padding: 10px 12px 16px; }
-    #c-progress-header { padding: 12px 16px 10px; }
+    #c-chat-content { padding: 24px 16px calc(160px + env(safe-area-inset-bottom, 0px)); }
+    #c-input-bar    { padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px)); }
+    #c-progress-header { padding: 0 16px; }
   }
 
   /* ── Part 6: Hero button animated gradient ──────────────────────────────── */
@@ -443,9 +460,13 @@ const GLOBAL_CSS = `
     background: linear-gradient(135deg, #4F8CFF, #7C5CFF, #4F8CFF);
     background-size: 200% 200%;
     animation: btnGradientShift 3s ease infinite;
-    transition: transform 180ms ease, box-shadow 180ms ease;
+    /* will-change: transform promotes button to its own compositor layer —
+       ensures tap/hover animation runs on GPU in iOS Safari */
+    will-change: transform;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   .c-hero-btn:hover { transform: scale(1.03); box-shadow: 0 14px 44px rgba(79,140,255,0.38); }
+  .c-hero-btn:active { transform: scale(0.97); }
   @media (hover: none) { .c-hero-btn:hover { transform: none; } }
 
   /* ── Part 7: Hero fade-out transition ───────────────────────────────────── */
@@ -494,7 +515,7 @@ const GLOBAL_CSS = `
 `;
 
 // ── Helper components ────────────────────────────────────────────────────────── ──────────────────────────────────────────────────────────
-function InjectCSS() {
+const InjectCSS = memo(function InjectCSS() {
   useEffect(() => {
     const prev = document.getElementById("c-global-css");
     if (prev) prev.remove();
@@ -505,9 +526,9 @@ function InjectCSS() {
     return () => el.remove();
   }, []);
   return null;
-}
+});
 
-function SplashDot({ index }) {
+const SplashDot = memo(function SplashDot({ index }) {
   const [step, setStep] = useState(0);
   useEffect(() => {
     const iv = setInterval(() => setStep((s) => (s + 1) % 4), 500);
@@ -522,13 +543,13 @@ function SplashDot({ index }) {
       transition: "background 0.2s ease",
     }} />
   );
-}
+});
 
-function ThinkingDots() {
+const ThinkingDots = memo(function ThinkingDots() {
   return (
     <div style={{ marginBottom: 32 }}>
       <div style={{
-        fontSize: 12, color: "#000", opacity: 0.38,
+        fontSize: 14, color: "#000", opacity: 0.38,
         letterSpacing: "0.10em", textTransform: "uppercase", marginBottom: 12,
       }}>
         Clarity denkt
@@ -540,24 +561,23 @@ function ThinkingDots() {
       </div>
     </div>
   );
-}
+});
 
 // ── Hero Screen ───────────────────────────────────────────────────────────────
-function HeroScreen({ onStart }) {
-  const [vis,    setVis]    = useState(false);
-  const [fading, setFading] = useState(false); // Part 7 — fade-out on start
+const HeroScreen = memo(function HeroScreen({ onStart }) {
+  const [fading, setFading] = useState(false);
 
-  useEffect(() => { const t = setTimeout(() => setVis(true), 80); return () => clearTimeout(t); }, []);
-
-  // Part 7 — trigger 400ms fade-out, then call onStart
+  // Trigger 400ms fade-out, then hand off to chat
   const handleStart = () => {
     setFading(true);
     setTimeout(() => onStart(), 400);
   };
 
+  // Hero renders instantly — CSS handles the 300ms ease-out fade-in.
+  // No vis state, no setTimeout, no layout shift.
   return (
     <div
-      className={fading ? "c-hero-fading" : ""}
+      className={fading ? "c-hero-fading" : "c-hero-fadein"}
       style={{
         minHeight: "100vh",
         display: "flex",
@@ -565,13 +585,12 @@ function HeroScreen({ onStart }) {
         justifyContent: "center",
         alignItems: "center",
         padding: "24px",
+        maxWidth: "100%",
+        margin: "0 auto",
         fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
         textAlign: "center",
         position: "relative",
         zIndex: 10,
-        opacity: vis ? 1 : 0,
-        transform: vis ? "none" : "translateY(16px)",
-        transition: "opacity 600ms ease, transform 600ms ease",
       }}>
 
       {/* Wordmark */}
@@ -597,11 +616,11 @@ function HeroScreen({ onStart }) {
 
       {/* Subline */}
       <p style={{
-        fontSize: "clamp(16px, 3.5vw, 20px)",
+        fontSize: "clamp(18px, 3.5vw, 20px)",
         color: "#000",
         opacity: 0.55,
-        lineHeight: 1.65,
-        marginBottom: 52,
+        lineHeight: 1.6,
+        marginBottom: 36,
         maxWidth: 360,
       }}>
         In einem kurzen Gespräch erkennst du, was dir wirklich wichtig ist.
@@ -624,9 +643,10 @@ function HeroScreen({ onStart }) {
           fontWeight: 600,
           borderRadius: "18px",
           cursor: "pointer",
-          marginBottom: 16,
+          marginBottom: 20,
           boxShadow: "0 10px 36px rgba(79,140,255,0.30)",
           minWidth: 220,
+          willChange: "transform",
         }}
       >
         Gespräch starten
@@ -634,15 +654,15 @@ function HeroScreen({ onStart }) {
 
       {/* Microcopy */}
       <div style={{
-        fontSize: 13, color: "#000", opacity: 0.42,
-        letterSpacing: "0.02em", lineHeight: 1.5,
+        fontSize: 14, color: "#000", opacity: 0.42,
+        letterSpacing: "0.02em", lineHeight: 1.6,
       }}>
         Kostenlos · Kein Account · ca. 10 Minuten
       </div>
 
       {/* Trust signal */}
       <div style={{
-        fontSize: 13, color: "#000", opacity: 0.6,
+        fontSize: 14, color: "#000", opacity: 0.6,
         marginTop: 10, letterSpacing: "0.01em",
       }}>
         Bereits über 1.000 Gespräche geführt
@@ -650,10 +670,10 @@ function HeroScreen({ onStart }) {
 
     </div>
   );
-}
+});
 
 // ── Analysis Screen — full-screen overlay while AI processes answers ──────────
-function AnalysisScreen() {
+const AnalysisScreen = memo(function AnalysisScreen() {
   const [vis, setVis] = useState(false);
   useEffect(() => { const t = setTimeout(() => setVis(true), 60); return () => clearTimeout(t); }, []);
 
@@ -677,7 +697,7 @@ function AnalysisScreen() {
       }} />
 
       <div style={{
-        fontSize: 16, color: "#000", opacity: 0.60,
+        fontSize: 18, color: "#000", opacity: 0.60,
         letterSpacing: "0.02em", lineHeight: 1.6,
         textAlign: "center", maxWidth: 280,
       }}>
@@ -685,7 +705,7 @@ function AnalysisScreen() {
       </div>
     </div>
   );
-}
+});
 
 // ── Share helpers ──────────────────────────────────────────────────────────────
 
@@ -697,12 +717,17 @@ function AnalysisScreen() {
 function generateProfileLink(result) {
   try {
     const mode = Array.isArray(result.identityModes) && result.identityModes[0];
-    const modeSlug  = mode
+    const modeSlug    = mode
       ? `${mode.type.toLowerCase().replace(/\s+/g, "-")}-${mode.confidence}`
       : "profile";
-    const clarity = result.scores?.Clarity ?? 0;
-    const energy  = result.scores?.Energy  ?? 0;
-    const path = `/p/${modeSlug}-clarity${clarity}-energy${energy}`;
+    const s           = result.scores ?? {};
+    // Encode all 5 dimensions so the public profile can show all bars
+    const clarity     = s.Clarity   ?? 0;
+    const energy      = s.Energy    ?? 0;
+    const strength    = s.Strength  ?? 0;
+    const direction   = s.Direction ?? 0;
+    const action      = s.Action    ?? 0;
+    const path = `/p/${modeSlug}-clarity${clarity}-energy${energy}-strength${strength}-direction${direction}-action${action}`;
     const base = window.location.hostname.includes("localhost")
       ? "http://localhost:5173"
       : "https://cla-ri-ty.netlify.app";
@@ -725,7 +750,7 @@ const SCORE_ORDER = ["Clarity", "Energy", "Strength", "Direction", "Action"];
 const scorePct = (v) => Math.min(Math.round(v * 3), 75);
 
 // ── ScoreIcon — minimal SVG icon for each clarity dimension ───────────────────
-function ScoreIcon({ label, color, size = 18 }) {
+const ScoreIcon = memo(function ScoreIcon({ label, color, size = 18 }) {
   const sw = "1.8", slc = "round", slj = "round";
   if (label === "Clarity") return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={sw} strokeLinecap={slc} strokeLinejoin={slj} opacity="0.85">
@@ -759,7 +784,7 @@ function ScoreIcon({ label, color, size = 18 }) {
     </svg>
   );
   return null;
-}
+});
 
 // ── ClarityProfileView ─────────────────────────────────────────────────────────
 // THE single source of truth rendered in all three views:
@@ -775,10 +800,11 @@ function ScoreIcon({ label, color, size = 18 }) {
 //   isStatic   — skip ALL CSS transitions (required for html-to-image capture)
 function ClarityProfileView({
   result,
-  heroVis    = true,
-  barsOn     = true,
-  insightVis = true,
-  isStatic   = false,
+  heroVis      = true,
+  barsOn       = true,
+  insightVis   = true,
+  isStatic     = false,
+  showInsights = true,   // false = share-image mode: stops after Fortschrittspotenzial
 }) {
   const primaryMode  = Array.isArray(result?.identityModes) && result.identityModes[0];
   // Only render scores that are present, in canonical order
@@ -804,8 +830,8 @@ function ClarityProfileView({
         ...tr("opacity, transform", 600),
       }}>
         <div style={{
-          fontSize: 10, letterSpacing: "0.42em", textTransform: "uppercase",
-          color: "#000", opacity: 0.38, marginBottom: 22,
+          fontSize: 14, letterSpacing: "0.12em", textTransform: "uppercase",
+          color: "#000", opacity: 0.38, marginBottom: 24,
         }}>
           Dein Clarity-Profil
         </div>
@@ -813,12 +839,12 @@ function ClarityProfileView({
         {primaryMode && (
           <>
             <div style={{
-              fontSize: "clamp(36px, 9vw, 60px)", fontWeight: 700,
+              fontSize: "clamp(36px, 9vw, 64px)", fontWeight: 700,
               letterSpacing: "-0.025em", color: "#000", lineHeight: 1.0, marginBottom: 14,
             }}>
               {primaryMode.type.toUpperCase()}
             </div>
-            <div style={{ fontSize: 13, color: "#000", opacity: 0.42, letterSpacing: "0.12em" }}>
+            <div style={{ fontSize: 16, fontWeight: 500, color: "#000", opacity: 0.42, letterSpacing: "0.06em" }}>
               {primaryMode.confidence}% Übereinstimmung
             </div>
           </>
@@ -838,11 +864,11 @@ function ClarityProfileView({
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
               </svg>
-              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase", color: "#4F8CFF" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#4F8CFF" }}>
                 Vergleich mit anderen Nutzern
               </span>
             </div>
-            <div style={{ fontSize: 14, color: "#000", opacity: 0.65, lineHeight: 1.65 }}>
+            <div style={{ fontSize: 16, color: "#000", opacity: 0.65, lineHeight: 1.6 }}>
               Du liegst aktuell im oberen 35% aller Teilnehmenden.
             </div>
           </div>
@@ -850,15 +876,15 @@ function ClarityProfileView({
 
         {result?.summary && (
           <div style={{
-            fontSize: 17, color: "#000", opacity: 0.65, lineHeight: 1.65,
-            marginTop: 28, maxWidth: 480, marginLeft: "auto", marginRight: "auto",
+            fontSize: 18, color: "#000", opacity: 0.65, lineHeight: 1.6,
+            marginTop: 32, maxWidth: 480, marginLeft: "auto", marginRight: "auto",
           }}>
             {result.summary}
           </div>
         )}
 
         {result?.confidence != null && (
-          <div style={{ fontSize: 11, color: "#000", opacity: 0.3, letterSpacing: "0.12em", marginTop: 16 }}>
+          <div style={{ fontSize: 14, color: "#000", opacity: 0.3, letterSpacing: "0.06em", marginTop: 16 }}>
             Analysequalität: {result.confidence}%
           </div>
         )}
@@ -873,8 +899,8 @@ function ClarityProfileView({
           ...tr("opacity, transform", 600),
         }}>
           <div style={{
-            fontSize: 10, letterSpacing: "0.38em", textTransform: "uppercase",
-            color: "#000", opacity: 0.35, marginBottom: 32, textAlign: "center",
+            fontSize: 14, letterSpacing: "0.12em", textTransform: "uppercase",
+            color: "#000", opacity: 0.35, marginBottom: 40, textAlign: "center",
           }}>
             Dein Klarheitsprofil
           </div>
@@ -887,11 +913,11 @@ function ClarityProfileView({
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <ScoreIcon label={label} color={col} size={18} />
-                    <span style={{ fontSize: 12, letterSpacing: "0.08em", color: "#000", opacity: 0.65 }}>
+                    <span style={{ fontSize: 16, fontWeight: 500, letterSpacing: "0.04em", color: "#000", opacity: 0.65 }}>
                       {label}
                     </span>
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: col }}>{pct}%</span>
+                  <span style={{ fontSize: 16, fontWeight: 600, color: col }}>{pct}%</span>
                 </div>
                 <div style={{ height: 12, borderRadius: 8, background: "rgba(0,0,0,0.06)", overflow: "hidden" }}>
                   <div style={{
@@ -923,36 +949,36 @@ function ClarityProfileView({
               <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
               <polyline points="17 6 23 6 23 12"/>
             </svg>
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase", color: "#4F8CFF" }}>
+            <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#4F8CFF" }}>
               Dein Fortschrittspotenzial
             </span>
           </div>
-          <div style={{ fontSize: 14, color: "#000", opacity: 0.65, lineHeight: 1.68 }}>
+          <div style={{ fontSize: 16, color: "#000", opacity: 0.65, lineHeight: 1.6 }}>
             Viele Menschen starten in diesem Bereich bei etwa 40–60%.{" "}
             Mit den richtigen Gewohnheiten kannst du über 90% erreichen.
           </div>
         </div>
       </div>
 
-      {/* ── INSIGHT ──────────────────────────────────────────────────────────── */}
-      {result?.pattern && (
+      {/* ── INSIGHT — hidden in share-image mode ───────────────────────────── */}
+      {showInsights && result?.pattern && (
         <div style={{
           maxWidth: 600, margin: "0 auto", padding: "44px 24px 0",
           opacity: insightVis ? 1 : 0,
           transform: insightVis ? "none" : "translateY(12px)",
           ...tr("opacity, transform", 600),
         }}>
-          <div style={{ fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase", color: "#000", opacity: 0.38, marginBottom: 14 }}>
+          <div style={{ fontSize: 14, letterSpacing: "0.12em", textTransform: "uppercase", color: "#000", opacity: 0.38, marginBottom: 18 }}>
             Insight
           </div>
-          <div style={{ fontSize: 16, lineHeight: 1.55, opacity: 0.88, color: "#000" }}>
+          <div style={{ fontSize: 18, lineHeight: 1.6, opacity: 0.88, color: "#000" }}>
             {result.pattern}
           </div>
         </div>
       )}
 
-      {/* ── STRENGTHS / ENERGY SOURCES / NEXT FOCUS ──────────────────────────── */}
-      {(result?.strengths?.length || result?.energySources?.length || result?.nextFocus) && (
+      {/* ── STRENGTHS / ENERGY SOURCES / NEXT FOCUS — hidden in share mode ───── */}
+      {showInsights && (result?.strengths?.length || result?.energySources?.length || result?.nextFocus) && (
         <div style={{
           maxWidth: 600, margin: "44px auto 0", padding: "0 24px",
           opacity: insightVis ? 1 : 0,
@@ -964,19 +990,19 @@ function ClarityProfileView({
             { title: "Dein nächster Fokus",  items: result?.nextFocus ? [result.nextFocus] : null },
           ].map(({ title, items }) => items?.length ? (
             <div key={title} style={{ marginBottom: 32 }}>
-              <div style={{ fontSize: 10, letterSpacing: "0.28em", textTransform: "uppercase", color: "#000", opacity: 0.38, marginBottom: 12 }}>
+              <div style={{ fontSize: 14, letterSpacing: "0.12em", textTransform: "uppercase", color: "#000", opacity: 0.38, marginBottom: 18 }}>
                 {title}
               </div>
               {items.map((s, i) => (
-                <div key={i} style={{ fontSize: 15, color: "#000", lineHeight: 1.75, opacity: 0.85 }}>— {s}</div>
+                <div key={i} style={{ fontSize: 18, color: "#000", lineHeight: 1.6, opacity: 0.85 }}>— {s}</div>
               ))}
             </div>
           ) : null)}
         </div>
       )}
 
-      {/* ── TODAY'S ACTION — rocket icon, soft red card ───────────────────────── */}
-      {result?.suggestedAction && (
+      {/* ── TODAY'S ACTION — hidden in share-image mode ────────────────────────── */}
+      {showInsights && result?.suggestedAction && (
         <div style={{
           maxWidth: 600, margin: "24px auto 0", padding: "0 24px",
           opacity: insightVis ? 1 : 0,
@@ -990,11 +1016,11 @@ function ClarityProfileView({
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 9 }}>
               <ScoreIcon label="Action" color="#FF5A6F" size={20} />
-              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.22em", textTransform: "uppercase", color: "#FF5A6F" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase", color: "#FF5A6F" }}>
                 Deine Aufgabe für heute
               </span>
             </div>
-            <div style={{ fontSize: 15, color: "#000", lineHeight: 1.65, opacity: 0.82 }}>
+            <div style={{ fontSize: 18, color: "#000", lineHeight: 1.6, opacity: 0.82 }}>
               {result.suggestedAction}
             </div>
           </div>
@@ -1030,6 +1056,7 @@ function ClarityShareWrapper({ result, wrapperRef }) {
           barsOn={true}
           insightVis={true}
           isStatic={true}
+          showInsights={false}
         />
       </div>
 
@@ -1057,17 +1084,23 @@ function ResultSection({ result }) {
   const [hoverImg,     setHoverImg]     = useState(false);
   const [hoverLink,    setHoverLink]    = useState(false);
   const [hoverNative,  setHoverNative]  = useState(false);
-  const shareWrapperRef = useRef(null);  // ← points to ClarityShareWrapper (1200×1600)
+  const shareWrapperRef      = useRef(null);
+  // Deferred share wrapper: avoid laying out the 1200×1600 DOM node during
+  // the reveal animation. Mounts 2.5 s after result appears.
+  const [shareWrapperMounted, setShareWrapperMounted] = useState(false);
 
   useEffect(() => {
     // Scroll to top so reveal animation is fully in view
     window.scrollTo({ top: 0, behavior: "instant" });
     // Staggered reveal: title → 0ms, bars → 300ms, insights → 700ms
-    const t0 = setTimeout(() => setVis(true),        0);
-    const t1 = setTimeout(() => setHeroVis(true),    0);
-    const t2 = setTimeout(() => setBarsOn(true),     300);
-    const t3 = setTimeout(() => setInsightVis(true), 700);
-    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    const t0 = setTimeout(() => setVis(true),              0);
+    const t1 = setTimeout(() => setHeroVis(true),          0);
+    const t2 = setTimeout(() => setBarsOn(true),           300);
+    const t3 = setTimeout(() => setInsightVis(true),       700);
+    // Mount the 1200×1600 share wrapper only after animations have settled
+    const t4 = setTimeout(() => setShareWrapperMounted(true), 2500);
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2);
+                   clearTimeout(t3); clearTimeout(t4); };
   }, []);
 
   // ── Share handlers ──────────────────────────────────────────────────────────
@@ -1093,8 +1126,15 @@ function ResultSection({ result }) {
   };
 
   const generateShareImage = async () => {
-    if (!shareWrapperRef.current || generating) return;
+    if (generating) return;
     setGenerating(true);
+    // If the share wrapper hasn't mounted yet (user tapped fast), mount it now
+    // and give React one frame to render before capturing.
+    if (!shareWrapperMounted) {
+      setShareWrapperMounted(true);
+      await new Promise((r) => setTimeout(r, 80));
+    }
+    if (!shareWrapperRef.current) { setGenerating(false); return; }
     try {
       const { toPng: _toPng } = await import("html-to-image");
       // Capture at full 1200×1600 resolution (pixelRatio: 1 — already large)
@@ -1174,7 +1214,7 @@ function ResultSection({ result }) {
         }}>
           Willst du tiefer gehen?
         </div>
-        <div style={{ fontSize: 15, color: "#000", opacity: 0.50, marginBottom: 28, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 18, color: "#000", opacity: 0.50, marginBottom: 28, lineHeight: 1.6 }}>
           Entdecke, was wirklich möglich ist.
         </div>
         <button
@@ -1195,7 +1235,7 @@ function ResultSection({ result }) {
         >
           Clarity System starten
         </button>
-        <div style={{ fontSize: 13, color: "#000", opacity: 0.45, letterSpacing: "0.01em" }}>
+        <div style={{ fontSize: 14, color: "#000", opacity: 0.45, letterSpacing: "0.01em" }}>
           7 Tage kostenlos testen
         </div>
       </div>
@@ -1206,7 +1246,7 @@ function ResultSection({ result }) {
         borderTop: "1px solid rgba(0,0,0,0.07)", textAlign: "center",
       }}>
         <div style={{
-          fontSize: 10, letterSpacing: "0.35em", textTransform: "uppercase",
+          fontSize: 14, letterSpacing: "0.12em", textTransform: "uppercase",
           color: "#000", opacity: 0.35, marginBottom: 24,
         }}>
           Profil teilen
@@ -1220,10 +1260,10 @@ function ResultSection({ result }) {
             border: "1px solid rgba(61,220,151,0.28)",
             borderRadius: 12, padding: "14px 18px", marginBottom: 16, textAlign: "left",
           }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#000", marginBottom: 3 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#000", marginBottom: 3 }}>
               Profilbild gespeichert.
             </div>
-            <div style={{ fontSize: 12, color: "#000", opacity: 0.52, lineHeight: 1.55 }}>
+            <div style={{ fontSize: 14, color: "#000", opacity: 0.52, lineHeight: 1.6 }}>
               Teile dein Klarheitsprofil mit Freunden.
             </div>
           </div>
@@ -1236,13 +1276,55 @@ function ResultSection({ result }) {
         </div>
       </div>
 
-      {/* Hidden share wrapper — rendered off-screen at 1200×1600 for html-to-image */}
-      <div style={{ position: "absolute", left: -9999, top: 0, pointerEvents: "none" }}>
-        <ClarityShareWrapper result={result} wrapperRef={shareWrapperRef} />
-      </div>
+      {/* Hidden share wrapper — deferred until 2.5s after result to avoid
+           blocking the reveal animation with a 1200×1600 layout. */}
+      {shareWrapperMounted && (
+        <div style={{ position: "absolute", left: -9999, top: 0, pointerEvents: "none" }}>
+          <ClarityShareWrapper result={result} wrapperRef={shareWrapperRef} />
+        </div>
+      )}
     </div>
   );
 }
+
+// ── ChatMessage — memoized to prevent re-rendering old messages ───────────────
+// Each message is stable once added; only the newest message ever changes.
+const ChatMessage = memo(function ChatMessage({ msg }) {
+  if (msg.role === "user") {
+    return (
+      <div className="c-user-bubble">
+        <div className="c-user-bubble-inner">{msg.content}</div>
+      </div>
+    );
+  }
+  if (msg.type === "reflection") {
+    return (
+      <div className="c-fade-up"
+        style={{ marginTop: 8, marginBottom: 40, paddingLeft: 16, borderLeft: "2px solid rgba(0,0,0,0.15)" }}>
+        <div style={{ fontSize: 14, letterSpacing: "0.12em", color: "#999", textTransform: "uppercase", marginBottom: 10 }}>
+          Beobachtung
+        </div>
+        <div style={{ fontSize: 18, fontStyle: "italic", color: "#444", lineHeight: 1.6 }}>
+          {msg.content}
+        </div>
+      </div>
+    );
+  }
+  if (msg.isQuestion) {
+    return (
+      <div className="c-fade-up"
+        style={{ fontSize: 22, fontWeight: 400, color: "#000", lineHeight: 1.6, marginBottom: 40 }}>
+        {msg.content}
+      </div>
+    );
+  }
+  return (
+    <div className="c-fade-up"
+      style={{ fontSize: 18, fontWeight: 400, color: "#000", opacity: 0.78, lineHeight: 1.6, marginBottom: 40 }}>
+      {msg.content}
+    </div>
+  );
+});
 
 // ── Main component ───────────────────────────────────────────────────────────── ─────────────────────────────────────────────────────────────
 function Clarity() {
@@ -1271,12 +1353,17 @@ function Clarity() {
   const [inputReady,     setInputReady]   = useState(false);
   const [inputFocused,   setInputFocused] = useState(false);
 
-  const inputRef       = useRef(null);
-  const bottomRef      = useRef(null);
-  const recognitionRef = useRef(null);
-  const pageRef        = useRef(null);
-  const rafRef         = useRef(null);
-  const mouseRef       = useRef({ x: 0.5, y: 0.5, tx: 0.5, ty: 0.5 });
+  const inputRef           = useRef(null);
+  const bottomRef          = useRef(null);
+  const recognitionRef     = useRef(null);
+  const finalTranscriptRef = useRef("");   // accumulates confirmed speech across sessions
+  const pageRef            = useRef(null);
+  const rafRef             = useRef(null);
+  const mouseRef           = useRef({ x: 0.5, y: 0.5, tx: 0.5, ty: 0.5 });
+  const phaseRef           = useRef("splash");  // mirror of phase for RAF closure
+
+  // Keep phaseRef in sync so the RAF closure always reads the current phase
+  useEffect(() => { phaseRef.current = phase; }, [phase]);
 
   const SR = typeof window !== "undefined"
     ? (window.SpeechRecognition || window.webkitSpeechRecognition)
@@ -1295,7 +1382,7 @@ function Clarity() {
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
-  // ── Parallax depth + ambient glass light ────────────────────────────────────
+  // ── Parallax depth + ambient glass light — skipped on splash screen ─────────
   useEffect(() => {
     const atmo   = document.getElementById("c-atmosphere");
     const nebula = document.getElementById("c-nebula");
@@ -1313,24 +1400,25 @@ function Clarity() {
     window.addEventListener("scroll", onScroll, { passive: true });
 
     const tick = () => {
-      const m = mouseRef.current;
-      // Smooth interpolation toward target
-      m.x += (m.tx - m.x) * 0.06;
-      m.y += (m.ty - m.y) * 0.06;
+      // Skip all DOM writes on splash screen — parallax is invisible there
+      // and skipping it reduces main-thread work during first paint on mobile.
+      if (phaseRef.current !== "splash") {
+        const m = mouseRef.current;
+        m.x += (m.tx - m.x) * 0.06;
+        m.y += (m.ty - m.y) * 0.06;
 
-      // Parallax: atmosphere moves slowest, nebula slightly faster
-      const atmoY  = Math.min(scrollY * 0.02, 20);
-      const nebY   = Math.min(scrollY * 0.05, 40);
+        const atmoY  = Math.min(scrollY * 0.02, 20);
+        const nebY   = Math.min(scrollY * 0.05, 40);
 
-      if (atmo)   atmo.style.transform   = `translateY(${atmoY.toFixed(2)}px)`;
-      if (nebula) nebula.style.transform = `translateY(${nebY.toFixed(2)}px)`;
+        if (atmo)   atmo.style.transform   = `translateY(${atmoY.toFixed(2)}px)`;
+        if (nebula) nebula.style.transform = `translateY(${nebY.toFixed(2)}px)`;
 
-      // Ambient glass light — move radial highlight with mouse
-      if (shell) {
-        const lx = (30 + m.x * 40).toFixed(1) + "%";
-        const ly = (20 + m.y * 60).toFixed(1) + "%";
-        shell.style.setProperty("--lx", lx);
-        shell.style.setProperty("--ly", ly);
+        if (shell) {
+          const lx = (30 + m.x * 40).toFixed(1) + "%";
+          const ly = (20 + m.y * 60).toFixed(1) + "%";
+          shell.style.setProperty("--lx", lx);
+          shell.style.setProperty("--ly", ly);
+        }
       }
 
       rafRef.current = requestAnimationFrame(tick);
@@ -1344,7 +1432,7 @@ function Clarity() {
     };
   }, []);
 
-  const beginTransition = () => {
+  const beginTransition = useCallback(() => {
     document.getElementById("c-strips")?.classList.add("fade-out");
     setSphereChat(true);
     // Short delay for strip fade-out before chat begins
@@ -1352,20 +1440,25 @@ function Clarity() {
       setPhase("chat");
       startIntroSequence();
     }, 600);
-  };
+  }, []);
 
   const startIntroSequence = () => {
     let i = 0;
     const revealNext = () => {
       i++;
       setVisibleChunks(i);
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
+      // No auto-scroll here — intro chunks fade in where the user is already looking.
+      // Only scroll once at the end so the first question + input are fully visible.
       if (i < INTRO_CHUNKS.length) {
         setTimeout(revealNext, 1000);
       } else {
         setTimeout(() => {
           setInputReady(true);
-          setTimeout(() => inputRef.current?.focus(), 100);
+          // Gently scroll the final question into view just once, then focus input
+          setTimeout(() => {
+            bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            inputRef.current?.focus();
+          }, 100);
         }, 600);
       }
     };
@@ -1537,7 +1630,7 @@ function Clarity() {
           ? { role: "assistant", type: "reflection", content: reflection }
           : { role: "assistant", content: reflection };
         setMessages((prev) => [...prev, reflectionMsg]);
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
+        // Message fades in via .c-fade-up — no auto-scroll needed here.
         // Reading pause — give the user time to read before the next question appears
         await delay(1200);
       }
@@ -1564,47 +1657,118 @@ function Clarity() {
     }, 80);
   };
 
-  const sendMessage = () => {
+  const sendMessage = useCallback(() => {
     const t = input.trim();
     if (!t) return;
     setInput("");
+    finalTranscriptRef.current = "";          // reset accumulated voice text
     if (inputRef.current) inputRef.current.style.height = "auto";
     dispatchAnswer(t);
+  }, [input, dispatchAnswer]);
+
+  // ── Voice input — continuous, accumulating across pauses ────────────────────
+  //
+  // How it works:
+  //   finalTranscriptRef holds all confirmed (isFinal) text from past segments.
+  //   Each onresult appends new finals to the ref, then displays
+  //   ref + current interim so the field always shows the full running text.
+  //
+  //   continuous: true   → recognition doesn't stop on brief pauses
+  //   onend auto-restart → some browsers still force-stop on longer silences;
+  //                        we restart transparently if the user hasn't tapped Stop.
+  const startRecognition = () => {
+    if (!SR) return;
+    const rec = new SR();
+    rec.lang            = "de-DE";
+    rec.continuous      = true;       // stay alive through natural pauses
+    rec.interimResults  = true;
+    rec.maxAlternatives = 1;
+
+    rec.onstart = () => setIsListening(true);
+
+    rec.onresult = (e) => {
+      let newFinals = "";
+      let interim   = "";
+
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) newFinals += e.results[i][0].transcript;
+        else                       interim   += e.results[i][0].transcript;
+      }
+
+      // Append any newly confirmed segments to the accumulated transcript.
+      // Trim + add a space separator only when there is existing text.
+      if (newFinals) {
+        const prev = finalTranscriptRef.current;
+        finalTranscriptRef.current = prev
+          ? prev.trimEnd() + " " + newFinals.trim()
+          : newFinals.trim();
+      }
+
+      // Display: everything confirmed so far + current interim hypothesis
+      const displayed = interim
+        ? finalTranscriptRef.current + (finalTranscriptRef.current ? " " : "") + interim
+        : finalTranscriptRef.current;
+
+      setInput(displayed);
+
+      // Auto-resize textarea to match new content
+      if (inputRef.current) {
+        inputRef.current.style.height = "auto";
+        inputRef.current.style.height =
+          Math.min(inputRef.current.scrollHeight, 120) + "px";
+      }
+    };
+
+    rec.onerror = (e) => {
+      // "no-speech" is routine on a quiet pause — don't treat it as a failure
+      if (e.error === "no-speech") return;
+      setIsListening(false);
+    };
+
+    rec.onend = () => {
+      // If the user hasn't pressed Stop, restart automatically.
+      // This covers browsers that force-terminate after ~60 s or on silence.
+      if (recognitionRef.current === rec && isListeningRef.current) {
+        try { rec.start(); } catch (_) { setIsListening(false); }
+      } else {
+        setIsListening(false);
+      }
+    };
+
+    recognitionRef.current = rec;
+    try { rec.start(); } catch (_) { setIsListening(false); }
   };
 
-  // ── Voice input ────────────────────────────────────────────────────────────
+  // Ref mirror of isListening so onend closure can read the latest value
+  const isListeningRef = useRef(false);
+  useEffect(() => { isListeningRef.current = isListening; }, [isListening]);
+
   const toggleVoice = () => {
     if (!hasSpeech) return;
     if (isListening) {
-      recognitionRef.current?.stop();
+      // User pressed Stop: set flag first so onend doesn't auto-restart
+      isListeningRef.current = false;
       setIsListening(false);
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+      // Keep whatever text was accumulated — user can edit before sending
       return;
     }
-    const rec = new SR();
-    rec.lang            = "de-DE";
-    rec.interimResults  = true;
-    rec.maxAlternatives = 1;
-    rec.onstart  = () => setIsListening(true);
-    rec.onend    = () => setIsListening(false);
-    rec.onerror  = () => setIsListening(false);
-    rec.onresult = (e) => {
-      let interim = "", final = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) final  += e.results[i][0].transcript;
-        else                       interim += e.results[i][0].transcript;
-      }
-      setInput(final || interim);
-      if (final) setTimeout(() => inputRef.current?.focus(), 50);
-    };
-    recognitionRef.current = rec;
-    rec.start();
+    // Fresh start: clear any leftover transcript from a previous session
+    finalTranscriptRef.current = "";
+    startRecognition();
   };
 
-  // ── Derived UI values ──────────────────────────────────────────────────────
+  // ── Derived UI values — memoized to avoid recomputing on every state change ──
   const answersCollected = answersRef.current.length;
-  const pct              = Math.min((answersCollected / 12) * 100, 100);
-  const displayQNum      = Math.min(answersCollected + 1, 12);
-  const showInput        = phase === "chat" && inputReady && !isTyping && !analysing;
+  const pct         = useMemo(() => Math.min((answersCollected / 12) * 100, 100),
+    [answersCollected]);
+  const displayQNum = useMemo(() => Math.min(answersCollected + 1, 12),
+    [answersCollected]);
+  const showInput   = useMemo(
+    () => phase === "chat" && inputReady && !isTyping && !analysing,
+    [phase, inputReady, isTyping, analysing]
+  );
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -1643,7 +1807,7 @@ function Clarity() {
       {/* Fullscreen app layout */}
       <div id="c-app">
 
-        {/* ── SPLASH: Hero Screen ──────────────────────────────────────── */}
+        {/* ── SPLASH: hero fades in immediately via CSS (no skeleton) ──── */}
         {phase === "splash" && (
           <HeroScreen onStart={beginTransition} />
         )}
@@ -1682,15 +1846,15 @@ function Clarity() {
                     </p>
                   ) : isFirstLine ? (
                     <p key={i} className="c-fade-up" style={{
-                      fontSize: 15, fontWeight: 400, color: "#000",
-                      opacity: 0.45, lineHeight: 1.65, margin: "0 0 16px 0",
+                      fontSize: 18, fontWeight: 400, color: "#000",
+                      opacity: 0.45, lineHeight: 1.6, margin: "0 0 20px 0",
                     }}>
                       {chunk}
                     </p>
                   ) : (
                     <p key={i} className="c-fade-up" style={{
-                      fontSize: 19, fontWeight: 400, color: "#000",
-                      opacity: 0.75, lineHeight: 1.72, margin: "0 0 20px 0",
+                      fontSize: 18, fontWeight: 400, color: "#000",
+                      opacity: 0.75, lineHeight: 1.6, margin: "0 0 20px 0",
                     }}>
                       {chunk}
                     </p>
@@ -1698,34 +1862,11 @@ function Clarity() {
                 })}
               </div>
 
-              {/* Message list */}
-              {messages.map((msg, i) =>
-                msg.role === "user" ? (
-                  <div key={i} className="c-user-bubble">
-                    <div className="c-user-bubble-inner">{msg.content}</div>
-                  </div>
-                ) : msg.type === "reflection" ? (
-                  <div key={i} className="c-fade-up"
-                    style={{ marginTop: 8, marginBottom: 40, paddingLeft: 16, borderLeft: "2px solid rgba(0,0,0,0.15)" }}>
-                    <div style={{ fontSize: 10, letterSpacing: "0.2em", color: "#999", textTransform: "uppercase", marginBottom: 8 }}>
-                      Beobachtung
-                    </div>
-                    <div style={{ fontSize: 17, fontStyle: "italic", color: "#444", lineHeight: 1.7 }}>
-                      {msg.content}
-                    </div>
-                  </div>
-                ) : msg.isQuestion ? (
-                  <div key={i} className="c-fade-up"
-                    style={{ fontSize: 21, fontWeight: 400, color: "#000", lineHeight: 1.72, marginBottom: 36 }}>
-                    {msg.content}
-                  </div>
-                ) : (
-                  <div key={i} className="c-fade-up"
-                    style={{ fontSize: 18, fontWeight: 400, color: "#000", opacity: 0.78, lineHeight: 1.7, marginBottom: 36 }}>
-                    {msg.content}
-                  </div>
-                )
-              )}
+              {/* Message list — each ChatMessage is memoized;
+                   only the newest message re-renders when state changes. */}
+              {messages.map((msg, i) => (
+                <ChatMessage key={i} msg={msg} />
+              ))}
 
               {isTyping && <ThinkingDots />}
 
@@ -1807,10 +1948,17 @@ function Clarity() {
  */
 function parseProfileSlug(slug) {
   try {
-    const clarityMatch = slug.match(/clarity(\d+)/i);
-    const energyMatch  = slug.match(/energy(\d+)/i);
-    const clarityScore = clarityMatch ? parseInt(clarityMatch[1], 10) : null;
-    const energyScore  = energyMatch  ? parseInt(energyMatch[1],  10) : null;
+    const clarityMatch   = slug.match(/clarity(\d+)/i);
+    const energyMatch    = slug.match(/energy(\d+)/i);
+    const strengthMatch  = slug.match(/strength(\d+)/i);
+    const directionMatch = slug.match(/direction(\d+)/i);
+    const actionMatch    = slug.match(/action(\d+)/i);
+
+    const clarityScore   = clarityMatch   ? parseInt(clarityMatch[1],   10) : null;
+    const energyScore    = energyMatch    ? parseInt(energyMatch[1],    10) : null;
+    const strengthScore  = strengthMatch  ? parseInt(strengthMatch[1],  10) : null;
+    const directionScore = directionMatch ? parseInt(directionMatch[1], 10) : null;
+    const actionScore    = actionMatch    ? parseInt(actionMatch[1],    10) : null;
 
     const scoresIndex = slug.search(/clarity\d+/i);
     const modeSection = slug.substring(0, scoresIndex).replace(/-$/, "");
@@ -1823,9 +1971,21 @@ function parseProfileSlug(slug) {
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
 
-    return { modeType, confidence: isNaN(confidence) ? null : confidence, clarityScore, energyScore };
+    return {
+      modeType,
+      confidence:    isNaN(confidence) ? null : confidence,
+      clarityScore,
+      energyScore,
+      strengthScore,
+      directionScore,
+      actionScore,
+    };
   } catch (_) {
-    return { modeType: "Explorer", confidence: null, clarityScore: null, energyScore: null };
+    return {
+      modeType: "Explorer", confidence: null,
+      clarityScore: null, energyScore: null,
+      strengthScore: null, directionScore: null, actionScore: null,
+    };
   }
 }
 
@@ -1834,7 +1994,7 @@ function parseProfileSlug(slug) {
 // Only Clarity + Energy scores are available from the URL slug; other dimensions
 // are not encoded in the share link, so only those two bars are shown.
 function ClarityPublicProfile({ slug }) {
-  const { modeType, confidence, clarityScore, energyScore } = parseProfileSlug(slug);
+  const { modeType, confidence, clarityScore, energyScore, strengthScore, directionScore, actionScore } = parseProfileSlug(slug);
   const OG_IMAGE = "https://cla-ri-ty.netlify.app/og-default.png";
   const [barsOn,   setBarsOn]   = useState(false);
   const [hoverCta, setHoverCta] = useState(false);
@@ -1867,10 +2027,13 @@ function ClarityPublicProfile({ slug }) {
   }, [modeType]);
 
   // Build a partial result object from the URL slug data.
-  // ClarityProfileView gracefully skips any missing sections.
+  // All 5 scores are now encoded in the link; ClarityProfileView skips missing ones.
   const partialScores = {};
-  if (clarityScore != null) partialScores.Clarity = clarityScore;
-  if (energyScore  != null) partialScores.Energy  = energyScore;
+  if (clarityScore   != null) partialScores.Clarity   = clarityScore;
+  if (energyScore    != null) partialScores.Energy     = energyScore;
+  if (strengthScore  != null) partialScores.Strength   = strengthScore;
+  if (directionScore != null) partialScores.Direction  = directionScore;
+  if (actionScore    != null) partialScores.Action     = actionScore;
 
   const partialResult = {
     identityModes: [{ type: modeType, confidence }],
