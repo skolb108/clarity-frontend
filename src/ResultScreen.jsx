@@ -1,43 +1,203 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  generateProfileLink,
-  SCORE_COLORS,
-  SCORE_ORDER,
-  scorePct,
-  ScoreIcon,
-  ClarityProfileView,
-} from "./shared.jsx";
 
+/* ─────────────────────────────────────────────────────────────
+   Section definitions — label, field key, and display variant.
+   Variant "highlight" gets the visually emphasized treatment.
+───────────────────────────────────────────────────────────── */
+const SECTIONS = [
+  { key: "core_problem",       label: "Das eigentliche Problem",   variant: "default"   },
+  { key: "hidden_pattern",     label: "Das verborgene Muster",     variant: "default"   },
+  { key: "clarity_statement",  label: "Deine Erkenntnis",          variant: "highlight" },
+  { key: "recommended_action", label: "Dein nächster Schritt",     variant: "action"    },
+  { key: "habit",              label: "Deine tägliche Gewohnheit", variant: "default"   },
+  { key: "identity_shift",     label: "Deine neue Identität",      variant: "default"   },
+];
+
+/* ─────────────────────────────────────────────────────────────
+   InsightSection — renders one labeled section of the profile.
+   Variants:
+     default   — standard label + body text
+     highlight — enlarged, background-highlighted clarity statement
+     action    — accent-left-border treatment for the action step
+───────────────────────────────────────────────────────────── */
+function InsightSection({ label, text, variant, visible }) {
+  if (!text) return null;
+
+  const baseWrapper = {
+    opacity:    visible ? 1 : 0,
+    transform:  visible ? "none" : "translateY(16px)",
+    transition: "opacity 600ms ease, transform 600ms ease",
+    maxWidth:   600,
+    margin:     "0 auto",
+    padding:    "0 24px",
+  };
+
+  // ── HIGHLIGHT: clarity_statement ──────────────────────────
+  if (variant === "highlight") {
+    return (
+      <div style={{ ...baseWrapper, marginBottom: 40 }}>
+        <div style={{
+          background:   "linear-gradient(135deg, rgba(79,140,255,0.07) 0%, rgba(156,107,255,0.06) 100%)",
+          border:       "1px solid rgba(79,140,255,0.18)",
+          borderRadius: 16,
+          padding:      "32px 28px",
+          textAlign:    "center",
+          position:     "relative",
+        }}>
+          {/* Accent dot */}
+          <div style={{
+            width: 6, height: 6, borderRadius: "50%",
+            background: "linear-gradient(135deg, #4F8CFF, #9C6BFF)",
+            margin: "0 auto 16px",
+          }} />
+          <div style={{
+            fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase",
+            color: "#4F8CFF", fontWeight: 600, marginBottom: 18,
+          }}>
+            {label}
+          </div>
+          <div style={{
+            fontSize:   22,
+            fontWeight: 400,
+            fontStyle:  "italic",
+            color:      "#000",
+            lineHeight: 1.55,
+          }}>
+            {text}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── ACTION: recommended_action ────────────────────────────
+  if (variant === "action") {
+    return (
+      <div style={{ ...baseWrapper, marginBottom: 40 }}>
+        <div style={{
+          borderLeft:  "3px solid #3DDC97",
+          paddingLeft: 20,
+          paddingTop:  4,
+          paddingBottom: 4,
+        }}>
+          <div style={{
+            fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase",
+            color: "#3DDC97", fontWeight: 600, marginBottom: 10,
+          }}>
+            {label}
+          </div>
+          <div style={{
+            fontSize: 18, fontWeight: 400, color: "#000",
+            lineHeight: 1.6, opacity: 0.85,
+          }}>
+            {text}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── DEFAULT ────────────────────────────────────────────────
+  return (
+    <div style={{ ...baseWrapper, marginBottom: 40 }}>
+      <div style={{
+        fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase",
+        color: "#000", opacity: 0.35, fontWeight: 600, marginBottom: 10,
+      }}>
+        {label}
+      </div>
+      <div style={{
+        fontSize: 18, fontWeight: 400, color: "#000",
+        lineHeight: 1.65, opacity: 0.78,
+      }}>
+        {text}
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ClarityShareWrapper — static 1200×1600 layout used by
+   html-to-image to generate the share card PNG.
+   Rendered off-screen; never visible to the user.
+───────────────────────────────────────────────────────────── */
 function ClarityShareWrapper({ result, wrapperRef }) {
   return (
     <div
       ref={wrapperRef}
       style={{
-        width: 1200,
-        minHeight: 1600,
+        width: 1200, minHeight: 1600,
         background: "linear-gradient(180deg, #f8f9fb 0%, #eef2f7 100%)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
+        display: "flex", flexDirection: "column", alignItems: "center",
         fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        padding: "100px 0 80px",
       }}
     >
-      {/* Centered profile content at 700px max-width */}
-      <div style={{ width: "100%", maxWidth: 700 }}>
-        <ClarityProfileView
-          result={result}
-          heroVis={true}
-          barsOn={true}
-          insightVis={true}
-          isStatic={true}
-          showInsights={false}
-        />
+      {/* Wordmark */}
+      <div style={{
+        fontSize: 11, letterSpacing: "0.42em", textTransform: "uppercase",
+        color: "#000", opacity: 0.25, marginBottom: 64,
+      }}>
+        clarity
       </div>
 
-      {/* Footer wordmark */}
+      {/* Headline */}
+      <div style={{
+        fontSize: 13, letterSpacing: "0.22em", textTransform: "uppercase",
+        color: "#4F8CFF", opacity: 0.80, marginBottom: 28, fontWeight: 600,
+      }}>
+        Deine Clarity Erkenntnis
+      </div>
+
+      {/* Sections — static, all visible */}
+      <div style={{ width: "100%", maxWidth: 700, padding: "0 60px" }}>
+        {SECTIONS.map(({ key, label, variant }) => (
+          result[key] ? (
+            <div key={key} style={{ marginBottom: 52 }}>
+              {variant === "highlight" ? (
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(79,140,255,0.08), rgba(156,107,255,0.06))",
+                  border: "1px solid rgba(79,140,255,0.18)",
+                  borderRadius: 16, padding: "40px 44px", textAlign: "center",
+                }}>
+                  <div style={{
+                    fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase",
+                    color: "#4F8CFF", fontWeight: 600, marginBottom: 20,
+                  }}>{label}</div>
+                  <div style={{ fontSize: 28, fontStyle: "italic", color: "#000", lineHeight: 1.5 }}>
+                    {result[key]}
+                  </div>
+                </div>
+              ) : variant === "action" ? (
+                <div style={{ borderLeft: "3px solid #3DDC97", paddingLeft: 28 }}>
+                  <div style={{
+                    fontSize: 13, letterSpacing: "0.18em", textTransform: "uppercase",
+                    color: "#3DDC97", fontWeight: 600, marginBottom: 12,
+                  }}>{label}</div>
+                  <div style={{ fontSize: 22, color: "#000", lineHeight: 1.6, opacity: 0.85 }}>
+                    {result[key]}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{
+                    fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase",
+                    color: "#000", opacity: 0.30, fontWeight: 600, marginBottom: 12,
+                  }}>{label}</div>
+                  <div style={{ fontSize: 22, color: "#000", lineHeight: 1.65, opacity: 0.75 }}>
+                    {result[key]}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : null
+        ))}
+      </div>
+
+      {/* Footer */}
       <div style={{
         fontSize: 11, letterSpacing: "0.38em", textTransform: "uppercase",
-        color: "#000", opacity: 0.20, marginTop: 56, paddingBottom: 72,
+        color: "#000", opacity: 0.18, marginTop: 60,
       }}>
         clarity.ai
       </div>
@@ -45,65 +205,63 @@ function ClarityShareWrapper({ result, wrapperRef }) {
   );
 }
 
+/* ─────────────────────────────────────────────────────────────
+   ResultSection — main component
+───────────────────────────────────────────────────────────── */
 function ResultSection({ result }) {
-  // Staggered micro-reward animation states
-  const [vis,          setVis]          = useState(false);   // outer wrapper
-  const [heroVis,      setHeroVis]      = useState(false);   // 1. header
-  const [barsOn,       setBarsOn]       = useState(false);   // 2. score bars
-  const [insightVis,   setInsightVis]   = useState(false);   // 3. insight + rest
-  const [copiedLink,   setCopiedLink]   = useState(false);
+  // Staggered reveal: wrapper → header → sections (staggered per-section)
+  const [vis,          setVis]          = useState(false);
+  const [headerVis,    setHeaderVis]    = useState(false);
+  const [sectionVis,   setSectionVis]   = useState([false, false, false, false, false, false]);
+  const [copiedStatement, setCopiedStatement] = useState(false);
+  const [hoverCopy,    setHoverCopy]    = useState(false);
+  const [hoverCta,     setHoverCta]     = useState(false);
   const [generating,   setGenerating]   = useState(false);
   const [shareConfirm, setShareConfirm] = useState(false);
-  const [hoverCta,     setHoverCta]     = useState(false);
   const [hoverImg,     setHoverImg]     = useState(false);
-  const [hoverLink,    setHoverLink]    = useState(false);
   const [hoverNative,  setHoverNative]  = useState(false);
-  const shareWrapperRef      = useRef(null);
-  // Deferred share wrapper: avoid laying out the 1200×1600 DOM node during
-  // the reveal animation. Mounts 2.5 s after result appears.
   const [shareWrapperMounted, setShareWrapperMounted] = useState(false);
+  const shareWrapperRef = useRef(null);
 
   useEffect(() => {
-    // Scroll to top so reveal animation is fully in view
     window.scrollTo({ top: 0, behavior: "instant" });
-    // Staggered reveal: title → 0ms, bars → 300ms, insights → 700ms
-    const t0 = setTimeout(() => setVis(true),              0);
-    const t1 = setTimeout(() => setHeroVis(true),          0);
-    const t2 = setTimeout(() => setBarsOn(true),           300);
-    const t3 = setTimeout(() => setInsightVis(true),       700);
-    // Mount the 1200×1600 share wrapper only after animations have settled
-    const t4 = setTimeout(() => setShareWrapperMounted(true), 2500);
-    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2);
-                   clearTimeout(t3); clearTimeout(t4); };
+
+    const timers = [];
+
+    // Outer wrapper fades in first
+    timers.push(setTimeout(() => setVis(true), 0));
+    timers.push(setTimeout(() => setHeaderVis(true), 80));
+
+    // Each section staggers in 150ms apart, starting at 300ms
+    SECTIONS.forEach((_, i) => {
+      timers.push(setTimeout(() => {
+        setSectionVis((prev) => {
+          const next = [...prev];
+          next[i] = true;
+          return next;
+        });
+      }, 300 + i * 150));
+    });
+
+    // Defer the 1200×1600 share DOM node until after animations settle
+    timers.push(setTimeout(() => setShareWrapperMounted(true), 2500));
+
+    return () => timers.forEach(clearTimeout);
   }, []);
 
-  // ── Share handlers ──────────────────────────────────────────────────────────
-  const copyProfileLink = async () => {
-    const link = generateProfileLink(result);
+  // ── Copy clarity_statement to clipboard ──────────────────────────────────
+  const copyInsight = async () => {
     try {
-      await navigator.clipboard.writeText(link);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2200);
+      await navigator.clipboard.writeText(result.clarity_statement || "");
+      setCopiedStatement(true);
+      setTimeout(() => setCopiedStatement(false), 2200);
     } catch (_) {}
   };
 
-  const nativeShare = async () => {
-    const profileLink = generateProfileLink(result);
-    const shareData = { title: "Mein Clarity Profil", text: result.summary || "Mein persönliches Klarheitsprofil von Clarity.", url: profileLink };
-    if (navigator.share) {
-      try { await navigator.share(shareData); }
-      catch (e) { /* cancelled */ }
-    } else {
-      try { await navigator.clipboard.writeText(profileLink); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2200); }
-      catch (_) {}
-    }
-  };
-
+  // ── Generate and share/download the PNG share card ────────────────────────
   const generateShareImage = async () => {
     if (generating) return;
     setGenerating(true);
-    // If the share wrapper hasn't mounted yet (user tapped fast), mount it now
-    // and give React one frame to render before capturing.
     if (!shareWrapperMounted) {
       setShareWrapperMounted(true);
       await new Promise((r) => setTimeout(r, 80));
@@ -111,27 +269,49 @@ function ResultSection({ result }) {
     if (!shareWrapperRef.current) { setGenerating(false); return; }
     try {
       const { toPng: _toPng } = await import("html-to-image");
-      // Capture at full 1200×1600 resolution (pixelRatio: 1 — already large)
       const dataUrl = await _toPng(shareWrapperRef.current, {
-        cacheBust: true,
-        pixelRatio: 1,
-        style: { borderRadius: "0px" },
+        cacheBust: true, pixelRatio: 1, style: { borderRadius: "0px" },
       });
+      // Try native file-share first (mobile)
       if (navigator.share && navigator.canShare) {
         try {
           const blob = await (await fetch(dataUrl)).blob();
-          const file = new File([blob], "clarity-profile.png", { type: "image/png" });
-          if (navigator.canShare({ files: [file] })) { await navigator.share({ title: "Mein Clarity Profil", files: [file] }); setGenerating(false); return; }
-        } catch (e) { /* fall through */ }
+          const file = new File([blob], "clarity-insight.png", { type: "image/png" });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: "Meine Clarity Erkenntnis", files: [file] });
+            setGenerating(false);
+            return;
+          }
+        } catch (_) { /* fall through to download */ }
       }
-      const a = document.createElement("a"); a.download = "clarity-profile.png"; a.href = dataUrl; a.click();
+      // Fallback: trigger download
+      const a = document.createElement("a");
+      a.download = "clarity-insight.png";
+      a.href = dataUrl;
+      a.click();
       setShareConfirm(true);
       setTimeout(() => setShareConfirm(false), 3500);
-    } catch (err) {
-      const profileLink = generateProfileLink(result);
-      try { await navigator.clipboard.writeText(profileLink); setCopiedLink(true); setTimeout(() => setCopiedLink(false), 2200); }
-      catch (_) {}
-    } finally { setGenerating(false); }
+    } catch (_) {
+      // Last resort: copy insight text
+      await copyInsight();
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // ── Native share — text summary ───────────────────────────────────────────
+  const nativeShare = async () => {
+    const text = result.clarity_statement || "";
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Meine Clarity Erkenntnis",
+          text,
+        });
+      } catch (_) { /* cancelled */ }
+    } else {
+      await copyInsight();
+    }
   };
 
   const BTN = (label, onClick, hover, setHover, opts = {}) => (
@@ -161,26 +341,88 @@ function ResultSection({ result }) {
   return (
     <div style={{
       fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-      opacity: vis ? 1 : 0,
+      opacity:   vis ? 1 : 0,
       transform: vis ? "none" : "translateY(24px)",
       transition: "opacity 700ms ease, transform 700ms ease",
       paddingBottom: 80,
     }}>
 
-      {/* ── PROFILE VIEW — ClarityProfileView is the single source of truth ─── */}
-      <ClarityProfileView
-        result={result}
-        heroVis={heroVis}
-        barsOn={barsOn}
-        insightVis={insightVis}
-        isStatic={false}
-      />
-
-      {/* ── NEXT STEP CTA — Part 4: marginBottom 32 before this divider ──────── */}
+      {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <div style={{
-        maxWidth: 600, margin: "32px auto 0", padding: "48px 24px 52px",
-        textAlign: "center",
+        maxWidth:   600,
+        margin:     "0 auto",
+        padding:    "64px 24px 52px",
+        textAlign:  "center",
+        opacity:    headerVis ? 1 : 0,
+        transform:  headerVis ? "none" : "translateY(12px)",
+        transition: "opacity 600ms ease, transform 600ms ease",
+      }}>
+        {/* Eyebrow */}
+        <div style={{
+          fontSize: 11, letterSpacing: "0.28em", textTransform: "uppercase",
+          color: "#4F8CFF", fontWeight: 600, marginBottom: 16,
+        }}>
+          Deine Clarity Erkenntnis
+        </div>
+        {/* Divider accent */}
+        <div style={{
+          width: 32, height: 2, margin: "0 auto",
+          background: "linear-gradient(90deg, #4F8CFF, #9C6BFF)",
+          borderRadius: 2,
+        }} />
+      </div>
+
+      {/* ── INSIGHT SECTIONS ──────────────────────────────────────────────── */}
+      {SECTIONS.map(({ key, label, variant }, i) => (
+        <InsightSection
+          key={key}
+          label={label}
+          text={result[key]}
+          variant={variant}
+          visible={sectionVis[i]}
+        />
+      ))}
+
+      {/* ── COPY INSIGHT BUTTON ───────────────────────────────────────────── */}
+      <div style={{
+        maxWidth: 600, margin: "0 auto 0", padding: "8px 24px 48px",
+        display: "flex", justifyContent: "center",
+      }}>
+        <button
+          onClick={copyInsight}
+          onMouseEnter={() => setHoverCopy(true)}
+          onMouseLeave={() => setHoverCopy(false)}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            border: `1px solid ${hoverCopy ? "rgba(79,140,255,0.5)" : "rgba(79,140,255,0.25)"}`,
+            background: hoverCopy ? "rgba(79,140,255,0.06)" : "transparent",
+            color: "#4F8CFF",
+            fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            fontSize: 13, letterSpacing: "0.12em",
+            padding: "14px 28px", borderRadius: 8,
+            cursor: "pointer",
+            transition: "background 200ms, border 200ms",
+          }}
+        >
+          {/* Clipboard icon */}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          {copiedStatement ? "✓ Kopiert" : "Erkenntnis kopieren"}
+        </button>
+      </div>
+
+      {/* ── DIVIDER ───────────────────────────────────────────────────────── */}
+      <div style={{
+        maxWidth: 600, margin: "0 auto",
         borderTop: "1px solid rgba(0,0,0,0.07)",
+      }} />
+
+      {/* ── NEXT STEP CTA ─────────────────────────────────────────────────── */}
+      <div style={{
+        maxWidth: 600, margin: "0 auto", padding: "48px 24px 52px",
+        textAlign: "center",
       }}>
         <div style={{
           fontSize: 22, fontWeight: 600, color: "#000",
@@ -188,7 +430,9 @@ function ResultSection({ result }) {
         }}>
           Willst du tiefer gehen?
         </div>
-        <div style={{ fontSize: 18, color: "#000", opacity: 0.50, marginBottom: 28, lineHeight: 1.6 }}>
+        <div style={{
+          fontSize: 18, color: "#000", opacity: 0.50, marginBottom: 28, lineHeight: 1.6,
+        }}>
           Entdecke, was wirklich möglich ist.
         </div>
         <button
@@ -209,12 +453,12 @@ function ResultSection({ result }) {
         >
           Clarity System starten
         </button>
-        <div style={{ fontSize: 14, color: "#000", opacity: 0.45, letterSpacing: "0.01em" }}>
+        <div style={{ fontSize: 14, color: "#000", opacity: 0.45 }}>
           7 Tage kostenlos testen
         </div>
       </div>
 
-      {/* ── SHARE SECTION ────────────────────────────────────────────────────── */}
+      {/* ── SHARE SECTION ─────────────────────────────────────────────────── */}
       <div style={{
         maxWidth: 600, margin: "0 auto", padding: "36px 24px 0",
         borderTop: "1px solid rgba(0,0,0,0.07)", textAlign: "center",
@@ -226,7 +470,6 @@ function ResultSection({ result }) {
           Profil teilen
         </div>
 
-        {/* Share confirmation toast */}
         {shareConfirm && (
           <div style={{
             maxWidth: 340, width: "100%",
@@ -235,23 +478,26 @@ function ResultSection({ result }) {
             borderRadius: 12, padding: "14px 18px", marginBottom: 16, textAlign: "left",
           }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#000", marginBottom: 3 }}>
-              Profilbild gespeichert.
+              Bild gespeichert.
             </div>
             <div style={{ fontSize: 14, color: "#000", opacity: 0.52, lineHeight: 1.6 }}>
-              Teile dein Klarheitsprofil mit Freunden.
+              Teile deine Erkenntnis mit Freunden.
             </div>
           </div>
         )}
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-          {BTN(generating ? "Wird erstellt…" : "Profilbild teilen", generateShareImage, hoverImg, setHoverImg, { disabled: generating })}
-          {BTN(copiedLink ? "✓ Link kopiert" : "Profil-Link kopieren", copyProfileLink, hoverLink, setHoverLink)}
-          {BTN("Profil teilen", nativeShare, hoverNative, setHoverNative)}
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
+        }}>
+          {BTN(
+            generating ? "Wird erstellt…" : "Erkenntnis-Bild teilen",
+            generateShareImage, hoverImg, setHoverImg, { disabled: generating }
+          )}
+          {BTN("Erkenntnis teilen", nativeShare, hoverNative, setHoverNative)}
         </div>
       </div>
 
-      {/* Hidden share wrapper — deferred until 2.5s after result to avoid
-           blocking the reveal animation with a 1200×1600 layout. */}
+      {/* Hidden share card — deferred 2.5s to avoid blocking reveal animation */}
       {shareWrapperMounted && (
         <div style={{ position: "absolute", left: -9999, top: 0, pointerEvents: "none" }}>
           <ClarityShareWrapper result={result} wrapperRef={shareWrapperRef} />
@@ -260,8 +506,5 @@ function ResultSection({ result }) {
     </div>
   );
 }
-
-// ── ChatMessage — memoized to prevent re-rendering old messages ───────────────
-// Each message is stable once added; only the newest message ever changes.
 
 export default ResultSection;
