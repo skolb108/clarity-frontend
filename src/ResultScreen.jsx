@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
 /* ─────────────────────────────────────────────────────────────
-   Score constants — inlined so this file has zero shared.jsx deps.
+   Score constants — inlined, zero shared.jsx deps
 ───────────────────────────────────────────────────────────── */
 const SCORE_COLORS = {
   Clarity:   "#4F8CFF",
@@ -12,32 +12,87 @@ const SCORE_COLORS = {
 };
 const SCORE_ORDER = ["Clarity", "Energy", "Strength", "Direction", "Action"];
 
-// Raw score is 4–25 → convert to a 0–100% width (capped at 75% so bars
-// never feel "full" even at max, preserving the visual tension of the scale)
+// Raw score 4–25 → 0–75% display width
 const scorePct = (v) => Math.min(Math.round(v * 3), 75);
 
 /* ─────────────────────────────────────────────────────────────
-   Section label helper — uppercase muted eyebrow
+   Part 3 — Inline SVG icons, 13×13, no external library.
+   Each uses a thin 2px stroke consistent with the design system.
 ───────────────────────────────────────────────────────────── */
-const SectionLabel = ({ children }) => (
+const IconInsight = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+const IconShield = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+const IconLightning = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+const IconCompass = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <circle cx="12" cy="12" r="10" />
+    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+  </svg>
+);
+const IconRocket = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+  </svg>
+);
+
+/* ─────────────────────────────────────────────────────────────
+   SectionLabel — uppercase eyebrow with optional leading icon.
+   When `color` is passed the label renders in that accent color
+   (used for the action/focus left-border sections).
+───────────────────────────────────────────────────────────── */
+const SectionLabel = ({ children, icon, color }) => (
   <div style={{
+    display: "flex", alignItems: "center", gap: 6,
     fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase",
-    color: "#000", opacity: 0.35, fontWeight: 600, marginBottom: 10,
+    color: color || "#000",
+    opacity: color ? 1 : 0.35,
+    fontWeight: 600, marginBottom: 12,
   }}>
+    {icon}
     {children}
   </div>
 );
 
 /* ─────────────────────────────────────────────────────────────
-   ScoreBar — one labeled horizontal progress bar
+   Part 2 — ScoreBar with proper 0 → target animation.
+
+   The key insight: `animated` must be false at mount so the bar
+   renders at width 0. When `animated` flips to true (200ms after
+   the scores section becomes visible), React updates the `width`
+   style from "0%" to the target percentage. The CSS `transition`
+   on that property then fires the 800ms ease-out animation.
+
+   If we just render at the target width immediately and add a
+   transition, nothing animates — there is no prior value to
+   transition FROM. The false → true flag flip is essential.
 ───────────────────────────────────────────────────────────── */
-function ScoreBar({ name, value }) {
-  const pct   = scorePct(value);
+function ScoreBar({ name, value, animated }) {
+  const pct   = animated ? scorePct(value) : 0;
   const color = SCORE_COLORS[name] || "#4F8CFF";
 
   return (
     <div style={{ marginBottom: 16 }}>
-      {/* Label + raw value */}
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "baseline",
         marginBottom: 6,
@@ -45,23 +100,22 @@ function ScoreBar({ name, value }) {
         <div style={{ fontSize: 13, color: "#000", opacity: 0.65, letterSpacing: "0.04em" }}>
           {name}
         </div>
-        <div style={{ fontSize: 12, color: color, fontWeight: 600, opacity: 0.85 }}>
+        <div style={{ fontSize: 12, color, fontWeight: 600, opacity: 0.85 }}>
           {value}
         </div>
       </div>
-      {/* Track */}
       <div style={{
         height: 4, borderRadius: 2,
         background: "rgba(0,0,0,0.07)",
         overflow: "hidden",
       }}>
-        {/* Fill — width animated via inline transition */}
         <div style={{
           height: "100%",
-          width:  `${pct}%`,
+          width: `${pct}%`,
           borderRadius: 2,
           background: color,
-          transition: "width 800ms cubic-bezier(0.4, 0, 0.2, 1)",
+          // ease-out: fast start, decelerates to a stop — feels like it "lands"
+          transition: "width 800ms cubic-bezier(0.0, 0.0, 0.2, 1)",
         }} />
       </div>
     </div>
@@ -69,7 +123,7 @@ function ScoreBar({ name, value }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   BulletList — renders an array of strings as clean bullet rows
+   BulletList — array of strings as clean dot-prefixed rows
 ───────────────────────────────────────────────────────────── */
 function BulletList({ items, accentColor = "#4F8CFF" }) {
   if (!items?.length) return null;
@@ -86,10 +140,7 @@ function BulletList({ items, accentColor = "#4F8CFF" }) {
             background: accentColor,
             marginTop: 8, flexShrink: 0,
           }} />
-          <span style={{
-            fontSize: 17, color: "#000", opacity: 0.78,
-            lineHeight: 1.6,
-          }}>
+          <span style={{ fontSize: 17, color: "#000", opacity: 0.78, lineHeight: 1.6 }}>
             {item}
           </span>
         </li>
@@ -99,18 +150,19 @@ function BulletList({ items, accentColor = "#4F8CFF" }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Shared section wrapper — handles fade-up animation per section
+   Section — fade-up wrapper for each content block.
+   invisible (opacity 0, shifted 18px down) until `visible` flips.
 ───────────────────────────────────────────────────────────── */
 function Section({ visible, children, style = {} }) {
   return (
     <div style={{
-      maxWidth:   600,
-      margin:     "0 auto",
-      padding:    "0 24px",
+      maxWidth:     600,
+      margin:       "0 auto",
+      padding:      "0 24px",
       marginBottom: 40,
-      opacity:    visible ? 1 : 0,
-      transform:  visible ? "none" : "translateY(16px)",
-      transition: "opacity 600ms ease, transform 600ms ease",
+      opacity:      visible ? 1 : 0,
+      transform:    visible ? "none" : "translateY(18px)",
+      transition:   "opacity 550ms ease, transform 550ms ease",
       ...style,
     }}>
       {children}
@@ -119,11 +171,12 @@ function Section({ visible, children, style = {} }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ClarityShareWrapper — static 1200×1600 off-screen share card
-   Rendered via html-to-image; never visible to the user.
+   ClarityShareWrapper — static 1200×1600 off-screen share card.
+   Captured by html-to-image; never directly visible to the user.
 ───────────────────────────────────────────────────────────── */
 function ClarityShareWrapper({ result, wrapperRef }) {
-  const scores = result.scores || {};
+  const scores     = result.scores       || {};
+  const identModes = result.identityModes || [];
 
   return (
     <div
@@ -139,12 +192,38 @@ function ClarityShareWrapper({ result, wrapperRef }) {
       {/* Wordmark */}
       <div style={{
         fontSize: 11, letterSpacing: "0.42em", textTransform: "uppercase",
-        color: "#000", opacity: 0.22, marginBottom: 60,
+        color: "#000", opacity: 0.22, marginBottom: 40,
       }}>
         clarity
       </div>
 
-      {/* Summary — the focal point */}
+      {/* Identity hero on share card */}
+      {identModes[0] && (
+        <div style={{ textAlign: "center", marginBottom: 60 }}>
+          <div style={{
+            fontSize: 11, letterSpacing: "0.30em", textTransform: "uppercase",
+            color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 14,
+          }}>
+            Dein Clarity Profil
+          </div>
+          <div style={{
+            fontSize: 54, fontWeight: 700, letterSpacing: "-0.025em",
+            color: "#000", lineHeight: 1.1, marginBottom: 12,
+          }}>
+            {identModes[0].type}
+          </div>
+          <div style={{ fontSize: 16, color: "#4F8CFF", fontWeight: 500 }}>
+            {identModes[0].confidence}% Übereinstimmung
+          </div>
+          {identModes[1] && (
+            <div style={{ marginTop: 10, fontSize: 14, color: "#000", opacity: 0.35 }}>
+              + {identModes[1].type} · {identModes[1].confidence}%
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Summary */}
       {result.summary && (
         <div style={{
           width: "100%", maxWidth: 780,
@@ -171,8 +250,6 @@ function ClarityShareWrapper({ result, wrapperRef }) {
       )}
 
       <div style={{ width: "100%", maxWidth: 780 }}>
-
-        {/* Pattern */}
         {result.pattern && (
           <div style={{ marginBottom: 52 }}>
             <div style={{
@@ -185,7 +262,6 @@ function ClarityShareWrapper({ result, wrapperRef }) {
           </div>
         )}
 
-        {/* Scores */}
         {SCORE_ORDER.some(k => scores[k] != null) && (
           <div style={{ marginBottom: 52 }}>
             <div style={{
@@ -194,10 +270,7 @@ function ClarityShareWrapper({ result, wrapperRef }) {
             }}>Scores</div>
             {SCORE_ORDER.map((k) => scores[k] != null && (
               <div key={k} style={{ marginBottom: 18 }}>
-                <div style={{
-                  display: "flex", justifyContent: "space-between",
-                  marginBottom: 8,
-                }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
                   <span style={{ fontSize: 15, color: "#000", opacity: 0.60 }}>{k}</span>
                   <span style={{ fontSize: 14, color: SCORE_COLORS[k], fontWeight: 600 }}>
                     {scores[k]}
@@ -214,24 +287,6 @@ function ClarityShareWrapper({ result, wrapperRef }) {
           </div>
         )}
 
-        {/* Identity modes */}
-        {result.identityModes?.length > 0 && (
-          <div style={{ marginBottom: 52 }}>
-            <div style={{
-              fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase",
-              color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 14,
-            }}>Identitätsmodus</div>
-            {result.identityModes.map((m, i) => (
-              <div key={i} style={{
-                fontSize: 20, color: "#000", opacity: 0.72, marginBottom: 8,
-              }}>
-                {m.type} — {m.confidence}%
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Next focus */}
         {result.nextFocus && (
           <div style={{ borderLeft: "3px solid #3DDC97", paddingLeft: 28, marginBottom: 52 }}>
             <div style={{
@@ -245,7 +300,6 @@ function ClarityShareWrapper({ result, wrapperRef }) {
         )}
       </div>
 
-      {/* Footer */}
       <div style={{
         fontSize: 11, letterSpacing: "0.38em", textTransform: "uppercase",
         color: "#000", opacity: 0.16, marginTop: 60,
@@ -258,58 +312,70 @@ function ClarityShareWrapper({ result, wrapperRef }) {
 
 /* ─────────────────────────────────────────────────────────────
    ResultSection — main component
+
+   Part 1 — Staged reveal timeline:
+     0ms    outer wrapper fades in
+     80ms   header eyebrow + accent line
+     160ms  identity hero (Part 4) — appears before summary
+     400ms  section 0: summary card        ← emotional peak 1
+     700ms  section 1: pattern
+     1000ms section 2: strengths
+     1300ms section 3: energySources
+     1600ms section 4: nextFocus
+     1900ms section 5: suggestedAction     ← emotional peak 2
+     2200ms section 6: scores (visible)
+     2400ms barsReady → bars animate 0→target (Part 2)
+     2500ms section 7: identity modes detail
 ───────────────────────────────────────────────────────────── */
-// 8 sections: summary · pattern · strengths · energySources ·
-//             nextFocus · suggestedAction · scores · identityModes
 const SECTION_COUNT = 8;
 
 function ResultSection({ result }) {
-  const [vis,          setVis]          = useState(false);
-  const [headerVis,    setHeaderVis]    = useState(false);
-  const [sectionVis,   setSectionVis]   = useState(() => Array(SECTION_COUNT).fill(false));
+  const [vis,           setVis]           = useState(false);
+  const [headerVis,     setHeaderVis]     = useState(false);
+  const [identHeroVis,  setIdentHeroVis]  = useState(false); // Part 4
+  const [sectionVis,    setSectionVis]    = useState(() => Array(SECTION_COUNT).fill(false));
+  const [barsReady,     setBarsReady]     = useState(false); // Part 2
   const [copiedSummary, setCopiedSummary] = useState(false);
-  const [hoverCopy,    setHoverCopy]    = useState(false);
-  const [hoverCta,     setHoverCta]     = useState(false);
-  const [generating,   setGenerating]   = useState(false);
-  const [shareConfirm, setShareConfirm] = useState(false);
-  const [hoverImg,     setHoverImg]     = useState(false);
-  const [hoverNative,  setHoverNative]  = useState(false);
+  const [hoverCopy,     setHoverCopy]     = useState(false);
+  const [hoverCta,      setHoverCta]      = useState(false);
+  const [generating,    setGenerating]    = useState(false);
+  const [shareConfirm,  setShareConfirm]  = useState(false);
+  const [hoverImg,      setHoverImg]      = useState(false);
+  const [hoverNative,   setHoverNative]   = useState(false);
   const [shareWrapperMounted, setShareWrapperMounted] = useState(false);
   const shareWrapperRef = useRef(null);
 
-  // ── Score bars need a separate "barsReady" flag so their CSS
-  // width transition fires after the section has become visible ──
-  const [barsReady, setBarsReady] = useState(false);
-
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
-    const timers = [];
+    const t = [];
 
-    timers.push(setTimeout(() => setVis(true),       0));
-    timers.push(setTimeout(() => setHeaderVis(true), 80));
+    t.push(setTimeout(() => setVis(true),           0));
+    t.push(setTimeout(() => setHeaderVis(true),    80));
+    t.push(setTimeout(() => setIdentHeroVis(true), 160));
 
-    // Stagger each section 160ms apart starting at 300ms
+    // Part 1 — 300ms gaps between sections
+    const BASE = 400, GAP = 300;
     for (let i = 0; i < SECTION_COUNT; i++) {
-      const delay = 300 + i * 160;
-      timers.push(setTimeout(() => {
-        setSectionVis((prev) => {
+      t.push(setTimeout(() => {
+        setSectionVis(prev => {
           const next = [...prev];
           next[i] = true;
           return next;
         });
-      }, delay));
+      }, BASE + i * GAP));
     }
 
-    // Let score bars animate in after their section is visible
-    timers.push(setTimeout(() => setBarsReady(true), 300 + 6 * 160 + 200));
+    // Part 2 — scores section (i=6) visible at BASE + 6*GAP = 2200ms.
+    // barsReady fires 200ms later so the Section fade-up finishes before
+    // the bar widths start moving — the two transitions don't overlap.
+    t.push(setTimeout(() => setBarsReady(true), 2200 + 200));
 
-    // Defer heavy share DOM node
-    timers.push(setTimeout(() => setShareWrapperMounted(true), 2500));
+    // Defer the heavy 1200×1600 share DOM node well past all animations
+    t.push(setTimeout(() => setShareWrapperMounted(true), 4500));
 
-    return () => timers.forEach(clearTimeout);
+    return () => t.forEach(clearTimeout);
   }, []);
 
-  // ── Copy summary to clipboard ─────────────────────────────────────────────
   const copyInsight = async () => {
     try {
       await navigator.clipboard.writeText(result.summary || "");
@@ -318,7 +384,6 @@ function ResultSection({ result }) {
     } catch (_) {}
   };
 
-  // ── Generate and share / download PNG ────────────────────────────────────
   const generateShareImage = async () => {
     if (generating) return;
     setGenerating(true);
@@ -341,7 +406,7 @@ function ResultSection({ result }) {
             setGenerating(false);
             return;
           }
-        } catch (_) { /* fall through */ }
+        } catch (_) { /* fall through to download */ }
       }
       const a = document.createElement("a");
       a.download = "clarity-profil.png";
@@ -356,7 +421,6 @@ function ResultSection({ result }) {
     }
   };
 
-  // ── Native share — shares summary text ───────────────────────────────────
   const nativeShare = async () => {
     if (navigator.share) {
       try {
@@ -391,8 +455,8 @@ function ResultSection({ result }) {
     </button>
   );
 
-  const scores      = result.scores      || {};
-  const identModes  = result.identityModes || [];
+  const scores     = result.scores       || {};
+  const identModes = result.identityModes || [];
 
   return (
     <div style={{
@@ -405,7 +469,7 @@ function ResultSection({ result }) {
 
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <div style={{
-        maxWidth: 600, margin: "0 auto", padding: "64px 24px 52px",
+        maxWidth: 600, margin: "0 auto", padding: "64px 24px 40px",
         textAlign: "center",
         opacity:    headerVis ? 1 : 0,
         transform:  headerVis ? "none" : "translateY(12px)",
@@ -424,7 +488,61 @@ function ResultSection({ result }) {
         }} />
       </div>
 
-      {/* ── SECTION 1 — SUMMARY (highlighted) ────────────────────────────── */}
+      {/* ── PART 4 — IDENTITY HERO ────────────────────────────────────────── */}
+      {/* Displayed before the summary so the user sees WHO they are first,
+          before they read what that means. Primary mode is large and bold;
+          secondary mode appears as a quiet footnote underneath.             */}
+      {identModes.length > 0 && (
+        <div style={{
+          maxWidth: 600, margin: "0 auto", padding: "0 24px",
+          marginBottom: 44,
+          textAlign: "center",
+          opacity:    identHeroVis ? 1 : 0,
+          transform:  identHeroVis ? "none" : "translateY(14px)",
+          transition: "opacity 700ms ease, transform 700ms ease",
+        }}>
+          <div style={{
+            fontSize: 10, letterSpacing: "0.32em", textTransform: "uppercase",
+            color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 10,
+          }}>
+            Dein Clarity Profil
+          </div>
+
+          {/* Primary mode — large, bold, full weight */}
+          <div style={{
+            fontSize: 38, fontWeight: 700, letterSpacing: "-0.025em",
+            color: "#000", lineHeight: 1.1, marginBottom: 10,
+          }}>
+            {identModes[0].type}
+          </div>
+
+          {/* Confidence dot + percentage */}
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            fontSize: 13, color: "#4F8CFF", fontWeight: 500,
+            letterSpacing: "0.03em",
+          }}>
+            <div style={{
+              width: 5, height: 5, borderRadius: "50%",
+              background: "#4F8CFF", opacity: 0.65,
+            }} />
+            {identModes[0].confidence}% Übereinstimmung
+          </div>
+
+          {/* Secondary mode — muted, smaller */}
+          {identModes[1] && (
+            <div style={{
+              marginTop: 12,
+              fontSize: 13, color: "#000", opacity: 0.35,
+              letterSpacing: "0.05em",
+            }}>
+              + {identModes[1].type} · {identModes[1].confidence}%
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── SECTION 0 — SUMMARY ───────────────────────────────────────────── */}
       <Section visible={sectionVis[0]}>
         <div style={{
           background:   "linear-gradient(135deg, rgba(79,140,255,0.07) 0%, rgba(156,107,255,0.06) 100%)",
@@ -453,45 +571,46 @@ function ResultSection({ result }) {
         </div>
       </Section>
 
-      {/* ── SECTION 2 — PATTERN ──────────────────────────────────────────── */}
+      {/* ── SECTION 1 — PATTERN ──────────────────────────────────────────── */}
       {result.pattern && (
         <Section visible={sectionVis[1]}>
-          <SectionLabel>Das verborgene Muster</SectionLabel>
+          {/* Part 3: insight icon */}
+          <SectionLabel icon={<IconInsight />}>Das verborgene Muster</SectionLabel>
           <div style={{ fontSize: 18, fontWeight: 400, color: "#000", lineHeight: 1.65, opacity: 0.78 }}>
             {result.pattern}
           </div>
         </Section>
       )}
 
-      {/* ── SECTION 3 — STRENGTHS ────────────────────────────────────────── */}
+      {/* ── SECTION 2 — STRENGTHS ────────────────────────────────────────── */}
       {result.strengths?.length > 0 && (
         <Section visible={sectionVis[2]}>
-          <SectionLabel>Deine Stärken</SectionLabel>
+          {/* Part 3: shield icon */}
+          <SectionLabel icon={<IconShield />}>Deine Stärken</SectionLabel>
           <BulletList items={result.strengths} accentColor="#9C6BFF" />
         </Section>
       )}
 
-      {/* ── SECTION 4 — ENERGY SOURCES ───────────────────────────────────── */}
+      {/* ── SECTION 3 — ENERGY SOURCES ───────────────────────────────────── */}
       {result.energySources?.length > 0 && (
         <Section visible={sectionVis[3]}>
-          <SectionLabel>Deine Energiequellen</SectionLabel>
+          {/* Part 3: lightning icon */}
+          <SectionLabel icon={<IconLightning />}>Deine Energiequellen</SectionLabel>
           <BulletList items={result.energySources} accentColor="#FF8A4F" />
         </Section>
       )}
 
-      {/* ── SECTION 5 — NEXT FOCUS (action variant) ──────────────────────── */}
+      {/* ── SECTION 4 — NEXT FOCUS ───────────────────────────────────────── */}
       {result.nextFocus && (
         <Section visible={sectionVis[4]}>
           <div style={{
             borderLeft: "3px solid #3DDC97",
             paddingLeft: 20, paddingTop: 4, paddingBottom: 4,
           }}>
-            <div style={{
-              fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase",
-              color: "#3DDC97", fontWeight: 600, marginBottom: 10,
-            }}>
+            {/* Part 3: compass icon in accent color */}
+            <SectionLabel icon={<IconCompass />} color="#3DDC97">
               Dein nächster Fokus
-            </div>
+            </SectionLabel>
             <div style={{ fontSize: 18, fontWeight: 400, color: "#000", lineHeight: 1.6, opacity: 0.85 }}>
               {result.nextFocus}
             </div>
@@ -499,19 +618,17 @@ function ResultSection({ result }) {
         </Section>
       )}
 
-      {/* ── SECTION 6 — SUGGESTED ACTION ─────────────────────────────────── */}
+      {/* ── SECTION 5 — SUGGESTED ACTION ─────────────────────────────────── */}
       {result.suggestedAction && (
         <Section visible={sectionVis[5]}>
           <div style={{
             borderLeft: "3px solid #4F8CFF",
             paddingLeft: 20, paddingTop: 4, paddingBottom: 4,
           }}>
-            <div style={{
-              fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase",
-              color: "#4F8CFF", fontWeight: 600, marginBottom: 10,
-            }}>
+            {/* Part 3: rocket icon in accent color */}
+            <SectionLabel icon={<IconRocket />} color="#4F8CFF">
               Empfohlene Aktion
-            </div>
+            </SectionLabel>
             <div style={{ fontSize: 18, fontWeight: 400, color: "#000", lineHeight: 1.6, opacity: 0.85 }}>
               {result.suggestedAction}
             </div>
@@ -519,20 +636,16 @@ function ResultSection({ result }) {
         </Section>
       )}
 
-      {/* ── SECTION 7 — SCORES ───────────────────────────────────────────── */}
+      {/* ── SECTION 6 — SCORES ───────────────────────────────────────────── */}
+      {/* Part 2: `animated={barsReady}` controls 0 → target width transition. */}
       {SCORE_ORDER.some(k => scores[k] != null) && (
         <Section visible={sectionVis[6]}>
           <SectionLabel>Deine Scores</SectionLabel>
-          {/* Score bars only animate their width once barsReady is true,
-              which fires 200ms after this section becomes visible. */}
-          <div style={{ opacity: barsReady ? 1 : 0, transition: "opacity 200ms ease" }}>
-            {SCORE_ORDER.map((key) =>
-              scores[key] != null ? (
-                <ScoreBar key={key} name={key} value={barsReady ? scores[key] : 0} />
-              ) : null
-            )}
-          </div>
-          {/* Confidence badge */}
+          {SCORE_ORDER.map((key) =>
+            scores[key] != null ? (
+              <ScoreBar key={key} name={key} value={scores[key]} animated={barsReady} />
+            ) : null
+          )}
           {result.confidence != null && (
             <div style={{
               marginTop: 20,
@@ -549,41 +662,46 @@ function ResultSection({ result }) {
         </Section>
       )}
 
-      {/* ── SECTION 8 — IDENTITY MODES ───────────────────────────────────── */}
+      {/* ── SECTION 7 — IDENTITY MODES (detail) ─────────────────────────── */}
+      {/* Hero (Part 4) shows the primary mode large above the fold.
+          This section shows all modes with mini bars for completeness.
+          Primary mode renders slightly larger and heavier than secondary. */}
       {identModes.length > 0 && (
         <Section visible={sectionVis[7]}>
           <SectionLabel>Identitätsmodus</SectionLabel>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {identModes.map((m, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                {/* Mode bar */}
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    display: "flex", justifyContent: "space-between",
-                    marginBottom: 5,
+              <div key={i}>
+                <div style={{
+                  display: "flex", justifyContent: "space-between", marginBottom: 5,
+                }}>
+                  <span style={{
+                    fontSize: i === 0 ? 15 : 14,
+                    color: "#000",
+                    opacity: i === 0 ? 0.80 : 0.52,
+                    fontWeight: i === 0 ? 500 : 400,
                   }}>
-                    <span style={{ fontSize: 15, color: "#000", opacity: 0.75 }}>
-                      {m.type}
-                    </span>
-                    <span style={{
-                      fontSize: 13, fontWeight: 600,
-                      color: i === 0 ? "#4F8CFF" : "#9C6BFF",
-                    }}>
-                      {m.confidence}%
-                    </span>
-                  </div>
-                  <div style={{
-                    height: 3, borderRadius: 2,
-                    background: "rgba(0,0,0,0.07)", overflow: "hidden",
+                    {m.type}
+                  </span>
+                  <span style={{
+                    fontSize: 13, fontWeight: 600,
+                    color: i === 0 ? "#4F8CFF" : "#9C6BFF",
+                    opacity: i === 0 ? 1 : 0.70,
                   }}>
-                    <div style={{
-                      height: "100%",
-                      width: barsReady ? `${m.confidence}%` : "0%",
-                      borderRadius: 2,
-                      background: i === 0 ? "#4F8CFF" : "#9C6BFF",
-                      transition: "width 800ms cubic-bezier(0.4, 0, 0.2, 1)",
-                    }} />
-                  </div>
+                    {m.confidence}%
+                  </span>
+                </div>
+                <div style={{
+                  height: i === 0 ? 3 : 2, borderRadius: 2,
+                  background: "rgba(0,0,0,0.07)", overflow: "hidden",
+                }}>
+                  <div style={{
+                    height: "100%",
+                    width: barsReady ? `${m.confidence}%` : "0%",
+                    borderRadius: 2,
+                    background: i === 0 ? "#4F8CFF" : "#9C6BFF",
+                    transition: "width 800ms cubic-bezier(0.0, 0.0, 0.2, 1)",
+                  }} />
                 </div>
               </div>
             ))}
@@ -698,7 +816,7 @@ function ResultSection({ result }) {
         </div>
       </div>
 
-      {/* Hidden share card — deferred 2.5s to avoid blocking reveal animation */}
+      {/* Hidden share card — deferred 4.5s to avoid competing with animations */}
       {shareWrapperMounted && (
         <div style={{ position: "absolute", left: -9999, top: 0, pointerEvents: "none" }}>
           <ClarityShareWrapper result={result} wrapperRef={shareWrapperRef} />
