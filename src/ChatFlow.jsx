@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback, memo, lazy, Suspense } from "react";
-
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://clarity-backend-production-108.up.railway.app";
+  
 // ResultSection is lazy — loaded only after analysis completes (phase → "result").
 // During the entire chat conversation this chunk is never downloaded.
 const ResultSection = lazy(() => import("./ResultScreen.jsx"));
@@ -567,9 +570,6 @@ function Clarity() {
       const controller = new AbortController();
       const timer = setTimeout(() => { controller.abort(); reject(new Error("stream timeout")); }, 30_000);
 
-const API_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://clarity-backend-production-108.up.railway.app";
 
 fetch(`${API_URL}/api/chat/stream`, {
   method: "POST",
