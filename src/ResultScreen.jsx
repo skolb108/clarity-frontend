@@ -374,7 +374,8 @@ function ResultSection({ result }) {
   const [hoverCta,      setHoverCta]      = useState(false);
   const [generating,    setGenerating]    = useState(false);
   const [shareConfirm,  setShareConfirm]  = useState(false);
-  const [copiedLink,    setCopiedLink]    = useState(false); // "Profil-Link kopiert" toast
+  const [shareUrl,      setShareUrl]      = useState(null);  // revealed share URL box
+  const [copiedLink,    setCopiedLink]    = useState(false); // copy-link button feedback
   const [hoverImg,      setHoverImg]      = useState(false);
   const [hoverNative,   setHoverNative]   = useState(false);
   const [shareWrapperMounted, setShareWrapperMounted] = useState(false);
@@ -459,24 +460,21 @@ function ResultSection({ result }) {
     // Build the public profile URL by Base64-encoding the full result object.
     // PublicProfile.jsx decodes this with: JSON.parse(atob(slug))
     const encoded  = btoa(JSON.stringify(result));
-    const shareUrl = "https://cla-ri-ty.netlify.app/p/" + encoded;
+    const url      = "https://cla-ri-ty.netlify.app/p/" + encoded;
 
+    // Always reveal the URL box so the user can see and copy the link
+    setShareUrl(url);
+
+    // Also trigger the native share dialog when available (mobile).
+    // This is non-blocking — the box stays visible regardless of outcome.
     if (navigator.share) {
       try {
         await navigator.share({
           title: "Mein Clarity Profil",
           text:  "Mein Clarity Profil",
-          url:   shareUrl,
+          url,
         });
-      } catch (_) { /* user cancelled — do nothing */ }
-    } else {
-      // navigator.share unavailable (desktop, non-HTTPS, etc.)
-      // Fall back to copying the link to the clipboard.
-      try {
-        await navigator.clipboard.writeText(shareUrl);
-        setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2500);
-      } catch (_) {}
+      } catch (_) { /* user cancelled — URL box still visible */ }
     }
   };
 
@@ -883,19 +881,74 @@ function ResultSection({ result }) {
           </div>
         )}
 
-        {copiedLink && (
+        {/* ── SHARE URL BOX ─────────────────────────────────────────────────
+             Revealed when the user clicks "Profil teilen". Shows the full
+             public URL and a copy button. Stays visible until the user
+             navigates away — no auto-dismiss, so they can copy at their pace.
+           ─────────────────────────────────────────────────────────────────── */}
+        {shareUrl && (
           <div style={{
             maxWidth: 340, width: "100%",
-            background: "linear-gradient(135deg, rgba(79,140,255,0.10), rgba(156,107,255,0.07))",
-            border: "1px solid rgba(79,140,255,0.24)",
-            borderRadius: 12, padding: "14px 18px", marginBottom: 16, textAlign: "left",
+            background: "linear-gradient(135deg, rgba(79,140,255,0.06) 0%, rgba(156,107,255,0.04) 100%)",
+            border: "1px solid rgba(79,140,255,0.20)",
+            borderRadius: 12, padding: "14px 16px", marginBottom: 16, textAlign: "left",
           }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#000", marginBottom: 3 }}>
-              Profil-Link kopiert.
+            {/* Eyebrow label */}
+            <div style={{
+              fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase",
+              color: "#4F8CFF", fontWeight: 600, marginBottom: 8, opacity: 0.80,
+            }}>
+              Dein Profil-Link
             </div>
-            <div style={{ fontSize: 14, color: "#000", opacity: 0.50, lineHeight: 1.6 }}>
-              Füge den Link ein, um dein Profil zu teilen.
+
+            {/* URL display — monospace, truncated with ellipsis on narrow screens */}
+            <div style={{
+              fontSize: 12, color: "#000", opacity: 0.55,
+              fontFamily: "ui-monospace, 'SF Mono', monospace",
+              lineHeight: 1.5, wordBreak: "break-all",
+              marginBottom: 12,
+            }}>
+              {shareUrl}
             </div>
+
+            {/* Copy button */}
+            <button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(shareUrl);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                } catch (_) {}
+              }}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 6,
+                fontSize: 12, letterSpacing: "0.10em",
+                color: copiedLink ? "#3DDC97" : "#4F8CFF",
+                background: "transparent", border: "none",
+                padding: 0, cursor: "pointer",
+                fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+                fontWeight: 600, transition: "color 200ms",
+              }}
+            >
+              {copiedLink ? (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  Kopiert
+                </>
+              ) : (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  Link kopieren
+                </>
+              )}
+            </button>
           </div>
         )}
 
