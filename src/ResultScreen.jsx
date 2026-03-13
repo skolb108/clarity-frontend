@@ -15,6 +15,9 @@ const SCORE_ORDER = ["Clarity", "Energy", "Strength", "Direction", "Action"];
 // Raw score 4–25 → 0–75% display width
 const scorePct = (v) => Math.min(Math.round(v * 3), 75);
 
+// Fallback identity mode — shown when the backend returns identityModes: []
+const IDENTITY_FALLBACK = { type: "Explorer", confidence: 60 };
+
 /* ─────────────────────────────────────────────────────────────
    Part 3 — Inline SVG icons, 13×13, no external library.
    Each uses a thin 2px stroke consistent with the design system.
@@ -105,14 +108,14 @@ function ScoreBar({ name, value, animated }) {
         </div>
       </div>
       <div style={{
-        height: 4, borderRadius: 2,
+        height: 6, borderRadius: 3,
         background: "rgba(0,0,0,0.07)",
         overflow: "hidden",
       }}>
         <div style={{
           height: "100%",
           width: `${pct}%`,
-          borderRadius: 2,
+          borderRadius: 3,
           background: color,
           // ease-out: fast start, decelerates to a stop — feels like it "lands"
           transition: "width 800ms cubic-bezier(0.0, 0.0, 0.2, 1)",
@@ -176,7 +179,8 @@ function Section({ visible, children, style = {} }) {
 ───────────────────────────────────────────────────────────── */
 function ClarityShareWrapper({ result, wrapperRef }) {
   const scores     = result.scores       || {};
-  const identModes = result.identityModes || [];
+  const rawIdent   = result.identityModes || [];
+  const identModes = rawIdent.length > 0 ? rawIdent : [IDENTITY_FALLBACK];
 
   return (
     <div
@@ -197,31 +201,29 @@ function ClarityShareWrapper({ result, wrapperRef }) {
         clarity
       </div>
 
-      {/* Identity hero on share card */}
-      {identModes[0] && (
-        <div style={{ textAlign: "center", marginBottom: 60 }}>
-          <div style={{
-            fontSize: 11, letterSpacing: "0.30em", textTransform: "uppercase",
-            color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 14,
-          }}>
-            Dein Clarity Profil
-          </div>
-          <div style={{
-            fontSize: 54, fontWeight: 700, letterSpacing: "-0.025em",
-            color: "#000", lineHeight: 1.1, marginBottom: 12,
-          }}>
-            {identModes[0].type}
-          </div>
-          <div style={{ fontSize: 16, color: "#4F8CFF", fontWeight: 500 }}>
-            {identModes[0].confidence}% Übereinstimmung
-          </div>
-          {identModes[1] && (
-            <div style={{ marginTop: 10, fontSize: 14, color: "#000", opacity: 0.35 }}>
-              + {identModes[1].type} · {identModes[1].confidence}%
-            </div>
-          )}
+      {/* Identity hero — always rendered thanks to fallback */}
+      <div style={{ textAlign: "center", marginBottom: 60 }}>
+        <div style={{
+          fontSize: 11, letterSpacing: "0.30em", textTransform: "uppercase",
+          color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 14,
+        }}>
+          Dein Clarity Profil
         </div>
-      )}
+        <div style={{
+          fontSize: 54, fontWeight: 700, letterSpacing: "-0.025em",
+          color: "#000", lineHeight: 1.1, marginBottom: 12,
+        }}>
+          {identModes[0].type}
+        </div>
+        <div style={{ fontSize: 16, color: "#4F8CFF", fontWeight: 500 }}>
+          {identModes[0].confidence}% Übereinstimmung
+        </div>
+        {identModes[1] && (
+          <div style={{ marginTop: 10, fontSize: 14, color: "#000", opacity: 0.35 }}>
+            + {identModes[1].type} · {identModes[1].confidence}%
+          </div>
+        )}
+      </div>
 
       {/* Summary */}
       {result.summary && (
@@ -455,8 +457,10 @@ function ResultSection({ result }) {
     </button>
   );
 
-  const scores     = result.scores       || {};
-  const identModes = result.identityModes || [];
+  const scores              = result.scores        || {};
+  // Always guarantee at least one identity mode — use fallback when backend returns []
+  const rawIdentModes       = result.identityModes  || [];
+  const effectiveIdentModes = rawIdentModes.length > 0 ? rawIdentModes : [IDENTITY_FALLBACK];
 
   return (
     <div style={{
@@ -489,58 +493,56 @@ function ResultSection({ result }) {
       </div>
 
       {/* ── PART 4 — IDENTITY HERO ────────────────────────────────────────── */}
-      {/* Displayed before the summary so the user sees WHO they are first,
-          before they read what that means. Primary mode is large and bold;
-          secondary mode appears as a quiet footnote underneath.             */}
-      {identModes.length > 0 && (
+      {/* Always rendered — effectiveIdentModes guarantees at least one entry.
+          Displayed before the summary so the user sees WHO they are first.
+          Primary mode is large and bold; secondary is a quiet footnote.      */}
+      <div style={{
+        maxWidth: 600, margin: "0 auto", padding: "0 24px",
+        marginBottom: 44,
+        textAlign: "center",
+        opacity:    identHeroVis ? 1 : 0,
+        transform:  identHeroVis ? "none" : "translateY(14px)",
+        transition: "opacity 700ms ease, transform 700ms ease",
+      }}>
         <div style={{
-          maxWidth: 600, margin: "0 auto", padding: "0 24px",
-          marginBottom: 44,
-          textAlign: "center",
-          opacity:    identHeroVis ? 1 : 0,
-          transform:  identHeroVis ? "none" : "translateY(14px)",
-          transition: "opacity 700ms ease, transform 700ms ease",
+          fontSize: 10, letterSpacing: "0.32em", textTransform: "uppercase",
+          color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 10,
+        }}>
+          Dein Clarity Profil
+        </div>
+
+        {/* Primary mode — 52px bold, high visual impact */}
+        <div style={{
+          fontSize: 52, fontWeight: 700, letterSpacing: "-0.025em",
+          color: "#000", lineHeight: 1.1, marginBottom: 12,
+        }}>
+          {effectiveIdentModes[0].type}
+        </div>
+
+        {/* Confidence dot + percentage */}
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          fontSize: 15, color: "#4F8CFF", fontWeight: 500,
+          letterSpacing: "0.03em",
         }}>
           <div style={{
-            fontSize: 10, letterSpacing: "0.32em", textTransform: "uppercase",
-            color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 10,
-          }}>
-            Dein Clarity Profil
-          </div>
-
-          {/* Primary mode — large, bold, full weight */}
-          <div style={{
-            fontSize: 38, fontWeight: 700, letterSpacing: "-0.025em",
-            color: "#000", lineHeight: 1.1, marginBottom: 10,
-          }}>
-            {identModes[0].type}
-          </div>
-
-          {/* Confidence dot + percentage */}
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            fontSize: 13, color: "#4F8CFF", fontWeight: 500,
-            letterSpacing: "0.03em",
-          }}>
-            <div style={{
-              width: 5, height: 5, borderRadius: "50%",
-              background: "#4F8CFF", opacity: 0.65,
-            }} />
-            {identModes[0].confidence}% Übereinstimmung
-          </div>
-
-          {/* Secondary mode — muted, smaller */}
-          {identModes[1] && (
-            <div style={{
-              marginTop: 12,
-              fontSize: 13, color: "#000", opacity: 0.35,
-              letterSpacing: "0.05em",
-            }}>
-              + {identModes[1].type} · {identModes[1].confidence}%
-            </div>
-          )}
+            width: 5, height: 5, borderRadius: "50%",
+            background: "#4F8CFF", opacity: 0.65,
+          }} />
+          {effectiveIdentModes[0].confidence}% Übereinstimmung
         </div>
-      )}
+
+        {/* Secondary mode — muted footnote, only if present */}
+        {effectiveIdentModes[1] && (
+          <div style={{
+            marginTop: 12,
+            fontSize: 13, color: "#000", opacity: 0.35,
+            letterSpacing: "0.05em",
+          }}>
+            + {effectiveIdentModes[1].type} · {effectiveIdentModes[1].confidence}%
+          </div>
+        )}
+      </div>
 
       {/* ── SECTION 0 — SUMMARY ───────────────────────────────────────────── */}
       <Section visible={sectionVis[0]}>
@@ -663,51 +665,49 @@ function ResultSection({ result }) {
       )}
 
       {/* ── SECTION 7 — IDENTITY MODES (detail) ─────────────────────────── */}
-      {/* Hero (Part 4) shows the primary mode large above the fold.
+      {/* Hero shows the primary mode large above the fold.
           This section shows all modes with mini bars for completeness.
-          Primary mode renders slightly larger and heavier than secondary. */}
-      {identModes.length > 0 && (
-        <Section visible={sectionVis[7]}>
-          <SectionLabel>Identitätsmodus</SectionLabel>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {identModes.map((m, i) => (
-              <div key={i}>
-                <div style={{
-                  display: "flex", justifyContent: "space-between", marginBottom: 5,
+          Uses effectiveIdentModes so it always renders (with fallback).      */}
+      <Section visible={sectionVis[7]}>
+        <SectionLabel>Identitätsmodus</SectionLabel>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {effectiveIdentModes.map((m, i) => (
+            <div key={i}>
+              <div style={{
+                display: "flex", justifyContent: "space-between", marginBottom: 5,
+              }}>
+                <span style={{
+                  fontSize: i === 0 ? 15 : 14,
+                  color: "#000",
+                  opacity: i === 0 ? 0.80 : 0.52,
+                  fontWeight: i === 0 ? 500 : 400,
                 }}>
-                  <span style={{
-                    fontSize: i === 0 ? 15 : 14,
-                    color: "#000",
-                    opacity: i === 0 ? 0.80 : 0.52,
-                    fontWeight: i === 0 ? 500 : 400,
-                  }}>
-                    {m.type}
-                  </span>
-                  <span style={{
-                    fontSize: 13, fontWeight: 600,
-                    color: i === 0 ? "#4F8CFF" : "#9C6BFF",
-                    opacity: i === 0 ? 1 : 0.70,
-                  }}>
-                    {m.confidence}%
-                  </span>
-                </div>
-                <div style={{
-                  height: i === 0 ? 3 : 2, borderRadius: 2,
-                  background: "rgba(0,0,0,0.07)", overflow: "hidden",
+                  {m.type}
+                </span>
+                <span style={{
+                  fontSize: 13, fontWeight: 600,
+                  color: i === 0 ? "#4F8CFF" : "#9C6BFF",
+                  opacity: i === 0 ? 1 : 0.70,
                 }}>
-                  <div style={{
-                    height: "100%",
-                    width: barsReady ? `${m.confidence}%` : "0%",
-                    borderRadius: 2,
-                    background: i === 0 ? "#4F8CFF" : "#9C6BFF",
-                    transition: "width 800ms cubic-bezier(0.0, 0.0, 0.2, 1)",
-                  }} />
-                </div>
+                  {m.confidence}%
+                </span>
               </div>
-            ))}
-          </div>
-        </Section>
-      )}
+              <div style={{
+                height: i === 0 ? 3 : 2, borderRadius: 2,
+                background: "rgba(0,0,0,0.07)", overflow: "hidden",
+              }}>
+                <div style={{
+                  height: "100%",
+                  width: barsReady ? `${m.confidence}%` : "0%",
+                  borderRadius: 2,
+                  background: i === 0 ? "#4F8CFF" : "#9C6BFF",
+                  transition: "width 800ms cubic-bezier(0.0, 0.0, 0.2, 1)",
+                }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
 
       {/* ── COPY SUMMARY BUTTON ───────────────────────────────────────────── */}
       <div style={{
