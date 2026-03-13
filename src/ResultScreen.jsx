@@ -374,7 +374,7 @@ function ResultSection({ result }) {
   const [hoverCta,      setHoverCta]      = useState(false);
   const [generating,    setGenerating]    = useState(false);
   const [shareConfirm,  setShareConfirm]  = useState(false);
-  const [copiedLink,    setCopiedLink]    = useState(false); // "Profil-Link kopiert" toast
+  const [copiedLink,    setCopiedLink]    = useState(false); // "Link kopiert" toast
   const [hoverImg,      setHoverImg]      = useState(false);
   const [hoverNative,   setHoverNative]   = useState(false);
   const [shareWrapperMounted, setShareWrapperMounted] = useState(false);
@@ -462,20 +462,18 @@ function ResultSection({ result }) {
     const shareUrl = "https://cla-ri-ty.netlify.app/p/" + encoded;
 
     if (navigator.share) {
+      // Mobile: share ONLY the URL.
+      // title + text were causing some apps (e.g. Chrome on Android) to
+      // open a Google search for the text string instead of the URL.
       try {
-        await navigator.share({
-          title: "Mein Clarity Profil",
-          text:  "Mein Clarity Profil",
-          url:   shareUrl,
-        });
+        await navigator.share({ url: shareUrl });
       } catch (_) { /* user cancelled */ }
     } else {
-      // navigator.share unavailable (desktop / non-HTTPS).
-      // Copy silently — show a brief toast, never display the raw URL.
+      // Desktop: copy silently, show a brief "Link kopiert" toast.
       try {
         await navigator.clipboard.writeText(shareUrl);
         setCopiedLink(true);
-        setTimeout(() => setCopiedLink(false), 2500);
+        setTimeout(() => setCopiedLink(false), 2000);
       } catch (_) {}
     }
   };
@@ -883,7 +881,7 @@ function ResultSection({ result }) {
           </div>
         )}
 
-        {/* "Profil-Link kopiert" — shown only on desktop where navigator.share
+        {/* "Link kopiert" — shown only on desktop where navigator.share
             is unavailable. Confirms the clipboard write without exposing the URL. */}
         {copiedLink && (
           <div style={{
@@ -893,7 +891,7 @@ function ResultSection({ result }) {
             borderRadius: 12, padding: "14px 18px", marginBottom: 16, textAlign: "left",
           }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#000", marginBottom: 3 }}>
-              Profil-Link kopiert.
+              Link kopiert.
             </div>
             <div style={{ fontSize: 14, color: "#000", opacity: 0.50, lineHeight: 1.6 }}>
               Füge den Link ein, um dein Profil zu teilen.
