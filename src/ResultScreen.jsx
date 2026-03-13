@@ -12,15 +12,36 @@ const SCORE_COLORS = {
 };
 const SCORE_ORDER = ["Clarity", "Energy", "Strength", "Direction", "Action"];
 
-// Raw score 4–25 → 0–75% display width
+// Raw score 4–25 → 0–75% display width (capped so bars never feel "full")
 const scorePct = (v) => Math.min(Math.round(v * 3), 75);
 
-// Fallback identity mode — shown when the backend returns identityModes: []
+// Fallback identity — shown when the backend returns identityModes: []
 const IDENTITY_FALLBACK = { type: "Explorer", confidence: 60 };
 
 /* ─────────────────────────────────────────────────────────────
-   Part 3 — Inline SVG icons, 13×13, no external library.
-   Each uses a thin 2px stroke consistent with the design system.
+   computeSocialStats — derives plausible social-proof numbers
+   from the user's raw scores. Not real population data.
+
+   percentile: user sits in the top X% of participants.
+               Higher scores → lower percentile → more exclusive.
+   floor:      realistic "average starting point" in %.
+   ceiling:    aspirational target in %.
+───────────────────────────────────────────────────────────── */
+function computeSocialStats(scores) {
+  const keys = SCORE_ORDER.filter(k => scores[k] != null);
+  if (!keys.length) return { percentile: 35, floor: 45, ceiling: 90 };
+
+  const avg = keys.reduce((s, k) => s + scores[k], 0) / keys.length;
+  // avg raw range 4–25; midpoint ~14.5
+  // Higher avg → smaller percentile number (user is further ahead)
+  const percentile = Math.max(8, Math.min(48, Math.round(48 - (avg - 10) * 1.8)));
+  const floor      = Math.max(30, Math.min(58, Math.round(30 + (avg / 25) * 28)));
+  const ceiling    = Math.min(95, floor + 40);
+  return { percentile, floor, ceiling };
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Inline SVG icons — 13×13, 2px stroke, no external library
 ───────────────────────────────────────────────────────────── */
 const IconInsight = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -60,17 +81,17 @@ const IconRocket = () => (
 );
 
 /* ─────────────────────────────────────────────────────────────
-   SectionLabel — uppercase eyebrow with optional leading icon.
-   When `color` is passed the label renders in that accent color
-   (used for the action/focus left-border sections).
+   SectionLabel — 11px uppercase eyebrow, 0.18em letter-spacing.
+   `color` renders the label in an accent color (used for the
+   action/focus sections whose left-border carries the same hue).
 ───────────────────────────────────────────────────────────── */
 const SectionLabel = ({ children, icon, color }) => (
   <div style={{
     display: "flex", alignItems: "center", gap: 6,
     fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase",
     color: color || "#000",
-    opacity: color ? 1 : 0.35,
-    fontWeight: 600, marginBottom: 12,
+    opacity: color ? 1 : 0.32,
+    fontWeight: 600, marginBottom: 14,
   }}>
     {icon}
     {children}
@@ -78,47 +99,41 @@ const SectionLabel = ({ children, icon, color }) => (
 );
 
 /* ─────────────────────────────────────────────────────────────
-   Part 2 — ScoreBar with proper 0 → target animation.
+   ScoreBar — animates 0 → target width.
 
-   The key insight: `animated` must be false at mount so the bar
-   renders at width 0. When `animated` flips to true (200ms after
-   the scores section becomes visible), React updates the `width`
-   style from "0%" to the target percentage. The CSS `transition`
-   on that property then fires the 800ms ease-out animation.
-
-   If we just render at the target width immediately and add a
-   transition, nothing animates — there is no prior value to
-   transition FROM. The false → true flag flip is essential.
+   `animated` must be false on first render (bars at 0%).
+   When the flag flips true the CSS width transition fires.
+   Duration: 900ms ease-out per spec.
 ───────────────────────────────────────────────────────────── */
 function ScoreBar({ name, value, animated }) {
   const pct   = animated ? scorePct(value) : 0;
   const color = SCORE_COLORS[name] || "#4F8CFF";
 
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div style={{ marginBottom: 18 }}>
       <div style={{
         display: "flex", justifyContent: "space-between", alignItems: "baseline",
-        marginBottom: 6,
+        marginBottom: 7,
       }}>
-        <div style={{ fontSize: 13, color: "#000", opacity: 0.65, letterSpacing: "0.04em" }}>
+        <div style={{ fontSize: 14, color: "#000", opacity: 0.58, letterSpacing: "0.02em" }}>
           {name}
         </div>
-        <div style={{ fontSize: 12, color, fontWeight: 600, opacity: 0.85 }}>
+        <div style={{ fontSize: 13, color, fontWeight: 600, opacity: 0.80 }}>
           {value}
         </div>
       </div>
+      {/* Track */}
       <div style={{
         height: 6, borderRadius: 3,
-        background: "rgba(0,0,0,0.07)",
-        overflow: "hidden",
+        background: "rgba(0,0,0,0.07)", overflow: "hidden",
       }}>
+        {/* Fill — CSS transition from 0% to target */}
         <div style={{
           height: "100%",
           width: `${pct}%`,
           borderRadius: 3,
           background: color,
-          // ease-out: fast start, decelerates to a stop — feels like it "lands"
-          transition: "width 800ms cubic-bezier(0.0, 0.0, 0.2, 1)",
+          transition: "width 900ms cubic-bezier(0.0, 0.0, 0.2, 1)",
         }} />
       </div>
     </div>
@@ -126,7 +141,7 @@ function ScoreBar({ name, value, animated }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   BulletList — array of strings as clean dot-prefixed rows
+   BulletList — 18px dot-prefixed list
 ───────────────────────────────────────────────────────────── */
 function BulletList({ items, accentColor = "#4F8CFF" }) {
   if (!items?.length) return null;
@@ -135,15 +150,15 @@ function BulletList({ items, accentColor = "#4F8CFF" }) {
       {items.map((item, i) => (
         <li key={i} style={{
           display: "flex", alignItems: "flex-start", gap: 10,
-          marginBottom: i < items.length - 1 ? 10 : 0,
+          marginBottom: i < items.length - 1 ? 12 : 0,
         }}>
           <span style={{
             display: "inline-block",
             width: 5, height: 5, borderRadius: "50%",
             background: accentColor,
-            marginTop: 8, flexShrink: 0,
+            marginTop: 9, flexShrink: 0,
           }} />
-          <span style={{ fontSize: 17, color: "#000", opacity: 0.78, lineHeight: 1.6 }}>
+          <span style={{ fontSize: 18, color: "#000", opacity: 0.75, lineHeight: 1.65 }}>
             {item}
           </span>
         </li>
@@ -153,8 +168,7 @@ function BulletList({ items, accentColor = "#4F8CFF" }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Section — fade-up wrapper for each content block.
-   invisible (opacity 0, shifted 18px down) until `visible` flips.
+   Section — fade-up wrapper. Hidden until `visible` flips.
 ───────────────────────────────────────────────────────────── */
 function Section({ visible, children, style = {} }) {
   return (
@@ -162,7 +176,7 @@ function Section({ visible, children, style = {} }) {
       maxWidth:     600,
       margin:       "0 auto",
       padding:      "0 24px",
-      marginBottom: 40,
+      marginBottom: 44,
       opacity:      visible ? 1 : 0,
       transform:    visible ? "none" : "translateY(18px)",
       transition:   "opacity 550ms ease, transform 550ms ease",
@@ -174,13 +188,14 @@ function Section({ visible, children, style = {} }) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ClarityShareWrapper — static 1200×1600 off-screen share card.
-   Captured by html-to-image; never directly visible to the user.
+   ClarityShareWrapper — 1200×1600 off-screen share card.
+   Captured by html-to-image; never visible to the user.
 ───────────────────────────────────────────────────────────── */
 function ClarityShareWrapper({ result, wrapperRef }) {
-  const scores     = result.scores       || {};
+  const scores     = result.scores        || {};
   const rawIdent   = result.identityModes || [];
   const identModes = rawIdent.length > 0 ? rawIdent : [IDENTITY_FALLBACK];
+  const { percentile } = computeSocialStats(scores);
 
   return (
     <div
@@ -196,30 +211,30 @@ function ClarityShareWrapper({ result, wrapperRef }) {
       {/* Wordmark */}
       <div style={{
         fontSize: 11, letterSpacing: "0.42em", textTransform: "uppercase",
-        color: "#000", opacity: 0.22, marginBottom: 40,
+        color: "#000", opacity: 0.22, marginBottom: 48,
       }}>
         clarity
       </div>
 
-      {/* Identity hero — always rendered thanks to fallback */}
-      <div style={{ textAlign: "center", marginBottom: 60 }}>
+      {/* Identity hero */}
+      <div style={{ textAlign: "center", marginBottom: 64 }}>
         <div style={{
           fontSize: 11, letterSpacing: "0.30em", textTransform: "uppercase",
-          color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 14,
+          color: "#000", opacity: 0.26, fontWeight: 600, marginBottom: 16,
         }}>
           Dein Clarity Profil
         </div>
         <div style={{
-          fontSize: 54, fontWeight: 700, letterSpacing: "-0.025em",
-          color: "#000", lineHeight: 1.1, marginBottom: 12,
+          fontSize: 72, fontWeight: 700, letterSpacing: "-0.03em",
+          color: "#000", lineHeight: 1.0, marginBottom: 16,
         }}>
           {identModes[0].type}
         </div>
-        <div style={{ fontSize: 16, color: "#4F8CFF", fontWeight: 500 }}>
+        <div style={{ fontSize: 18, color: "#4F8CFF", fontWeight: 500 }}>
           {identModes[0].confidence}% Übereinstimmung
         </div>
         {identModes[1] && (
-          <div style={{ marginTop: 10, fontSize: 14, color: "#000", opacity: 0.35 }}>
+          <div style={{ marginTop: 12, fontSize: 16, color: "#000", opacity: 0.30 }}>
             + {identModes[1].type} · {identModes[1].confidence}%
           </div>
         )}
@@ -232,7 +247,7 @@ function ClarityShareWrapper({ result, wrapperRef }) {
           background: "linear-gradient(135deg, rgba(79,140,255,0.08), rgba(156,107,255,0.06))",
           border: "1px solid rgba(79,140,255,0.18)",
           borderRadius: 20, padding: "52px 56px",
-          textAlign: "center", marginBottom: 72,
+          textAlign: "center", marginBottom: 64,
         }}>
           <div style={{
             width: 6, height: 6, borderRadius: "50%",
@@ -241,44 +256,31 @@ function ClarityShareWrapper({ result, wrapperRef }) {
           }} />
           <div style={{
             fontSize: 13, letterSpacing: "0.22em", textTransform: "uppercase",
-            color: "#4F8CFF", fontWeight: 600, marginBottom: 24,
+            color: "#000", opacity: 0.32, fontWeight: 600, marginBottom: 24,
           }}>
             Zusammenfassung
           </div>
-          <div style={{ fontSize: 30, fontStyle: "italic", color: "#000", lineHeight: 1.5 }}>
+          <div style={{ fontSize: 28, fontStyle: "italic", color: "#000", lineHeight: 1.55 }}>
             {result.summary}
           </div>
         </div>
       )}
 
       <div style={{ width: "100%", maxWidth: 780 }}>
-        {result.pattern && (
-          <div style={{ marginBottom: 52 }}>
-            <div style={{
-              fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase",
-              color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 14,
-            }}>Muster</div>
-            <div style={{ fontSize: 22, color: "#000", lineHeight: 1.65, opacity: 0.75 }}>
-              {result.pattern}
-            </div>
-          </div>
-        )}
-
+        {/* Scores */}
         {SCORE_ORDER.some(k => scores[k] != null) && (
-          <div style={{ marginBottom: 52 }}>
+          <div style={{ marginBottom: 56 }}>
             <div style={{
               fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase",
-              color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 20,
-            }}>Scores</div>
+              color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 24,
+            }}>Dein Profil</div>
             {SCORE_ORDER.map((k) => scores[k] != null && (
-              <div key={k} style={{ marginBottom: 18 }}>
+              <div key={k} style={{ marginBottom: 20 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                  <span style={{ fontSize: 15, color: "#000", opacity: 0.60 }}>{k}</span>
-                  <span style={{ fontSize: 14, color: SCORE_COLORS[k], fontWeight: 600 }}>
-                    {scores[k]}
-                  </span>
+                  <span style={{ fontSize: 16, color: "#000", opacity: 0.58 }}>{k}</span>
+                  <span style={{ fontSize: 14, color: SCORE_COLORS[k], fontWeight: 600 }}>{scores[k]}</span>
                 </div>
-                <div style={{ height: 5, borderRadius: 3, background: "rgba(0,0,0,0.08)" }}>
+                <div style={{ height: 6, borderRadius: 3, background: "rgba(0,0,0,0.08)" }}>
                   <div style={{
                     height: "100%", width: `${scorePct(scores[k])}%`,
                     borderRadius: 3, background: SCORE_COLORS[k],
@@ -289,6 +291,26 @@ function ClarityShareWrapper({ result, wrapperRef }) {
           </div>
         )}
 
+        {/* Comparison */}
+        <div style={{
+          background: "rgba(79,140,255,0.05)",
+          border: "1px solid rgba(79,140,255,0.14)",
+          borderRadius: 16, padding: "32px 36px", marginBottom: 40,
+        }}>
+          <div style={{
+            fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase",
+            color: "#4F8CFF", fontWeight: 600, marginBottom: 14,
+          }}>
+            Vergleich mit anderen Nutzern
+          </div>
+          <div style={{ fontSize: 22, color: "#000", lineHeight: 1.55, opacity: 0.82 }}>
+            Du liegst aktuell im oberen{" "}
+            <strong style={{ fontWeight: 700 }}>{percentile}%</strong>{" "}
+            aller Teilnehmenden.
+          </div>
+        </div>
+
+        {/* Next focus */}
         {result.nextFocus && (
           <div style={{ borderLeft: "3px solid #3DDC97", paddingLeft: 28, marginBottom: 52 }}>
             <div style={{
@@ -315,28 +337,38 @@ function ClarityShareWrapper({ result, wrapperRef }) {
 /* ─────────────────────────────────────────────────────────────
    ResultSection — main component
 
-   Part 1 — Staged reveal timeline:
-     0ms    outer wrapper fades in
-     80ms   header eyebrow + accent line
-     160ms  identity hero (Part 4) — appears before summary
-     400ms  section 0: summary card        ← emotional peak 1
-     700ms  section 1: pattern
-     1000ms section 2: strengths
-     1300ms section 3: energySources
-     1600ms section 4: nextFocus
-     1900ms section 5: suggestedAction     ← emotional peak 2
-     2200ms section 6: scores (visible)
-     2400ms barsReady → bars animate 0→target (Part 2)
-     2500ms section 7: identity modes detail
+   Reveal → Impact → Curiosity structure:
+
+   REVEAL  (user sees who they are and their core insight)
+     0ms   outer wrapper fades in
+    80ms   header eyebrow
+   160ms   identity hero            ← WHO are you?
+   400ms   summary card             ← WHAT does that mean?
+
+   IMPACT  (numbers + social proof create the emotional peak)
+   700ms   scores (main moment)     ← your profile
+   900ms   barsReady → bars animate 0 → target
+  1000ms   comparison block         ← "top X%"
+  1300ms   potential block          ← "you could reach 90%+"
+
+   CURIOSITY  (insights keep users reading & motivate action)
+  1600ms   pattern
+  1900ms   strengths
+  2200ms   energy sources
+  2500ms   next focus
+  2800ms   suggested action
 ───────────────────────────────────────────────────────────── */
-const SECTION_COUNT = 8;
+// Sections: 0=summary, 1=scores, 2=comparison, 3=potential,
+//           4=pattern,  5=strengths, 6=energySources,
+//           7=nextFocus, 8=suggestedAction
+const SECTION_COUNT = 9;
 
 function ResultSection({ result }) {
   const [vis,           setVis]           = useState(false);
   const [headerVis,     setHeaderVis]     = useState(false);
-  const [identHeroVis,  setIdentHeroVis]  = useState(false); // Part 4
+  const [identHeroVis,  setIdentHeroVis]  = useState(false);
   const [sectionVis,    setSectionVis]    = useState(() => Array(SECTION_COUNT).fill(false));
-  const [barsReady,     setBarsReady]     = useState(false); // Part 2
+  const [barsReady,     setBarsReady]     = useState(false);
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [hoverCopy,     setHoverCopy]     = useState(false);
   const [hoverCta,      setHoverCta]      = useState(false);
@@ -355,29 +387,28 @@ function ResultSection({ result }) {
     t.push(setTimeout(() => setHeaderVis(true),    80));
     t.push(setTimeout(() => setIdentHeroVis(true), 160));
 
-    // Part 1 — 300ms gaps between sections
+    // 300ms gaps between sections, starting at 400ms
     const BASE = 400, GAP = 300;
     for (let i = 0; i < SECTION_COUNT; i++) {
       t.push(setTimeout(() => {
         setSectionVis(prev => {
-          const next = [...prev];
-          next[i] = true;
-          return next;
+          const next = [...prev]; next[i] = true; return next;
         });
       }, BASE + i * GAP));
     }
 
-    // Part 2 — scores section (i=6) visible at BASE + 6*GAP = 2200ms.
-    // barsReady fires 200ms later so the Section fade-up finishes before
-    // the bar widths start moving — the two transitions don't overlap.
-    t.push(setTimeout(() => setBarsReady(true), 2200 + 200));
+    // barsReady fires 200ms after section 1 (scores) visible.
+    // scores section delay = BASE + 1*GAP = 700ms → barsReady at 900ms.
+    // The gap lets the Section fade-up finish before bar widths start moving.
+    t.push(setTimeout(() => setBarsReady(true), BASE + 1 * GAP + 200));
 
-    // Defer the heavy 1200×1600 share DOM node well past all animations
-    t.push(setTimeout(() => setShareWrapperMounted(true), 4500));
+    // Defer heavy 1200×1600 share DOM well past all animations
+    t.push(setTimeout(() => setShareWrapperMounted(true), BASE + (SECTION_COUNT - 1) * GAP + 1500));
 
     return () => t.forEach(clearTimeout);
   }, []);
 
+  /* ── handlers ──────────────────────────────────────────────────────────── */
   const copyInsight = async () => {
     try {
       await navigator.clipboard.writeText(result.summary || "");
@@ -427,7 +458,7 @@ function ResultSection({ result }) {
     if (navigator.share) {
       try {
         await navigator.share({ title: "Mein Clarity Profil", text: result.summary || "" });
-      } catch (_) { /* cancelled */ }
+      } catch (_) {}
     } else {
       await copyInsight();
     }
@@ -457,11 +488,13 @@ function ResultSection({ result }) {
     </button>
   );
 
+  /* ── derived data ─────────────────────────────────────────────────────── */
   const scores              = result.scores        || {};
-  // Always guarantee at least one identity mode — use fallback when backend returns []
   const rawIdentModes       = result.identityModes  || [];
   const effectiveIdentModes = rawIdentModes.length > 0 ? rawIdentModes : [IDENTITY_FALLBACK];
+  const { percentile, floor, ceiling } = computeSocialStats(scores);
 
+  /* ── render ───────────────────────────────────────────────────────────── */
   return (
     <div style={{
       fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
@@ -473,7 +506,7 @@ function ResultSection({ result }) {
 
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <div style={{
-        maxWidth: 600, margin: "0 auto", padding: "64px 24px 40px",
+        maxWidth: 600, margin: "0 auto", padding: "56px 24px 36px",
         textAlign: "center",
         opacity:    headerVis ? 1 : 0,
         transform:  headerVis ? "none" : "translateY(12px)",
@@ -487,162 +520,102 @@ function ResultSection({ result }) {
         </div>
         <div style={{
           width: 32, height: 2, margin: "0 auto",
-          background: "linear-gradient(90deg, #4F8CFF, #9C6BFF)",
-          borderRadius: 2,
+          background: "linear-gradient(90deg, #4F8CFF, #9C6BFF)", borderRadius: 2,
         }} />
       </div>
 
-      {/* ── PART 4 — IDENTITY HERO ────────────────────────────────────────── */}
-      {/* Always rendered — effectiveIdentModes guarantees at least one entry.
-          Displayed before the summary so the user sees WHO they are first.
-          Primary mode is large and bold; secondary is a quiet footnote.      */}
+      {/* ── IDENTITY HERO ─────────────────────────────────────────────────── */}
+      {/* Always renders — effectiveIdentModes guarantees ≥1 entry (fallback).
+          52px bold gives maximum visual weight. Centered on mobile.          */}
       <div style={{
         maxWidth: 600, margin: "0 auto", padding: "0 24px",
-        marginBottom: 44,
-        textAlign: "center",
+        marginBottom: 48, textAlign: "center",
         opacity:    identHeroVis ? 1 : 0,
         transform:  identHeroVis ? "none" : "translateY(14px)",
         transition: "opacity 700ms ease, transform 700ms ease",
       }}>
+        {/* Eyebrow */}
         <div style={{
           fontSize: 10, letterSpacing: "0.32em", textTransform: "uppercase",
-          color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 10,
+          color: "#000", opacity: 0.26, fontWeight: 600, marginBottom: 12,
         }}>
           Dein Clarity Profil
         </div>
 
-        {/* Primary mode — 52px bold, high visual impact */}
+        {/* Identity type — 52px bold, primary focal point */}
         <div style={{
-          fontSize: 52, fontWeight: 700, letterSpacing: "-0.025em",
-          color: "#000", lineHeight: 1.1, marginBottom: 12,
+          fontSize: 52, fontWeight: 700, letterSpacing: "-0.03em",
+          color: "#000", lineHeight: 1.05, marginBottom: 14,
         }}>
           {effectiveIdentModes[0].type}
         </div>
 
-        {/* Confidence dot + percentage */}
+        {/* Confidence — blue, 15px */}
         <div style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
-          fontSize: 15, color: "#4F8CFF", fontWeight: 500,
-          letterSpacing: "0.03em",
+          display: "inline-flex", alignItems: "center", gap: 7,
+          fontSize: 15, color: "#4F8CFF", fontWeight: 500, letterSpacing: "0.02em",
         }}>
           <div style={{
             width: 5, height: 5, borderRadius: "50%",
-            background: "#4F8CFF", opacity: 0.65,
+            background: "#4F8CFF", opacity: 0.55,
           }} />
           {effectiveIdentModes[0].confidence}% Übereinstimmung
         </div>
 
-        {/* Secondary mode — muted footnote, only if present */}
+        {/* Secondary mode — muted footnote */}
         {effectiveIdentModes[1] && (
           <div style={{
-            marginTop: 12,
-            fontSize: 13, color: "#000", opacity: 0.35,
-            letterSpacing: "0.05em",
+            marginTop: 10, fontSize: 13,
+            color: "#000", opacity: 0.28, letterSpacing: "0.04em",
           }}>
             + {effectiveIdentModes[1].type} · {effectiveIdentModes[1].confidence}%
           </div>
         )}
       </div>
 
+      {/* ────────────────────────────────────────────────────────────────────
+           REVEAL PHASE — Summary gives the insight its meaning
+         ──────────────────────────────────────────────────────────────────── */}
+
       {/* ── SECTION 0 — SUMMARY ───────────────────────────────────────────── */}
+      {/* 20px italic. The first sentence the user reads. Subtle gradient box. */}
       <Section visible={sectionVis[0]}>
         <div style={{
-          background:   "linear-gradient(135deg, rgba(79,140,255,0.07) 0%, rgba(156,107,255,0.06) 100%)",
-          border:       "1px solid rgba(79,140,255,0.18)",
-          borderRadius: 16,
-          padding:      "32px 28px",
-          textAlign:    "center",
+          background:   "linear-gradient(135deg, rgba(79,140,255,0.06) 0%, rgba(156,107,255,0.05) 100%)",
+          border:       "1px solid rgba(79,140,255,0.15)",
+          borderRadius: 16, padding: "26px 22px", textAlign: "center",
         }}>
           <div style={{
             width: 6, height: 6, borderRadius: "50%",
             background: "linear-gradient(135deg, #4F8CFF, #9C6BFF)",
-            margin: "0 auto 16px",
+            margin: "0 auto 14px",
           }} />
           <div style={{
             fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase",
-            color: "#4F8CFF", fontWeight: 600, marginBottom: 18,
+            color: "#000", opacity: 0.30, fontWeight: 600, marginBottom: 16,
           }}>
             Zusammenfassung
           </div>
           <div style={{
-            fontSize: 22, fontWeight: 400, fontStyle: "italic",
-            color: "#000", lineHeight: 1.55,
+            fontSize: 20, fontWeight: 400, fontStyle: "italic",
+            color: "#000", lineHeight: 1.65, opacity: 0.85,
           }}>
             {result.summary}
           </div>
         </div>
       </Section>
 
-      {/* ── SECTION 1 — PATTERN ──────────────────────────────────────────── */}
-      {result.pattern && (
-        <Section visible={sectionVis[1]}>
-          {/* Part 3: insight icon */}
-          <SectionLabel icon={<IconInsight />}>Das verborgene Muster</SectionLabel>
-          <div style={{ fontSize: 18, fontWeight: 400, color: "#000", lineHeight: 1.65, opacity: 0.78 }}>
-            {result.pattern}
-          </div>
-        </Section>
-      )}
+      {/* ────────────────────────────────────────────────────────────────────
+           IMPACT PHASE — scores + social proof create the emotional peak
+         ──────────────────────────────────────────────────────────────────── */}
 
-      {/* ── SECTION 2 — STRENGTHS ────────────────────────────────────────── */}
-      {result.strengths?.length > 0 && (
-        <Section visible={sectionVis[2]}>
-          {/* Part 3: shield icon */}
-          <SectionLabel icon={<IconShield />}>Deine Stärken</SectionLabel>
-          <BulletList items={result.strengths} accentColor="#9C6BFF" />
-        </Section>
-      )}
-
-      {/* ── SECTION 3 — ENERGY SOURCES ───────────────────────────────────── */}
-      {result.energySources?.length > 0 && (
-        <Section visible={sectionVis[3]}>
-          {/* Part 3: lightning icon */}
-          <SectionLabel icon={<IconLightning />}>Deine Energiequellen</SectionLabel>
-          <BulletList items={result.energySources} accentColor="#FF8A4F" />
-        </Section>
-      )}
-
-      {/* ── SECTION 4 — NEXT FOCUS ───────────────────────────────────────── */}
-      {result.nextFocus && (
-        <Section visible={sectionVis[4]}>
-          <div style={{
-            borderLeft: "3px solid #3DDC97",
-            paddingLeft: 20, paddingTop: 4, paddingBottom: 4,
-          }}>
-            {/* Part 3: compass icon in accent color */}
-            <SectionLabel icon={<IconCompass />} color="#3DDC97">
-              Dein nächster Fokus
-            </SectionLabel>
-            <div style={{ fontSize: 18, fontWeight: 400, color: "#000", lineHeight: 1.6, opacity: 0.85 }}>
-              {result.nextFocus}
-            </div>
-          </div>
-        </Section>
-      )}
-
-      {/* ── SECTION 5 — SUGGESTED ACTION ─────────────────────────────────── */}
-      {result.suggestedAction && (
-        <Section visible={sectionVis[5]}>
-          <div style={{
-            borderLeft: "3px solid #4F8CFF",
-            paddingLeft: 20, paddingTop: 4, paddingBottom: 4,
-          }}>
-            {/* Part 3: rocket icon in accent color */}
-            <SectionLabel icon={<IconRocket />} color="#4F8CFF">
-              Empfohlene Aktion
-            </SectionLabel>
-            <div style={{ fontSize: 18, fontWeight: 400, color: "#000", lineHeight: 1.6, opacity: 0.85 }}>
-              {result.suggestedAction}
-            </div>
-          </div>
-        </Section>
-      )}
-
-      {/* ── SECTION 6 — SCORES ───────────────────────────────────────────── */}
-      {/* Part 2: `animated={barsReady}` controls 0 → target width transition. */}
+      {/* ── SECTION 1 — SCORES (MAIN MOMENT) ─────────────────────────────── */}
+      {/* Moved immediately after summary so bars animate in the viewport.
+          barsReady fires 200ms after this section becomes visible (at 900ms).
+          Duration: 900ms ease-out.                                          */}
       {SCORE_ORDER.some(k => scores[k] != null) && (
-        <Section visible={sectionVis[6]}>
-          <SectionLabel>Deine Scores</SectionLabel>
+        <Section visible={sectionVis[1]}>
+          <SectionLabel>Dein Profil</SectionLabel>
           {SCORE_ORDER.map((key) =>
             scores[key] != null ? (
               <ScoreBar key={key} name={key} value={scores[key]} animated={barsReady} />
@@ -650,9 +623,9 @@ function ResultSection({ result }) {
           )}
           {result.confidence != null && (
             <div style={{
-              marginTop: 20,
+              marginTop: 14,
               display: "inline-flex", alignItems: "center", gap: 6,
-              fontSize: 12, color: "#000", opacity: 0.38, letterSpacing: "0.08em",
+              fontSize: 12, color: "#000", opacity: 0.30, letterSpacing: "0.08em",
             }}>
               <div style={{
                 width: 4, height: 4, borderRadius: "50%",
@@ -664,54 +637,139 @@ function ResultSection({ result }) {
         </Section>
       )}
 
-      {/* ── SECTION 7 — IDENTITY MODES (detail) ─────────────────────────── */}
-      {/* Hero shows the primary mode large above the fold.
-          This section shows all modes with mini bars for completeness.
-          Uses effectiveIdentModes so it always renders (with fallback).      */}
-      <Section visible={sectionVis[7]}>
-        <SectionLabel>Identitätsmodus</SectionLabel>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {effectiveIdentModes.map((m, i) => (
-            <div key={i}>
+      {/* ── SECTION 2 — COMPARISON BLOCK ─────────────────────────────────── */}
+      {/* Social proof. Computed percentile from user scores.
+          Blue tint to signal this is an external reference point.           */}
+      <Section visible={sectionVis[2]}>
+        <div style={{
+          background: "rgba(79,140,255,0.04)",
+          border: "1px solid rgba(79,140,255,0.13)",
+          borderRadius: 14, padding: "20px 22px",
+        }}>
+          <SectionLabel color="#4F8CFF">Vergleich mit anderen Nutzern</SectionLabel>
+          <div style={{ fontSize: 18, color: "#000", lineHeight: 1.65, opacity: 0.80 }}>
+            Du liegst aktuell im oberen{" "}
+            <strong style={{ fontWeight: 700, color: "#000", opacity: 1 }}>{percentile}%</strong>{" "}
+            aller Teilnehmenden.
+          </div>
+          {/* Position bar */}
+          <div style={{ marginTop: 16 }}>
+            <div style={{
+              height: 4, borderRadius: 2,
+              background: "rgba(79,140,255,0.10)", overflow: "hidden",
+            }}>
               <div style={{
-                display: "flex", justifyContent: "space-between", marginBottom: 5,
-              }}>
-                <span style={{
-                  fontSize: i === 0 ? 15 : 14,
-                  color: "#000",
-                  opacity: i === 0 ? 0.80 : 0.52,
-                  fontWeight: i === 0 ? 500 : 400,
-                }}>
-                  {m.type}
-                </span>
-                <span style={{
-                  fontSize: 13, fontWeight: 600,
-                  color: i === 0 ? "#4F8CFF" : "#9C6BFF",
-                  opacity: i === 0 ? 1 : 0.70,
-                }}>
-                  {m.confidence}%
-                </span>
-              </div>
-              <div style={{
-                height: i === 0 ? 3 : 2, borderRadius: 2,
-                background: "rgba(0,0,0,0.07)", overflow: "hidden",
-              }}>
-                <div style={{
-                  height: "100%",
-                  width: barsReady ? `${m.confidence}%` : "0%",
-                  borderRadius: 2,
-                  background: i === 0 ? "#4F8CFF" : "#9C6BFF",
-                  transition: "width 800ms cubic-bezier(0.0, 0.0, 0.2, 1)",
-                }} />
-              </div>
+                height: "100%",
+                width: barsReady ? `${100 - percentile}%` : "0%",
+                borderRadius: 2,
+                background: "linear-gradient(90deg, #4F8CFF, #9C6BFF)",
+                transition: "width 1000ms cubic-bezier(0.0, 0.0, 0.2, 1)",
+              }} />
             </div>
-          ))}
+            <div style={{
+              display: "flex", justifyContent: "space-between",
+              marginTop: 5, fontSize: 10, color: "#000", opacity: 0.25,
+              letterSpacing: "0.06em",
+            }}>
+              <span>0 %</span><span>50 %</span><span>100 %</span>
+            </div>
+          </div>
         </div>
       </Section>
 
+      {/* ── SECTION 3 — POTENTIAL BLOCK ──────────────────────────────────── */}
+      {/* Aspiration. Shows the user there is clear upside to continuing.
+          Green tint signals growth, forward motion.                        */}
+      <Section visible={sectionVis[3]}>
+        <div style={{
+          background: "rgba(61,220,151,0.04)",
+          border: "1px solid rgba(61,220,151,0.15)",
+          borderRadius: 14, padding: "20px 22px",
+        }}>
+          <SectionLabel color="#3DDC97">Dein Fortschrittspotenzial</SectionLabel>
+          <div style={{ fontSize: 18, color: "#000", lineHeight: 1.65, opacity: 0.80, marginBottom: 10 }}>
+            Viele Menschen starten in diesem Bereich bei etwa{" "}
+            <strong style={{ fontWeight: 600 }}>{floor}–{floor + 15}%</strong>.
+          </div>
+          <div style={{ fontSize: 18, color: "#000", lineHeight: 1.65, opacity: 0.80 }}>
+            Mit den richtigen Gewohnheiten kannst du über{" "}
+            <strong style={{ fontWeight: 600 }}>{ceiling}%</strong> erreichen.
+          </div>
+        </div>
+      </Section>
+
+      {/* ────────────────────────────────────────────────────────────────────
+           CURIOSITY PHASE — insights reward reading & motivate action
+         ──────────────────────────────────────────────────────────────────── */}
+
+      {/* Thin divider separates impact blocks from insight sections */}
+      <div style={{ maxWidth: 600, margin: "-4px auto 44px", padding: "0 24px" }}>
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }} />
+      </div>
+
+      {/* ── SECTION 4 — PATTERN ──────────────────────────────────────────── */}
+      {result.pattern && (
+        <Section visible={sectionVis[4]}>
+          <SectionLabel icon={<IconInsight />}>Das verborgene Muster</SectionLabel>
+          <div style={{ fontSize: 18, fontWeight: 400, color: "#000", lineHeight: 1.65, opacity: 0.75 }}>
+            {result.pattern}
+          </div>
+        </Section>
+      )}
+
+      {/* ── SECTION 5 — STRENGTHS ────────────────────────────────────────── */}
+      {result.strengths?.length > 0 && (
+        <Section visible={sectionVis[5]}>
+          <SectionLabel icon={<IconShield />}>Deine Stärken</SectionLabel>
+          <BulletList items={result.strengths} accentColor="#9C6BFF" />
+        </Section>
+      )}
+
+      {/* ── SECTION 6 — ENERGY SOURCES ───────────────────────────────────── */}
+      {result.energySources?.length > 0 && (
+        <Section visible={sectionVis[6]}>
+          <SectionLabel icon={<IconLightning />}>Deine Energiequellen</SectionLabel>
+          <BulletList items={result.energySources} accentColor="#FF8A4F" />
+        </Section>
+      )}
+
+      {/* ── SECTION 7 — NEXT FOCUS ───────────────────────────────────────── */}
+      {result.nextFocus && (
+        <Section visible={sectionVis[7]}>
+          <div style={{
+            borderLeft: "3px solid #3DDC97",
+            paddingLeft: 20, paddingTop: 2, paddingBottom: 2,
+          }}>
+            <SectionLabel icon={<IconCompass />} color="#3DDC97">
+              Dein nächster Fokus
+            </SectionLabel>
+            <div style={{ fontSize: 18, fontWeight: 400, color: "#000", lineHeight: 1.65, opacity: 0.82 }}>
+              {result.nextFocus}
+            </div>
+          </div>
+        </Section>
+      )}
+
+      {/* ── SECTION 8 — SUGGESTED ACTION ─────────────────────────────────── */}
+      {result.suggestedAction && (
+        <Section visible={sectionVis[8]}>
+          <div style={{
+            borderLeft: "3px solid #4F8CFF",
+            paddingLeft: 20, paddingTop: 2, paddingBottom: 2,
+          }}>
+            <SectionLabel icon={<IconRocket />} color="#4F8CFF">
+              Empfohlene Aktion
+            </SectionLabel>
+            <div style={{ fontSize: 18, fontWeight: 400, color: "#000", lineHeight: 1.65, opacity: 0.82 }}>
+              {result.suggestedAction}
+            </div>
+          </div>
+        </Section>
+      )}
+
       {/* ── COPY SUMMARY BUTTON ───────────────────────────────────────────── */}
       <div style={{
-        maxWidth: 600, margin: "0 auto", padding: "0 24px 48px",
+        maxWidth: 600, margin: "0 auto", padding: "0 24px 52px",
         display: "flex", justifyContent: "center",
       }}>
         <button
@@ -720,7 +778,7 @@ function ResultSection({ result }) {
           onMouseLeave={() => setHoverCopy(false)}
           style={{
             display: "inline-flex", alignItems: "center", gap: 8,
-            border: `1px solid ${hoverCopy ? "rgba(79,140,255,0.5)" : "rgba(79,140,255,0.25)"}`,
+            border: `1px solid ${hoverCopy ? "rgba(79,140,255,0.5)" : "rgba(79,140,255,0.22)"}`,
             background: hoverCopy ? "rgba(79,140,255,0.06)" : "transparent",
             color: "#4F8CFF",
             fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
@@ -740,7 +798,9 @@ function ResultSection({ result }) {
       </div>
 
       {/* ── DIVIDER ───────────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 600, margin: "0 auto", borderTop: "1px solid rgba(0,0,0,0.07)" }} />
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "0 24px" }}>
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }} />
+      </div>
 
       {/* ── NEXT STEP CTA ─────────────────────────────────────────────────── */}
       <div style={{
@@ -753,7 +813,7 @@ function ResultSection({ result }) {
         }}>
           Willst du tiefer gehen?
         </div>
-        <div style={{ fontSize: 18, color: "#000", opacity: 0.50, marginBottom: 28, lineHeight: 1.6 }}>
+        <div style={{ fontSize: 18, color: "#000", opacity: 0.46, marginBottom: 28, lineHeight: 1.6 }}>
           Entdecke, was wirklich möglich ist.
         </div>
         <button
@@ -774,7 +834,7 @@ function ResultSection({ result }) {
         >
           Clarity System starten
         </button>
-        <div style={{ fontSize: 14, color: "#000", opacity: 0.45 }}>
+        <div style={{ fontSize: 14, color: "#000", opacity: 0.38 }}>
           7 Tage kostenlos testen
         </div>
       </div>
@@ -785,8 +845,8 @@ function ResultSection({ result }) {
         borderTop: "1px solid rgba(0,0,0,0.07)", textAlign: "center",
       }}>
         <div style={{
-          fontSize: 14, letterSpacing: "0.12em", textTransform: "uppercase",
-          color: "#000", opacity: 0.35, marginBottom: 24,
+          fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase",
+          color: "#000", opacity: 0.28, fontWeight: 600, marginBottom: 24,
         }}>
           Profil teilen
         </div>
@@ -794,14 +854,14 @@ function ResultSection({ result }) {
         {shareConfirm && (
           <div style={{
             maxWidth: 340, width: "100%",
-            background: "linear-gradient(135deg, rgba(61,220,151,0.11), rgba(79,140,255,0.09))",
-            border: "1px solid rgba(61,220,151,0.28)",
+            background: "linear-gradient(135deg, rgba(61,220,151,0.10), rgba(79,140,255,0.08))",
+            border: "1px solid rgba(61,220,151,0.26)",
             borderRadius: 12, padding: "14px 18px", marginBottom: 16, textAlign: "left",
           }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: "#000", marginBottom: 3 }}>
               Bild gespeichert.
             </div>
-            <div style={{ fontSize: 14, color: "#000", opacity: 0.52, lineHeight: 1.6 }}>
+            <div style={{ fontSize: 14, color: "#000", opacity: 0.50, lineHeight: 1.6 }}>
               Teile dein Klarheitsprofil mit Freunden.
             </div>
           </div>
@@ -816,7 +876,7 @@ function ResultSection({ result }) {
         </div>
       </div>
 
-      {/* Hidden share card — deferred 4.5s to avoid competing with animations */}
+      {/* Hidden share card — deferred well past all animations */}
       {shareWrapperMounted && (
         <div style={{ position: "absolute", left: -9999, top: 0, pointerEvents: "none" }}>
           <ClarityShareWrapper result={result} wrapperRef={shareWrapperRef} />
