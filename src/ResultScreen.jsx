@@ -374,6 +374,7 @@ function ResultSection({ result }) {
   const [hoverCta,      setHoverCta]      = useState(false);
   const [generating,    setGenerating]    = useState(false);
   const [shareConfirm,  setShareConfirm]  = useState(false);
+  const [copiedLink,    setCopiedLink]    = useState(false); // "Profil-Link kopiert" toast
   const [hoverImg,      setHoverImg]      = useState(false);
   const [hoverNative,   setHoverNative]   = useState(false);
   const [shareWrapperMounted, setShareWrapperMounted] = useState(false);
@@ -455,12 +456,27 @@ function ResultSection({ result }) {
   };
 
   const nativeShare = async () => {
+    // Build the public profile URL by Base64-encoding the full result object.
+    // PublicProfile.jsx decodes this with: JSON.parse(atob(slug))
+    const encoded  = btoa(JSON.stringify(result));
+    const shareUrl = "https://cla-ri-ty.netlify.app/p/" + encoded;
+
     if (navigator.share) {
       try {
-        await navigator.share({ title: "Mein Clarity Profil", text: result.summary || "" });
-      } catch (_) {}
+        await navigator.share({
+          title: "Mein Clarity Profil",
+          text:  "Mein Clarity Profil",
+          url:   shareUrl,
+        });
+      } catch (_) { /* user cancelled — do nothing */ }
     } else {
-      await copyInsight();
+      // navigator.share unavailable (desktop, non-HTTPS, etc.)
+      // Fall back to copying the link to the clipboard.
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+      } catch (_) {}
     }
   };
 
@@ -863,6 +879,22 @@ function ResultSection({ result }) {
             </div>
             <div style={{ fontSize: 14, color: "#000", opacity: 0.50, lineHeight: 1.6 }}>
               Teile dein Klarheitsprofil mit Freunden.
+            </div>
+          </div>
+        )}
+
+        {copiedLink && (
+          <div style={{
+            maxWidth: 340, width: "100%",
+            background: "linear-gradient(135deg, rgba(79,140,255,0.10), rgba(156,107,255,0.07))",
+            border: "1px solid rgba(79,140,255,0.24)",
+            borderRadius: 12, padding: "14px 18px", marginBottom: 16, textAlign: "left",
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#000", marginBottom: 3 }}>
+              Profil-Link kopiert.
+            </div>
+            <div style={{ fontSize: 14, color: "#000", opacity: 0.50, lineHeight: 1.6 }}>
+              Füge den Link ein, um dein Profil zu teilen.
             </div>
           </div>
         )}
