@@ -167,15 +167,7 @@
       (e.g. /assets/index-Ct5dSURP.css) during build, so this works in
       both dev and prod without any manual filename management.
     -->
-    <link
-      rel="preload"
-      href="/src/index.css"
-      as="style"
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <noscript>
-      <link rel="stylesheet" href="/src/index.css" />
-    </noscript>
+
 
     <!--
       MODULE PRELOAD — tells the browser to start downloading main.jsx and
@@ -185,8 +177,7 @@
 
       Vite rewrites these hrefs to hashed paths during build.
     -->
-    <link rel="modulepreload" href="/src/main.jsx" />
-    <link rel="modulepreload" href="/src/App.jsx" />
+
 
   </head>
   <body>
