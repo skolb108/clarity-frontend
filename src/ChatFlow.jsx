@@ -5,7 +5,7 @@ const API_URL =
   
 // ResultSection is lazy — loaded only after analysis completes (phase → "result").
 // During the entire chat conversation this chunk is never downloaded.
-const ResultSection = lazy(() => import("./ResultScreen.jsx"));
+const ResultSection = lazy(() => import("./ResultScreen"));
 
 const QUESTIONS = [
   "Was beschäftigt dich gerade am meisten in deinem Leben?",
@@ -18,7 +18,7 @@ const QUESTIONS = [
   "Wenn du in drei Jahren zurückblickst was müsste passiert sein damit du zufrieden bist?",
   "Gibt es etwas das du schon lange tun möchtest?",
   "Was hält dich bisher davon ab?",
-  "Warum ist dir das trotzdem wichtig?",
+  "Warum ist dir das außerdem wichtig?",
   "Wenn du heute eine kleine Sache verändern würdest welche wäre das?",
 ];
 
@@ -1014,14 +1014,59 @@ fetch(`${API_URL}/api/chat/stream`, {
         )}
 
         {/* ── RESULT ───────────────────────────────────────────────────── */}
-        {phase === "result" && result && (
-          <div>
-            <Suspense fallback={null}>
-            <ResultSection result={result} />
-          </Suspense>
-            <div ref={bottomRef} style={{ height: 1 }} />
-          </div>
-        )}
+        {phase === "result" && result && (() => {
+          const analysisResult = result;
+
+          // Hard fallback — if result is not a plain object, bail out silently
+          if (!analysisResult || typeof analysisResult !== "object" || Array.isArray(analysisResult)) {
+            console.warn("RESULT: invalid shape, skipping render", analysisResult);
+            return null;
+          }
+
+          // Sanitize every field before passing to ResultSection.
+          // Nothing here can be a raw object that React would try to stringify.
+          const safeResult = {
+            summary:         typeof analysisResult.summary         === "string" ? analysisResult.summary         : "",
+            pattern:         typeof analysisResult.pattern         === "string" ? analysisResult.pattern         : "",
+            nextFocus:       typeof analysisResult.nextFocus       === "string" ? analysisResult.nextFocus       : "",
+            suggestedAction: typeof analysisResult.suggestedAction === "string" ? analysisResult.suggestedAction : "",
+            confidence:      typeof analysisResult.confidence      === "number" ? analysisResult.confidence      : null,
+            scores: analysisResult.scores && typeof analysisResult.scores === "object" && !Array.isArray(analysisResult.scores)
+              ? {
+                  Clarity:   typeof analysisResult.scores.Clarity   === "number" ? analysisResult.scores.Clarity   : 50,
+                  Energy:    typeof analysisResult.scores.Energy     === "number" ? analysisResult.scores.Energy    : 50,
+                  Strength:  typeof analysisResult.scores.Strength   === "number" ? analysisResult.scores.Strength  : 50,
+                  Direction: typeof analysisResult.scores.Direction  === "number" ? analysisResult.scores.Direction : 50,
+                  Action:    typeof analysisResult.scores.Action     === "number" ? analysisResult.scores.Action    : 50,
+                }
+              : { Clarity: 50, Energy: 50, Strength: 50, Direction: 50, Action: 50 },
+            identityModes: Array.isArray(analysisResult.identityModes)
+              ? analysisResult.identityModes
+                  .filter(m => m && typeof m === "object" && typeof m.type === "string")
+                  .map(m => ({
+                    type:       String(m.type).trim(),
+                    confidence: typeof m.confidence === "number" ? m.confidence : 60,
+                  }))
+              : [],
+            strengths: Array.isArray(analysisResult.strengths)
+              ? analysisResult.strengths.filter(s => typeof s === "string")
+              : [],
+            energySources: Array.isArray(analysisResult.energySources)
+              ? analysisResult.energySources.filter(s => typeof s === "string")
+              : [],
+          };
+
+          console.log("SAFE RESULT:", safeResult);
+
+          return (
+            <div>
+              <Suspense fallback={null}>
+                <ResultSection result={safeResult} />
+              </Suspense>
+              <div ref={bottomRef} style={{ height: 1 }} />
+            </div>
+          );
+        })()}
 
       </div>{/* /#c-app */}
 

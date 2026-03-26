@@ -3,12 +3,12 @@ import { useState, lazy, Suspense, memo, useRef } from "react";
 // ── ChatApp chunk — declared at module level so Vite emits a separate chunk.
 // The import() factory is NOT called (no network request) until <ChatApp />
 // renders inside <Suspense> for the first time.
-const ChatApp = lazy(() => import("./ChatApp"));
+const ChatApp = lazy(() => import("./ChatFlow"));
 
 // ── Prefetch helper — starts the chunk download early without mounting ─────────
 // Called on pointerdown/touchstart so the ~400ms hero fade-out doubles as
 // download time. Safe to call multiple times — import() caches the promise.
-const prefetchChatApp = () => import("./ChatApp");
+const prefetchChatApp = () => import("./ChatFlow");
 
 // ── HeroScreen — lives in the initial bundle, paints before any JS evaluates ──
 const HeroScreen = memo(function HeroScreen({ onStart }) {

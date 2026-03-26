@@ -1,42 +1,42 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 /* ─────────────────────────────────────────────────────────────
-   DEV PROFILES — keyboard toggle (1/2/3) or ?dev=key in URL
+   DEV PROFILES — keyboard 1/2/3 or ?dev=key
 ───────────────────────────────────────────────────────────── */
 
 const DEV_PROFILES = {
   explorer_low: {
-    summary:      "Du bist aktuell auf der Suche nach Klarheit in verschiedenen Lebensbereichen.",
-    pattern:      "Du denkst viel nach, aber handelst selten. Der nächste Schritt fehlt noch.",
-    strengths:    ["Offenheit für neue Perspektiven", "Hohe Reflexionsfähigkeit"],
-    energySources: ["Gespräche mit ehrlichen Menschen", "Zeit in der Natur"],
-    nextFocus:    "Wähle einen Bereich und setze heute eine kleine Aktion um.",
+    summary:         "Du bist aktuell auf der Suche nach Klarheit in verschiedenen Lebensbereichen.",
+    pattern:         "Du denkst viel nach, aber handelst selten. Der nächste Schritt fehlt noch.",
+    strengths:       ["Offenheit für neue Perspektiven", "Hohe Reflexionsfähigkeit"],
+    energySources:   ["Gespräche mit ehrlichen Menschen", "Zeit in der Natur"],
+    nextFocus:       "Wähle einen Bereich und setze heute eine kleine Aktion um.",
     suggestedAction: "Schreib drei Dinge auf, die du in den nächsten 30 Tagen ändern willst.",
-    confidence:   40,
-    scores:       { Clarity: 3, Energy: 4, Strength: 5, Direction: 2, Action: 3 },
-    identityModes: [{ type: "Explorer", confidence: 40 }],
+    confidence:      40,
+    scores:          { Clarity: 3, Energy: 4, Strength: 5, Direction: 2, Action: 3 },
+    identityModes:   [{ type: "Explorer", confidence: 40 }],
   },
   high_performer: {
-    summary:      "Du hast klare Strukturen und setzt Dinge konsequent um.",
-    pattern:      "Du bist im Flow — aber Erholung und Tiefe kommen manchmal zu kurz.",
-    strengths:    ["Konsequenz", "Klarheit über Ziele", "Hohe Umsetzungskraft"],
-    energySources: ["Ergebnisse sehen", "Fokussierte Arbeitsphasen", "Klare Prioritäten"],
-    nextFocus:    "Schutz deine Energie — nicht alles verdient dein Bestes.",
+    summary:         "Du hast klare Strukturen und setzt Dinge konsequent um.",
+    pattern:         "Du bist im Flow — aber Erholung und Tiefe kommen manchmal zu kurz.",
+    strengths:       ["Konsequenz", "Klarheit über Ziele", "Hohe Umsetzungskraft"],
+    energySources:   ["Ergebnisse sehen", "Fokussierte Arbeitsphasen", "Klare Prioritäten"],
+    nextFocus:       "Schutz deine Energie — nicht alles verdient dein Bestes.",
     suggestedAction: "Blockiere einmal pro Woche zwei Stunden für tiefe, ungestörte Arbeit.",
-    confidence:   80,
-    scores:       { Clarity: 8, Energy: 7, Strength: 8, Direction: 9, Action: 8 },
-    identityModes: [{ type: "Builder", confidence: 80 }],
+    confidence:      80,
+    scores:          { Clarity: 8, Energy: 7, Strength: 8, Direction: 9, Action: 8 },
+    identityModes:   [{ type: "Builder", confidence: 80 }],
   },
   chaotic: {
-    summary:      "Du bist in vielen Bereichen aktiv, aber ohne klare Richtung.",
-    pattern:      "Viel Energie, aber kein Kanal. Du springst von Idee zu Idee ohne Abschluss.",
-    strengths:    ["Hohe Kreativität", "Breites Interessenspektrum"],
-    energySources: ["Neue Ideen", "Spontane Projekte"],
-    nextFocus:    "Wähle ein Projekt und bring es zu Ende, bevor du das nächste beginnst.",
+    summary:         "Du bist in vielen Bereichen aktiv, aber ohne klare Richtung.",
+    pattern:         "Viel Energie, aber kein Kanal. Du springst von Idee zu Idee ohne Abschluss.",
+    strengths:       ["Hohe Kreativität", "Breites Interessenspektrum"],
+    energySources:   ["Neue Ideen", "Spontane Projekte"],
+    nextFocus:       "Wähle ein Projekt und bring es zu Ende, bevor du das nächste beginnst.",
     suggestedAction: "Schreib alle aktiven Projekte auf. Streich 70% davon.",
-    confidence:   30,
-    scores:       { Clarity: 2, Energy: 6, Strength: 4, Direction: 1, Action: 3 },
-    identityModes: [{ type: "Explorer", confidence: 30 }],
+    confidence:      30,
+    scores:          { Clarity: 2, Energy: 6, Strength: 4, Direction: 1, Action: 3 },
+    identityModes:   [{ type: "Explorer", confidence: 30 }],
   },
 };
 
@@ -44,15 +44,15 @@ const _urlParams       = typeof window !== "undefined" ? new URLSearchParams(win
 const devProfileFromUrl = _urlParams.get("dev");
 
 /* ─────────────────────────────────────────────────────────────
-   DESIGN TOKENS — single source of truth
+   DESIGN TOKENS
 ───────────────────────────────────────────────────────────── */
 
 const SCORE_COLORS = {
-  Clarity:   "#4F8CFF",
-  Energy:    "#FF8A4F",
-  Strength:  "#9C6BFF",
-  Direction: "#3DDC97",
-  Action:    "#FF5A6F",
+  Clarity:   "#6366f1",
+  Energy:    "#f59e0b",
+  Strength:  "#8b5cf6",
+  Direction: "#0ea5e9",
+  Action:    "#ec4899",
 };
 const SCORE_ORDER = ["Clarity", "Energy", "Strength", "Direction", "Action"];
 
@@ -70,11 +70,7 @@ const T = {
   muted: "rgba(0,0,0,0.28)",
 };
 
-const FS = {
-  label: 11,
-  body:  16,
-  small: 14,
-};
+const FS = { label: 11, body: 16, small: 14 };
 
 const CARD = {
   background:   "rgba(0,0,0,0.025)",
@@ -84,16 +80,16 @@ const CARD = {
 };
 
 const INPUT_STYLE = {
-  boxSizing:    "border-box",
-  padding:      "10px 14px",
+  boxSizing:  "border-box",
+  padding:    "10px 14px",
   borderRadius: 8,
-  border:       "1px solid rgba(0,0,0,0.12)",
-  background:   "rgba(0,0,0,0.025)",
-  fontSize:     FS.body,
-  color:        T.high,
-  outline:      "none",
-  fontFamily:   "'Helvetica Neue', Helvetica, Arial, sans-serif",
-  width:        "100%",
+  border:     "1px solid rgba(0,0,0,0.12)",
+  background: "rgba(0,0,0,0.025)",
+  fontSize:   FS.body,
+  color:      T.high,
+  outline:    "none",
+  fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+  width:      "100%",
 };
 
 const insightBorder = (color) => ({
@@ -104,29 +100,46 @@ const insightBorder = (color) => ({
 });
 
 const scorePct = (v) => Math.min(Math.round(v * 3), 75);
-const IDENTITY_FALLBACK = { type: "Explorer", confidence: 60 };
 
 /* ─────────────────────────────────────────────────────────────
-   RESULT SAFETY UTILITIES
+   IDENTITY DESCRIPTORS — one sharp line per archetype
 ───────────────────────────────────────────────────────────── */
 
-function safeEncodeResult(result) {
+const IDENTITY_DESCRIPTORS = {
+  "Builder":            "Du siehst Potenzial, wo andere Chaos sehen. Dein Werkzeug ist Umsetzung.",
+  "Explorer":           "Du bist unterwegs — die Richtung noch offen. Aber deine Neugier bleibt.",
+  "Creator":            "Du erschaffst, weil du nicht anders kannst. Das ist keine Entscheidung — das bist du.",
+  "Stability Seeker":   "Sicherheit ist kein Rückzug für dich. Es ist das Fundament, auf dem du baust.",
+  "Transition Phase":   "Du stehst zwischen zwei Versionen von dir. Das ist kein Problem — das ist Wachstum.",
+  "Burnout Risk":       "Du gibst viel — vielleicht zu viel. Die Energie, die du trägst, verdient Schutz.",
+  "Hidden Opportunity": "Du unterschätzt dich systematisch. Das Potenzial ist da — es wartet auf dich.",
+};
+const IDENTITY_DESCRIPTOR_DEFAULT = "Du bist an einem Punkt, der Klarheit braucht. Gut, dass du hier bist.";
+
+/* ─────────────────────────────────────────────────────────────
+   PRIMITIVE SAFETY UTILITIES
+───────────────────────────────────────────────────────────── */
+
+function toSafeNum(v, fallback = 0) {
+  if (typeof v === "symbol") return fallback;
+  if (v !== null && typeof v === "object" && !Object.getPrototypeOf(v)) return fallback;
   try {
-    const json = JSON.stringify(result);
-    return btoa(unescape(encodeURIComponent(json)));
-  } catch (_) { return ""; }
+    const n = Number(v);
+    return isFinite(n) ? n : fallback;
+  } catch { return fallback; }
 }
 
-function safeDecodeResult(slug) {
-  try {
-    if (!slug || typeof slug !== "string" || slug.length === 0)
-      return { ok: false, result: null };
-    const json   = decodeURIComponent(escape(atob(slug)));
-    const parsed = JSON.parse(json);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-      return { ok: false, result: null };
-    return { ok: true, result: parsed };
-  } catch (_) { return { ok: false, result: null }; }
+function toSafeStr(v, fallback = "") {
+  if (v === null || v === undefined) return fallback;
+  if (typeof v === "symbol") return fallback;
+  if (typeof v === "string") return v || fallback;
+  if (typeof v === "object" && !Object.getPrototypeOf(v)) return fallback;
+  try { return String(v) || fallback; } catch { return fallback; }
+}
+
+function safeEncodeResult(result) {
+  try { return btoa(unescape(encodeURIComponent(JSON.stringify(result)))); }
+  catch (_) { return ""; }
 }
 
 function validateResult(raw) {
@@ -139,7 +152,7 @@ function validateResult(raw) {
     if (typeof v === "number" && isFinite(v)) scores[k] = v;
   });
 
-  const rawModes      = Array.isArray(base.identityModes) ? base.identityModes : [];
+  const rawModes    = Array.isArray(base.identityModes) ? base.identityModes : [];
   const identityModes = rawModes
     .filter(m => m && typeof m === "object" && typeof m.type === "string" && m.type.trim())
     .map(m => ({
@@ -150,106 +163,175 @@ function validateResult(raw) {
   return {
     summary:         typeof base.summary         === "string" ? base.summary         : "",
     pattern:         typeof base.pattern         === "string" ? base.pattern         : "",
-    strengths:       Array.isArray(base.strengths)       ? base.strengths.filter(s => typeof s === "string")       : [],
-    energySources:   Array.isArray(base.energySources)   ? base.energySources.filter(s => typeof s === "string")   : [],
-    nextFocus:       typeof base.nextFocus        === "string" ? base.nextFocus       : "",
-    suggestedAction: typeof base.suggestedAction  === "string" ? base.suggestedAction : "",
-    confidence:      typeof base.confidence       === "number" ? base.confidence      : null,
+    strengths:       Array.isArray(base.strengths)     ? base.strengths.filter(s => typeof s === "string")     : [],
+    energySources:   Array.isArray(base.energySources) ? base.energySources.filter(s => typeof s === "string") : [],
+    nextFocus:       typeof base.nextFocus        === "string" ? base.nextFocus        : "",
+    suggestedAction: typeof base.suggestedAction  === "string" ? base.suggestedAction  : "",
+    confidence:      typeof base.confidence       === "number" ? base.confidence       : null,
     scores,
     identityModes,
   };
 }
 
-function computeSocialStats(scores) {
-  const keys = SCORE_ORDER.filter(k => scores[k] != null);
-  if (!keys.length) return { percentile: 35, floor: 45, ceiling: 90 };
-  const avg        = keys.reduce((s, k) => s + scores[k], 0) / keys.length;
-  const percentile = Math.max(8,  Math.min(48, Math.round(48 - (avg - 10) * 1.8)));
-  const floor      = Math.max(30, Math.min(58, Math.round(30 + (avg / 25) * 28)));
-  const ceiling    = Math.min(95, floor + 40);
-  return { percentile, floor, ceiling };
+/* ─────────────────────────────────────────────────────────────
+   ORGANIC BLOB — helpers + CSS
+───────────────────────────────────────────────────────────── */
+
+function getDominantGradient(dims) {
+  if (!dims || dims.length === 0) return ["#6366f1", "#818cf8", "#a5b4fc"];
+  const top = dims.reduce((a, b) => toSafeNum(a.value, 0) >= toSafeNum(b.value, 0) ? a : b);
+  const palettes = {
+    "#6366f1": ["#6366f1", "#818cf8", "#a5b4fc"],
+    "#f59e0b": ["#d97706", "#f59e0b", "#fbbf24"],
+    "#8b5cf6": ["#7c3aed", "#8b5cf6", "#a78bfa"],
+    "#0ea5e9": ["#0284c7", "#0ea5e9", "#38bdf8"],
+    "#ec4899": ["#db2777", "#ec4899", "#f472b6"],
+  };
+  return palettes[typeof top.color === "string" ? top.color : ""] || ["#6366f1", "#818cf8", "#a5b4fc"];
+}
+
+function getBlobShape(dims) {
+  if (!dims || dims.length < 5) return "50% 50% 50% 50% / 50% 50% 50% 50%";
+  const vals = dims.map(d => toSafeNum(d.value, 50));
+  const n = (v) => 30 + (v / 100) * 35;
+  const s = `${n(vals[0]).toFixed(0)}% ${(100-n(vals[1])).toFixed(0)}% ${n(vals[2]).toFixed(0)}% ${(100-n(vals[3])).toFixed(0)}% / ${(100-n(vals[1])).toFixed(0)}% ${n(vals[2]).toFixed(0)}% ${(100-n(vals[3])).toFixed(0)}% ${n(vals[4]).toFixed(0)}%`;
+  return s.includes("NaN") ? "50% 50% 50% 50% / 50% 50% 50% 50%" : s;
+}
+
+function getBlobShapeAlt(dims) {
+  if (!dims || dims.length < 5) return "50% 50% 50% 50% / 50% 50% 50% 50%";
+  const vals = dims.map(d => toSafeNum(d.value, 50));
+  const n = (v) => 30 + (v / 100) * 35;
+  const s = `${(100-n(vals[0])).toFixed(0)}% ${n(vals[1]).toFixed(0)}% ${(100-n(vals[2])).toFixed(0)}% ${n(vals[3]).toFixed(0)}% / ${n(vals[2]).toFixed(0)}% ${(100-n(vals[3])).toFixed(0)}% ${n(vals[4]).toFixed(0)}% ${(100-n(vals[0])).toFixed(0)}%`;
+  return s.includes("NaN") ? "50% 50% 50% 50% / 50% 50% 50% 50%" : s;
+}
+
+const BLOB_KEYFRAMES = `
+  @keyframes blobBreath {
+    0%   { transform: scale(1);    border-radius: var(--s1); }
+    40%  { transform: scale(1.03); border-radius: var(--s2); }
+    70%  { transform: scale(1.01); border-radius: var(--s1); }
+    100% { transform: scale(1);    border-radius: var(--s1); }
+  }
+  @keyframes glowA {
+    0%, 100% { opacity: 0.55; transform: scale(1); }
+    50%       { opacity: 0.75; transform: scale(1.08); }
+  }
+  @keyframes glowB {
+    0%, 100% { opacity: 0.25; transform: scale(1.1); }
+    50%       { opacity: 0.40; transform: scale(1); }
+  }
+`;
+
+let kfInjected = false;
+function injectKeyframes() {
+  if (kfInjected) return;
+  const s = document.createElement("style");
+  s.textContent = BLOB_KEYFRAMES;
+  document.head.appendChild(s);
+  kfInjected = true;
 }
 
 /* ─────────────────────────────────────────────────────────────
-   ICONS
+   ORGANIC BLOB
 ───────────────────────────────────────────────────────────── */
-const IconInsight = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-  </svg>
-);
-const IconShield = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-  </svg>
-);
-const IconLightning = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
-);
-const IconCompass = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-    <circle cx="12" cy="12" r="10" /><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-  </svg>
-);
-const IconRocket = () => (
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
-    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-    <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
-  </svg>
-);
 
-/* ── SectionLabel ─────────────────────────────────────────── */
-const SectionLabel = ({ children, icon, color }) => (
-  <div style={{
-    display: "flex", alignItems: "center", gap: 6,
-    fontSize: FS.label, letterSpacing: "0.15em", textTransform: "uppercase",
-    color: color || T.muted, fontWeight: 600, marginBottom: 12,
-  }}>
-    {icon}{children}
-  </div>
-);
+function OrganicBlob({ dims = [], size = 320 }) {
+  const colors = getDominantGradient(dims);
+  const s1     = getBlobShape(dims);
+  const s2     = getBlobShapeAlt(dims);
+  const c0     = typeof colors[0] === "string" ? colors[0] : "#6366f1";
+  const c1     = typeof colors[1] === "string" ? colors[1] : "#818cf8";
+  const c2     = typeof colors[2] === "string" ? colors[2] : "#a5b4fc";
 
-/* ── ScoreRing ────────────────────────────────────────────── */
-function ScoreRing({ name, value, animated }) {
-  const pct   = animated ? scorePct(value) : 0;
-  const color = SCORE_COLORS[name] || CLR.primary;
-  const R = 34, SIZE = 88, CX = SIZE / 2;
-  const circ   = 2 * Math.PI * R;
-  const offset = circ * (1 - pct / 100);
+  useEffect(() => { injectKeyframes(); }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ overflow: "visible" }}>
-        <circle cx={CX} cy={CX} r={R} fill="none" stroke="rgba(0,0,0,0.10)" strokeWidth="10" />
-        <circle
-          cx={CX} cy={CX} r={R} fill="none"
-          stroke={color} strokeWidth="10" strokeLinecap="round"
-          strokeDasharray={circ} strokeDashoffset={offset}
-          transform={`rotate(-90 ${CX} ${CX})`}
-          style={{ transition: "stroke-dashoffset 900ms cubic-bezier(0.0,0.0,0.2,1)" }}
-        />
-        <text x={CX} y={CX} textAnchor="middle" dominantBaseline="central"
-          style={{ fontSize: 14, fontWeight: 700, fill: T.high, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
-          {pct}%
-        </text>
-      </svg>
-      <div style={{ fontSize: FS.label, letterSpacing: "0.09em", textTransform: "uppercase", color: T.low, fontWeight: 500 }}>
-        {name}
+    <div style={{ position: "relative", width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "absolute", inset: -48, borderRadius: "50%", background: `radial-gradient(circle at 40% 40%, ${c0}60 0%, ${c0}28 40%, transparent 70%)`, filter: "blur(36px)", pointerEvents: "none", animation: "glowA 8s ease-in-out infinite" }} />
+      <div style={{ position: "absolute", inset: -80, borderRadius: "50%", background: `radial-gradient(circle at 60% 60%, ${c1}44 0%, transparent 65%)`, filter: "blur(56px)", pointerEvents: "none", animation: "glowB 9s ease-in-out infinite" }} />
+      <div style={{
+        width: size, height: size, borderRadius: s1, position: "relative",
+        background:   `linear-gradient(135deg, ${c0} 0%, ${c1} 50%, ${c2} 100%)`,
+        boxShadow:    `0 0 0 1px ${c0}22, inset 0 1px 0 ${c0}40, 0 32px 80px ${c0}40, 0 8px 32px ${c0}30`,
+        "--s1": s1, "--s2": s2,
+        animation:  "blobBreath 8s ease-in-out infinite",
+        willChange: "border-radius, transform",
+      }}>
+        <div style={{ position: "absolute", top: "12%", left: "14%", width: "38%", height: "32%", borderRadius: "50%", background: "radial-gradient(ellipse at 40% 35%, rgba(255,255,255,0.32) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: "10%", right: "12%", width: "42%", height: "36%", borderRadius: "50%", background: `radial-gradient(ellipse, ${c0}50 0%, transparent 70%)`, filter: "blur(12px)", pointerEvents: "none" }} />
       </div>
     </div>
   );
 }
 
-/* ── BulletList ───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   SHAREABLE AVATAR CARD — offscreen, html-to-image target
+───────────────────────────────────────────────────────────── */
+
+function ShareableAvatarCard({ wrapperRef, dims = [], type = "", tagline = "" }) {
+  const colors    = getDominantGradient(dims);
+  const shape1    = getBlobShape(dims);
+  const glow      = typeof colors[0] === "string" ? colors[0] : "#6366f1";
+  const safeType  = toSafeStr(type, "Explorer") || "Explorer";
+  const safeTag   = toSafeStr(tagline, "");
+
+  return (
+    <div ref={wrapperRef} style={{ width: 400, height: 560, background: "#07070f", borderRadius: 28, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", padding: "40px 36px 36px", position: "relative", overflow: "hidden", fontFamily: "system-ui, sans-serif", boxSizing: "border-box" }}>
+      <div style={{ position: "absolute", top: -60, left: "50%", transform: "translateX(-50%)", width: 500, height: 500, borderRadius: "50%", background: `radial-gradient(circle, ${glow}20 0%, transparent 65%)`, filter: "blur(60px)", pointerEvents: "none" }} />
+      <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: 1 }}>
+        <span style={{ fontSize: 11, letterSpacing: "0.28em", textTransform: "uppercase", color: "rgba(255,255,255,0.22)", fontWeight: 600 }}>clarity</span>
+        <span style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: glow, fontWeight: 600, border: `1px solid ${glow}44`, padding: "4px 14px", borderRadius: 40 }}>Dein Profil</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, position: "relative", zIndex: 1 }}>
+        <div style={{ fontSize: 54, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1, textAlign: "center" }}>{safeType}</div>
+        <div style={{ position: "relative" }}>
+          <div style={{ position: "absolute", inset: -40, borderRadius: "50%", background: `radial-gradient(circle, ${glow}50 0%, transparent 68%)`, filter: "blur(28px)" }} />
+          <div style={{ width: 240, height: 240, borderRadius: shape1, background: `linear-gradient(135deg, ${typeof colors[0] === "string" ? colors[0] : "#6366f1"} 0%, ${typeof colors[1] === "string" ? colors[1] : "#818cf8"} 50%, ${typeof colors[2] === "string" ? colors[2] : "#a5b4fc"} 100%)`, boxShadow: `0 24px 64px ${glow}44, inset 0 1px 0 ${glow}40`, position: "relative" }}>
+            <div style={{ position: "absolute", top: "12%", left: "14%", width: "38%", height: "32%", borderRadius: "50%", background: "radial-gradient(ellipse at 40% 35%, rgba(255,255,255,0.28) 0%, transparent 70%)" }} />
+          </div>
+        </div>
+        <div style={{ fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.40)", textAlign: "center", lineHeight: 1.5, maxWidth: 280, fontWeight: 300 }}>"{safeTag}"</div>
+      </div>
+      <div style={{ fontSize: 10, letterSpacing: "0.36em", textTransform: "uppercase", color: "rgba(255,255,255,0.14)", position: "relative", zIndex: 1 }}>clarity.ai</div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────
+   UI PRIMITIVES
+───────────────────────────────────────────────────────────── */
+
+const SectionLabel = ({ children, icon, color }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: FS.label, letterSpacing: "0.15em", textTransform: "uppercase", color: color || T.muted, fontWeight: 600, marginBottom: 12 }}>
+    {icon}{children}
+  </div>
+);
+
+function ScoreRing({ name, value, animated }) {
+  const pct    = animated ? scorePct(value) : 0;
+  const color  = SCORE_COLORS[name] || CLR.primary;
+  const R = 34, SIZE = 88, CX = SIZE / 2;
+  const circ   = 2 * Math.PI * R;
+  const offset = circ * (1 - pct / 100);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ overflow: "visible" }}>
+        <circle cx={CX} cy={CX} r={R} fill="none" stroke="rgba(0,0,0,0.10)" strokeWidth="10" />
+        <circle cx={CX} cy={CX} r={R} fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
+          strokeDasharray={circ} strokeDashoffset={offset}
+          transform={`rotate(-90 ${CX} ${CX})`}
+          style={{ transition: "stroke-dashoffset 900ms cubic-bezier(0.0,0.0,0.2,1)" }} />
+        <text x={CX} y={CX} textAnchor="middle" dominantBaseline="central"
+          style={{ fontSize: 14, fontWeight: 700, fill: T.high, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" }}>
+          {pct}%
+        </text>
+      </svg>
+      <div style={{ fontSize: FS.label, letterSpacing: "0.09em", textTransform: "uppercase", color: T.low, fontWeight: 500 }}>{name}</div>
+    </div>
+  );
+}
+
 function BulletList({ items, accentColor = CLR.primary }) {
   if (!items?.length) return null;
   return (
@@ -264,366 +346,93 @@ function BulletList({ items, accentColor = CLR.primary }) {
   );
 }
 
-/* ── Section ──────────────────────────────────────────────── */
 function Section({ children, style = {}, delay = 0, onVisible }) {
-  const ref          = useRef(null);
+  const ref = useRef(null);
   const [visible, setVisible] = useState(false);
-  const onVisibleRef = useRef(onVisible);
-  onVisibleRef.current = onVisible;
+  const cbRef = useRef(onVisible);
+  cbRef.current = onVisible;
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          const tid = setTimeout(() => {
-            setVisible(true);
-            onVisibleRef.current?.();
-          }, delay);
-          observer.unobserve(el);
-          return () => clearTimeout(tid);
-        }
-      },
-      { threshold: 0, rootMargin: "0px 0px -8% 0px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        const tid = setTimeout(() => { setVisible(true); cbRef.current?.(); }, delay);
+        obs.unobserve(el);
+        return () => clearTimeout(tid);
+      }
+    }, { threshold: 0, rootMargin: "0px 0px -8% 0px" });
+    obs.observe(el);
+    return () => obs.disconnect();
   }, [delay]);
 
   return (
-    <div ref={ref} style={{
-      maxWidth: 600, margin: "0 auto", padding: "0 24px", marginBottom: 36,
-      opacity:    visible ? 1 : 0,
-      transform:  visible ? "none" : "translateY(18px)",
-      transition: "opacity 520ms ease, transform 520ms ease",
-      willChange: "opacity, transform",
-      ...style,
-    }}>
+    <div ref={ref} style={{ maxWidth: 600, margin: "0 auto", padding: "0 24px", marginBottom: 36, opacity: visible ? 1 : 0, transform: visible ? "none" : "translateY(18px)", transition: "opacity 520ms ease, transform 520ms ease", willChange: "opacity, transform", ...style }}>
       {children}
     </div>
   );
 }
 
-/* ── Divider ──────────────────────────────────────────────── */
 const Divider = () => (
   <div style={{ maxWidth: 600, margin: "0 auto 36px", padding: "0 24px" }}>
     <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }} />
   </div>
 );
 
-/* ── ActionButton ─────────────────────────────────────────── */
-const ActionButton = ({ label, onClick, active = true, green = false, style: extra = {} }) => (
+const ActionButton = ({ label, onClick, active = true, green = false }) => (
   <button onClick={onClick} style={{
     height: 44, padding: "0 22px",
     background: green && active ? CLR.green : active ? "#111" : "rgba(0,0,0,0.10)",
     color: "#fff", border: "none",
-    fontFamily:   "'Helvetica Neue', Helvetica, Arial, sans-serif",
-    fontSize:     FS.small, fontWeight: 600, borderRadius: 10,
-    cursor:       active ? "pointer" : "not-allowed",
-    transition:   "background 200ms",
-    boxShadow:    active && green ? "0 3px 12px rgba(45,158,116,0.22)" : active ? "0 3px 10px rgba(0,0,0,0.12)" : "none",
-    ...extra,
+    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+    fontSize: FS.small, fontWeight: 600, borderRadius: 10,
+    cursor: active ? "pointer" : "not-allowed",
+    transition: "background 200ms",
+    boxShadow: active && green ? "0 3px 12px rgba(45,158,116,0.22)" : active ? "0 3px 10px rgba(0,0,0,0.12)" : "none",
   }}>
     {label}
   </button>
 );
 
-const BackButton = ({ onClick }) => (
-  <button onClick={onClick} style={{
-    height: 44, padding: "0 18px", background: "transparent", color: T.low,
-    border: "1px solid rgba(0,0,0,0.12)",
-    fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-    fontSize: FS.small, fontWeight: 500, borderRadius: 10, cursor: "pointer",
-  }}>
-    ← Zurück
-  </button>
+const IconInsight = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+);
+const IconShield = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+const IconLightning = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+const IconCompass = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <circle cx="12" cy="12" r="10" /><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+  </svg>
+);
+const IconRocket = () => (
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+    <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+    <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" /><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+  </svg>
 );
 
 /* ─────────────────────────────────────────────────────────────
-   RadialAvatar — bold minimal identity symbol
-───────────────────────────────────────────────────────────── */
-function RadialAvatar({ scores }) {
-  const AVATAR_COLOR = "#4F8CFF";
-
-  const size      = 360;
-  const center    = size / 2;
-  const radius    = 148;
-  const total     = SCORE_ORDER.length;
-  const angleStep = (Math.PI * 2) / total;
-
-  const points = SCORE_ORDER.map((key, i) => {
-    const raw   = scores[key] != null ? scores[key] : 0;
-    const pct   = Math.min(Math.max(raw * 3, 6), 75) / 75;
-    const angle = i * angleStep - Math.PI / 2;
-    return {
-      x: center + Math.cos(angle) * radius * pct,
-      y: center + Math.sin(angle) * radius * pct,
-    };
-  });
-
-  const shapePath = points.map(p => `${p.x},${p.y}`).join(" ");
-
-  return (
-    <div style={{
-      position:       "relative",
-      display:        "flex",
-      alignItems:     "center",
-      justifyContent: "center",
-      padding:        "20px",
-    }}>
-
-      {/* Strong radial glow */}
-      <div style={{
-        position:     "absolute",
-        width:        280,
-        height:       280,
-        borderRadius: "50%",
-        background:   "radial-gradient(ellipse at center, rgba(79,140,255,0.38) 0%, rgba(79,140,255,0.12) 45%, transparent 72%)",
-        filter:       "blur(24px)",
-        pointerEvents: "none",
-      }} />
-
-      {/* Secondary outer halo */}
-      <div style={{
-        position:     "absolute",
-        width:        360,
-        height:       360,
-        borderRadius: "50%",
-        background:   "radial-gradient(ellipse at center, transparent 30%, rgba(79,140,255,0.08) 60%, transparent 80%)",
-        pointerEvents: "none",
-      }} />
-
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        style={{ overflow: "visible", position: "relative" }}
-      >
-        {/* Outer boundary ring */}
-        <circle
-          cx={center} cy={center}
-          r={radius}
-          fill="none"
-          stroke="rgba(79,140,255,0.12)"
-          strokeWidth="1"
-          strokeDasharray="3 6"
-        />
-
-        {/* Mid reference ring */}
-        <circle
-          cx={center} cy={center}
-          r={radius * 0.5}
-          fill="none"
-          stroke="rgba(79,140,255,0.06)"
-          strokeWidth="1"
-        />
-
-        {/* Identity shape */}
-        <polygon
-          points={shapePath}
-          fill="rgba(79,140,255,0.14)"
-          stroke={AVATAR_COLOR}
-          strokeWidth="4.5"
-          strokeLinejoin="round"
-          style={{
-            filter: "drop-shadow(0 0 22px rgba(79,140,255,0.60)) drop-shadow(0 0 8px rgba(79,140,255,0.40))",
-          }}
-        />
-
-        {/* Vertex anchor dots */}
-        {points.map((p, i) => (
-          <circle
-            key={i}
-            cx={p.x} cy={p.y}
-            r="7"
-            fill={AVATAR_COLOR}
-            stroke="#0a0a0a"
-            strokeWidth="2"
-            style={{ filter: "drop-shadow(0 0 6px rgba(79,140,255,0.70))" }}
-          />
-        ))}
-      </svg>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────
-   ClarityAvatarCard — 1200×1600 identity share card
-───────────────────────────────────────────────────────────── */
-function ClarityAvatarCard({ result, wrapperRef }) {
-  const safeR      = validateResult(result);
-  const scores     = safeR.scores;
-  const identModes = safeR.identityModes.length > 0 ? safeR.identityModes : [IDENTITY_FALLBACK];
-  const { percentile } = computeSocialStats(scores);
-
-  const topKey = SCORE_ORDER.reduce((best, k) => {
-    if (scores[k] == null) return best;
-    return (best == null || scores[k] > scores[best]) ? k : best;
-  }, null);
-  const accentColor = topKey ? SCORE_COLORS[topKey] : "#4F8CFF";
-
-  const summaryShort = safeR.summary
-    ? (safeR.summary.length > 120 ? safeR.summary.slice(0, 118).trimEnd() + "…" : safeR.summary)
-    : "";
-
-  const FF = "'Helvetica Neue', Helvetica, Arial, sans-serif";
-
-  return (
-    <div ref={wrapperRef} style={{
-      width: 1200, height: 1600,
-      background: "#0a0a0a",
-      display: "flex", flexDirection: "column",
-      fontFamily: FF,
-      position: "relative",
-      overflow: "hidden",
-    }}>
-
-      {/* Background atmosphere blobs */}
-      <div style={{
-        position: "absolute", top: -300, left: "50%",
-        transform: "translateX(-50%)",
-        width: 1100, height: 1100, borderRadius: "50%",
-        background: "radial-gradient(ellipse, rgba(79,140,255,0.09) 0%, transparent 65%)",
-        pointerEvents: "none",
-      }} />
-      <div style={{
-        position: "absolute", bottom: -120, right: -120,
-        width: 640, height: 640, borderRadius: "50%",
-        background: "radial-gradient(ellipse, rgba(156,107,255,0.10) 0%, transparent 68%)",
-        pointerEvents: "none",
-      }} />
-
-      {/* Card inner */}
-      <div style={{
-        flex: 1, display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "space-between",
-        padding: "88px 100px 80px",
-        position: "relative", zIndex: 1,
-      }}>
-
-        {/* TOP: wordmark + badge */}
-        <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{
-            fontSize: 13, letterSpacing: "0.52em", textTransform: "uppercase",
-            color: "#fff", opacity: 0.22, fontWeight: 500,
-          }}>
-            clarity
-          </div>
-          <div style={{
-            fontSize: 11, letterSpacing: "0.28em", textTransform: "uppercase",
-            color: accentColor, fontWeight: 600,
-            border: `1px solid ${accentColor}55`,
-            padding: "7px 18px", borderRadius: 40,
-          }}>
-            Dein Profil
-          </div>
-        </div>
-
-        {/* MIDDLE: identity → avatar → summary */}
-        <div style={{
-          flex: 1, display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          textAlign: "center", padding: "40px 0 0",
-          width: "100%",
-        }}>
-
-          {/* Primary identity */}
-          <div style={{
-            fontSize: 120, fontWeight: 800,
-            letterSpacing: "-0.04em", lineHeight: 0.88,
-            color: "#fff", marginBottom: 18,
-          }}>
-            {identModes[0].type}
-          </div>
-
-          {/* Secondary identity */}
-          {identModes[1] && (
-            <div style={{
-              fontSize: 22, color: "#fff", opacity: 0.30,
-              letterSpacing: "0.16em", textTransform: "uppercase",
-              fontWeight: 400, marginBottom: 12,
-            }}>
-              + {identModes[1].type}
-            </div>
-          )}
-
-          {/* Accent rule */}
-          <div style={{
-            width: 48, height: 3, borderRadius: 2,
-            background: accentColor,
-            margin: "0 auto 52px",
-            boxShadow: `0 0 16px ${accentColor}88`,
-          }} />
-
-          {/* RadialAvatar scaled up for 1200px card */}
-          <div style={{ transform: "scale(1.55)", transformOrigin: "center center", marginBottom: 0 }}>
-            <RadialAvatar scores={scores} />
-          </div>
-
-          {/* Summary quote */}
-          {summaryShort && (
-            <div style={{
-              fontSize: 27, fontStyle: "italic",
-              color: "#fff", opacity: 0.44,
-              lineHeight: 1.60, maxWidth: 800,
-              fontWeight: 300, marginTop: 52,
-            }}>
-              "{summaryShort}"
-            </div>
-          )}
-
-        </div>
-
-        {/* BOTTOM: percentile row */}
-        <div style={{ width: "100%" }}>
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", marginBottom: 32 }} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <div>
-              <div style={{
-                fontSize: 10, letterSpacing: "0.34em", textTransform: "uppercase",
-                color: "#fff", opacity: 0.22, marginBottom: 8,
-              }}>
-                Top Teilnehmende
-              </div>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span style={{
-                  fontSize: 60, fontWeight: 800,
-                  color: accentColor, letterSpacing: "-0.03em", lineHeight: 1,
-                }}>
-                  {percentile}%
-                </span>
-                <span style={{ fontSize: 16, color: "#fff", opacity: 0.30 }}>weltweit</span>
-              </div>
-            </div>
-            <div style={{
-              fontSize: 11, letterSpacing: "0.44em", textTransform: "uppercase",
-              color: "#fff", opacity: 0.13,
-            }}>
-              clarity.ai
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────
-   ResultSection
+   RESULT SCREEN
 ───────────────────────────────────────────────────────────── */
 
-function ResultSection({ result: realResult }) {
+export function ResultScreen({ result: realResult }) {
   const [vis,               setVis]               = useState(false);
-  const [headerVis,         setHeaderVis]          = useState(false);
-  const [avatarVis,         setAvatarVis]          = useState(false);
   const [barsReady,         setBarsReady]          = useState(false);
-  const [hoverCta,          setHoverCta]           = useState(false);
   const [generating,        setGenerating]         = useState(false);
   const [shareConfirm,      setShareConfirm]       = useState(false);
   const [copiedLink,        setCopiedLink]         = useState(false);
-  const [habitCommitted,    setHabitCommitted]     = useState(false);
+  const [hoverCta,          setHoverCta]           = useState(false);
   const [selectedHabit,     setSelectedHabit]      = useState("");
   const [selectedNutrition, setSelectedNutrition]  = useState(false);
   const [habitTime,         setHabitTime]          = useState("");
@@ -632,30 +441,23 @@ function ResultSection({ result: realResult }) {
   const [habitDone,         setHabitDone]          = useState(false);
   const [checkEmail,        setCheckEmail]         = useState("");
   const [checkEmailDone,    setCheckEmailDone]     = useState(false);
-  const [hoverImg,          setHoverImg]           = useState(false);
-  const [hoverNative,       setHoverNative]        = useState(false);
   const [shareWrapperMounted, setShareWrapperMounted] = useState(false);
-  const [avatarScale,       setAvatarScale]        = useState(0.46);
   const [devProfile,        setDevProfile]         = useState(devProfileFromUrl);
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" ? window.innerWidth < 640 : true
-  );
+  const [isMobile,          setIsMobile]           = useState(typeof window !== "undefined" ? window.innerWidth < 640 : true);
 
-  const shareWrapperRef    = useRef(null);
-  const avatarContainerRef = useRef(null);
+  const shareWrapperRef = useRef(null);
 
-  /* ── Keyboard toggle for dev profiles ──────────────────── */
+  /* ── dev keyboard shortcuts ─────────────────────────────── */
   useEffect(() => {
-    const handleKey = (e) => {
-      // Only fire when no input/textarea is focused
+    const h = (e) => {
       if (["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
       if (e.key === "1") setDevProfile("explorer_low");
       if (e.key === "2") setDevProfile("high_performer");
       if (e.key === "3") setDevProfile("chaotic");
       if (e.key === "0") setDevProfile(null);
     };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
   }, []);
 
   useEffect(() => {
@@ -665,30 +467,49 @@ function ResultSection({ result: realResult }) {
   }, []);
 
   useEffect(() => {
-    const el = avatarContainerRef.current;
-    if (!el) return;
-    const obs = new ResizeObserver(([entry]) => {
-      const w = entry.contentRect.width;
-      if (w > 0) setAvatarScale(w / 1200);
-    });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  useEffect(() => {
+    injectKeyframes();
     window.scrollTo({ top: 0, behavior: "instant" });
-    const t1 = setTimeout(() => setVis(true),        0);
-    const t2 = setTimeout(() => setHeaderVis(true), 80);
-    const t3 = setTimeout(() => setAvatarVis(true), 220);
-    const t4 = setTimeout(() => setShareWrapperMounted(true), 3000);
-    return () => [t1, t2, t3, t4].forEach(clearTimeout);
+    const t1 = setTimeout(() => setVis(true), 80);
+    const t2 = setTimeout(() => setShareWrapperMounted(true), 3000);
+    return () => [t1, t2].forEach(clearTimeout);
   }, []);
 
   const handleScoresVisible = useCallback(() => {
     setTimeout(() => setBarsReady(true), 180);
   }, []);
 
-  /* ── handlers ──────────────────────────────────────────── */
+  /* ── derived data ───────────────────────────────────────── */
+  const finalResult = devProfile && DEV_PROFILES[devProfile] ? DEV_PROFILES[devProfile] : realResult;
+  const safeResult  = validateResult(finalResult);
+  const scores      = safeResult.scores;
+
+  // identityType — hardened extraction
+  const identityType = (() => {
+    try {
+      const modes = safeResult.identityModes;
+      if (!Array.isArray(modes) || modes.length === 0) return "Explorer";
+      const raw = modes[0];
+      if (!raw) return "Explorer";
+      if (typeof raw === "string") return raw.trim() || "Explorer";
+      if (typeof raw === "object") {
+        const t = raw.type;
+        if (typeof t === "string") return t.trim() || "Explorer";
+      }
+      return "Explorer";
+    } catch { return "Explorer"; }
+  })();
+
+  // blob dimensions (maps scores → OrganicBlob props)
+  const blobDims = SCORE_ORDER.map(k => ({
+    name:  k,
+    value: toSafeNum(scores[k], 50),
+    color: SCORE_COLORS[k] || "#6366f1",
+  }));
+
+  const tagline = safeResult.summary || "Du bist aktuell in einer Phase der Entwicklung.";
+  const habitLabels = { walk: "Spaziergang", meditate: "Meditation", workout: "Workout" };
+
+  /* ── share handlers ─────────────────────────────────────── */
   const generateShareImage = async () => {
     if (generating) return;
     setGenerating(true);
@@ -698,8 +519,8 @@ function ResultSection({ result: realResult }) {
     }
     if (!shareWrapperRef.current) { setGenerating(false); return; }
     try {
-      const { toPng: _toPng } = await import("html-to-image");
-      const dataUrl = await _toPng(shareWrapperRef.current, { cacheBust: true, pixelRatio: 1, style: { borderRadius: "0px" } });
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(shareWrapperRef.current, { cacheBust: true, pixelRatio: 1 });
       if (navigator.share && navigator.canShare) {
         try {
           const blob = await (await fetch(dataUrl)).blob();
@@ -712,16 +533,13 @@ function ResultSection({ result: realResult }) {
         } catch (_) {}
       }
       const a = document.createElement("a");
-      a.download = "clarity-profil.png";
+      a.download = `clarity-${identityType.toLowerCase().replace(/\s+/g, "-")}.png`;
       a.href = dataUrl;
       a.click();
       setShareConfirm(true);
       setTimeout(() => setShareConfirm(false), 3500);
-    } catch (_) {
-      // failed silently
-    } finally {
-      setGenerating(false);
-    }
+    } catch (_) {}
+    finally { setGenerating(false); }
   };
 
   const nativeShare = async () => {
@@ -736,109 +554,80 @@ function ResultSection({ result: realResult }) {
     } catch (_) {}
   };
 
-  const BTN = (label, onClick, hover, setHover, opts = {}) => (
-    <button
-      onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
-      disabled={opts.disabled}
-      style={{
-        border:     `1px solid ${hover ? "transparent" : "rgba(0,0,0,0.13)"}`,
-        background: hover ? "#111" : "rgba(255,255,255,0.70)",
-        color:      hover ? "#fff" : T.high,
-        fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-        fontSize: FS.small, letterSpacing: "0.06em",
-        padding: "12px 22px", borderRadius: 8,
-        cursor:   opts.disabled ? "wait" : "pointer",
-        transition: "background 180ms, color 180ms, border 180ms",
-        opacity:  opts.disabled ? 0.50 : 1,
-        width: "100%", maxWidth: 320,
-        textAlign: "left",
-        boxShadow: hover ? "none" : "0 1px 3px rgba(0,0,0,0.06)",
-        ...opts.style,
-      }}
-    >
-      {label}
-    </button>
-  );
+  /* ── style helpers ──────────────────────────────────────── */
+  const FF = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 
-  /* ── derived data ───────────────────────────────────────── */
-  // Dev override: if a valid devProfile key is active, use that data instead of the real result
-  const finalResult         = devProfile && DEV_PROFILES[devProfile] ? DEV_PROFILES[devProfile] : realResult;
-  console.log("DEV PROFILE:", devProfile);
-
-  const safeResult          = validateResult(finalResult);
-  const scores              = safeResult.scores;
-  const rawIdentModes       = safeResult.identityModes;
-  const effectiveIdentModes = rawIdentModes.length > 0 ? rawIdentModes : [IDENTITY_FALLBACK];
-  const habitLabels = { walk: "Spaziergang", meditate: "Meditation", workout: "Workout" };
+  const fadeUp = (d = 0) => ({
+    opacity:    vis ? 1 : 0,
+    transform:  vis ? "none" : "translateY(20px)",
+    transition: `opacity 600ms ease ${d}ms, transform 600ms ease ${d}ms`,
+  });
 
   /* ── render ─────────────────────────────────────────────── */
   return (
-    <div style={{
-      fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-      opacity:    vis ? 1 : 0, transform: vis ? "none" : "translateY(18px)",
-      transition: "opacity 650ms ease, transform 650ms ease",
-      paddingBottom: 80,
-    }}>
+    <div style={{ fontFamily: FF, opacity: vis ? 1 : 0, transition: "opacity 650ms ease", paddingBottom: 80 }}>
 
-      {/* Dev overlay badge — visible only when a dev profile is active */}
+      {/* Dev badge */}
       {devProfile && DEV_PROFILES[devProfile] && (
-        <div style={{
-          position:   "fixed", top: 12, right: 12, zIndex: 9999,
-          padding:    "6px 14px", borderRadius: 20,
-          background: "rgba(79,140,255,0.92)",
-          color:      "#fff",
-          fontSize:   FS.label, fontWeight: 700, letterSpacing: "0.10em",
-          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-          boxShadow:  "0 2px 12px rgba(79,140,255,0.40)",
-          pointerEvents: "none",
-          textTransform: "uppercase",
-        }}>
+        <div style={{ position: "fixed", top: 12, right: 12, zIndex: 9999, padding: "6px 14px", borderRadius: 20, background: "rgba(79,140,255,0.92)", color: "#fff", fontSize: FS.label, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", fontFamily: FF, pointerEvents: "none" }}>
           DEV · {devProfile}
         </div>
       )}
 
-      {/* Page header */}
-      <div style={{
-        maxWidth: 600, margin: "0 auto", padding: "48px 24px 0",
-        opacity:    headerVis ? 1 : 0, transform: headerVis ? "none" : "translateY(8px)",
-        transition: "opacity 550ms ease, transform 550ms ease",
-      }}>
-        <div style={{ fontSize: FS.label, letterSpacing: "0.18em", textTransform: "uppercase", color: CLR.primary, fontWeight: 600, marginBottom: 6 }}>
-          Dein Clarity Profil
-        </div>
-        <div style={{ width: 20, height: 2, background: `linear-gradient(90deg,${CLR.primary},${CLR.secondary})`, borderRadius: 2 }} />
-      </div>
+      {/* ═══ 1. HERO ══════════════════════════════════════════ */}
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "56px 24px 0", ...fadeUp(0) }}>
 
-      {/* ─── Avatar Card Hero ─────────────────────────────────── */}
-      <div style={{
-        maxWidth: 600, margin: "0 auto", padding: "24px 24px 0",
-        marginBottom: 56,
-        opacity:    avatarVis ? 1 : 0,
-        transform:  avatarVis ? "none" : "translateY(14px)",
-        transition: "opacity 700ms ease, transform 700ms ease",
-      }}>
-        <div
-          ref={avatarContainerRef}
-          style={{
-            width: "100%",
-            position: "relative",
-            paddingTop: "133.33%",
-            borderRadius: 20,
-            overflow: "hidden",
-            boxShadow: "0 24px 64px rgba(0,0,0,0.22), 0 4px 16px rgba(0,0,0,0.10)",
-          }}
-        >
-          <div style={{
-            position: "absolute", top: 0, left: 0,
-            transformOrigin: "top left",
-            transform: `scale(${avatarScale})`,
-          }}>
-            <ClarityAvatarCard result={finalResult} />
+        {/* Identity moment */}
+        <div style={{ textAlign: "center", marginBottom: 44 }}>
+          <p style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8", fontWeight: 600, margin: "0 0 20px" }}>
+            Clarity hat erkannt
+          </p>
+          <p style={{ fontSize: "clamp(16px, 3.5vw, 20px)", fontWeight: 400, color: "#94a3b8", lineHeight: 1, margin: "0 0 6px" }}>
+            Du bist ein
+          </p>
+          <h1 style={{ fontSize: "clamp(52px, 13vw, 88px)", fontWeight: 900, letterSpacing: "-0.045em", lineHeight: 0.92, margin: "0 0 24px" }}>
+            <span style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              {identityType}
+            </span>
+          </h1>
+          <p style={{ fontSize: "clamp(15px, 2.5vw, 17px)", color: "#334155", lineHeight: 1.65, maxWidth: 380, margin: "0 auto", fontWeight: 400, letterSpacing: "-0.01em" }}>
+            {IDENTITY_DESCRIPTORS[identityType] || IDENTITY_DESCRIPTOR_DEFAULT}
+          </p>
+        </div>
+
+        {/* Blob + personal tagline */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, marginBottom: 36 }}>
+          <OrganicBlob dims={blobDims} size={300} />
+          <p style={{ fontSize: 16, fontStyle: "italic", color: "#64748b", textAlign: "center", maxWidth: 420, lineHeight: 1.7, margin: 0, opacity: 0.85 }}>
+            "{tagline}"
+          </p>
+        </div>
+
+        {/* Hero share buttons */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginBottom: 64 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
+            <button
+              onClick={generateShareImage} disabled={generating}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 48, padding: "0 24px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontSize: 14, fontWeight: 600, cursor: generating ? "not-allowed" : "pointer", opacity: generating ? 0.55 : 1, fontFamily: "inherit", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", transition: "background 150ms" }}
+              onMouseEnter={e => { if (!generating) e.currentTarget.style.background = "#1e293b"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "#0f172a"; }}>
+              {generating ? "Erstelle Bild…" : `Mein ${identityType}-Profil speichern`}
+            </button>
+            <button
+              onClick={nativeShare}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 48, padding: "0 24px", borderRadius: 999, border: "1.5px solid #e2e8f0", background: "transparent", color: "#475569", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", transition: "border-color 150ms, color 150ms" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = "#94a3b8"; e.currentTarget.style.color = "#0f172a"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#475569"; }}>
+              {copiedLink ? "✓ Link kopiert" : "Link teilen"}
+            </button>
           </div>
+          {shareConfirm && (
+            <div style={{ fontSize: FS.small, color: CLR.green, fontWeight: 500 }}>✓ Bild gespeichert.</div>
+          )}
         </div>
       </div>
 
-      {/* Section 0 — Summary */}
+      {/* ═══ 2. SUMMARY ══════════════════════════════════════ */}
       {safeResult.summary && (
         <Section delay={80}>
           <div style={{ ...CARD }}>
@@ -850,41 +639,7 @@ function ResultSection({ result: realResult }) {
         </Section>
       )}
 
-      {/* Section 1 — Explanation */}
-      <Section delay={safeResult.summary ? 160 : 80}>
-        <div style={{ ...CARD }}>
-          <SectionLabel>Was zeigt diese Analyse?</SectionLabel>
-          <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.65, marginBottom: 10 }}>
-            Diese Analyse zeigt deine Stärke in fünf Bereichen deines Lebens.
-          </div>
-          <div style={{ fontSize: FS.small, color: T.low, lineHeight: 1.65 }}>
-            Sie basiert auf deinem Gespräch mit Clarity und zeigt dir, wo du gerade stehst.
-          </div>
-        </div>
-      </Section>
-
-      {/* ═══ VERSTÄNDNIS ════════════════════════════════════════ */}
-
-      {SCORE_ORDER.some(k => scores[k] != null) && (
-        <Section delay={0} onVisible={handleScoresVisible}>
-          <SectionLabel>Dein Profil</SectionLabel>
-          <div style={{
-            display: "flex",
-            flexWrap:       isMobile ? "wrap" : "nowrap",
-            justifyContent: isMobile ? "flex-start" : "space-between",
-            gap:            isMobile ? 20 : 8,
-          }}>
-            {SCORE_ORDER.map(key => scores[key] != null ? (
-              <div key={key} style={{ flexShrink: 0, width: isMobile ? "calc(50% - 10px)" : "auto", display: "flex", justifyContent: "center" }}>
-                <ScoreRing name={key} value={scores[key]} animated={barsReady} />
-              </div>
-            ) : null)}
-          </div>
-        </Section>
-      )}
-
-      {/* ═══ INSIGHTS ══════════════════════════════════════════ */}
-
+      {/* ═══ 3. INSIGHTS ══════════════════════════════════════ */}
       {safeResult.pattern && (
         <Section delay={0}>
           <div style={insightBorder(CLR.primary)}>
@@ -914,21 +669,30 @@ function ResultSection({ result: realResult }) {
 
       <Divider />
 
-      {/* ═══ HANDLUNG ══════════════════════════════════════════ */}
+      {/* ═══ 4. DIMENSIONS ════════════════════════════════════ */}
+      {SCORE_ORDER.some(k => scores[k] != null) && (
+        <Section delay={0} onVisible={handleScoresVisible}>
+          <SectionLabel>Dein Profil</SectionLabel>
+          <div style={{ display: "flex", flexWrap: isMobile ? "wrap" : "nowrap", justifyContent: isMobile ? "flex-start" : "space-between", gap: isMobile ? 20 : 8 }}>
+            {SCORE_ORDER.map(k => scores[k] != null ? (
+              <div key={k} style={{ flexShrink: 0, width: isMobile ? "calc(50% - 10px)" : "auto", display: "flex", justifyContent: "center" }}>
+                <ScoreRing name={k} value={scores[k]} animated={barsReady} />
+              </div>
+            ) : null)}
+          </div>
+        </Section>
+      )}
 
+      <Divider />
+
+      {/* ═══ 5. ACTION / HABIT SYSTEM ═════════════════════════ */}
       <Section delay={0}>
         <div style={{ ...CARD, borderLeft: `3px solid ${CLR.green}`, borderRadius: "0 12px 12px 0" }}>
           <SectionLabel color={CLR.green}>Dein Fortschrittspotenzial</SectionLabel>
           <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.7, marginBottom: 12 }}>
             Dein größter Hebel liegt in der Transformation deiner täglichen Gewohnheiten.
           </div>
-          <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.7, marginBottom: 14 }}>
-            Mit den richtigen Gewohnheiten kannst du deine Stärke in diesen fünf Bereichen in wenigen Wochen deutlich steigern.
-          </div>
           <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)", paddingTop: 14 }}>
-            <div style={{ fontSize: FS.small, color: T.low, lineHeight: 1.65, marginBottom: 6 }}>
-              Es gibt zwei Arten von Gewohnheiten: die, die es sich lohnt aufzugeben — und die, die es sich lohnt zu beginnen.
-            </div>
             <div style={{ fontSize: FS.small, color: CLR.green, lineHeight: 1.65, fontWeight: 600, marginBottom: 6 }}>
               Clarity arbeitet mit positiven Gewohnheiten.
             </div>
@@ -948,12 +712,7 @@ function ResultSection({ result: realResult }) {
 
           {habitDone ? (
             <div>
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 12,
-                padding: "8px 16px", borderRadius: 20,
-                background: "rgba(45,158,116,0.09)", border: "1px solid rgba(45,158,116,0.22)",
-                fontSize: FS.small, color: CLR.green, fontWeight: 600,
-              }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 12, padding: "8px 16px", borderRadius: 20, background: "rgba(45,158,116,0.09)", border: "1px solid rgba(45,158,116,0.22)", fontSize: FS.small, color: CLR.green, fontWeight: 600 }}>
                 ✓ Geplant für heute.
               </div>
               <div style={{ fontSize: FS.body, color: T.low, lineHeight: 1.6, marginBottom: 4 }}>
@@ -968,6 +727,7 @@ function ResultSection({ result: realResult }) {
               <div style={{ fontSize: FS.label, color: T.muted, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 600, marginBottom: 12 }}>
                 Wähle heute eine kleine Aktion:
               </div>
+
               {[
                 { id: "walk",     primary: "20 Minuten Spaziergang im Park oder Wald ohne Handy", secondary: null },
                 { id: "meditate", primary: "5 Minuten Meditation", secondary: "Aufrecht sitzen, Augen schließen, ruhig ein- und ausatmen." },
@@ -975,32 +735,14 @@ function ResultSection({ result: realResult }) {
               ].map(item => {
                 const sel = selectedHabit === item.id;
                 return (
-                  <div key={item.id}
-                    onClick={() => { if (habitStep === 1) setSelectedHabit(item.id); }}
-                    style={{
-                      display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10,
-                      cursor: habitStep === 1 ? "pointer" : "default",
-                      padding: "11px 13px", borderRadius: 10,
-                      background: sel ? "rgba(79,140,255,0.07)" : "rgba(0,0,0,0.02)",
-                      border: `1px solid ${sel ? "rgba(79,140,255,0.26)" : "rgba(0,0,0,0.07)"}`,
-                      transition: "background 140ms, border 140ms",
-                    }}>
-                    <div style={{
-                      width: 18, height: 18, borderRadius: "50%", flexShrink: 0, marginTop: 1,
-                      border: `2px solid ${sel ? CLR.primary : "rgba(0,0,0,0.20)"}`,
-                      background: sel ? CLR.primary : "transparent",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      transition: "background 140ms, border 140ms",
-                    }}>
+                  <div key={item.id} onClick={() => { if (habitStep === 1) setSelectedHabit(item.id); }}
+                    style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10, cursor: habitStep === 1 ? "pointer" : "default", padding: "11px 13px", borderRadius: 10, background: sel ? "rgba(79,140,255,0.07)" : "rgba(0,0,0,0.02)", border: `1px solid ${sel ? "rgba(79,140,255,0.26)" : "rgba(0,0,0,0.07)"}`, transition: "background 140ms, border 140ms" }}>
+                    <div style={{ width: 18, height: 18, borderRadius: "50%", flexShrink: 0, marginTop: 1, border: `2px solid ${sel ? CLR.primary : "rgba(0,0,0,0.20)"}`, background: sel ? CLR.primary : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 140ms, border 140ms" }}>
                       {sel && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#fff" }} />}
                     </div>
                     <div>
-                      <div style={{ fontSize: FS.body, color: sel ? T.high : T.mid, lineHeight: 1.5, fontWeight: sel ? 600 : 400 }}>
-                        {item.primary}
-                      </div>
-                      {item.secondary && (
-                        <div style={{ fontSize: FS.small, color: T.low, lineHeight: 1.5, marginTop: 2 }}>{item.secondary}</div>
-                      )}
+                      <div style={{ fontSize: FS.body, color: sel ? T.high : T.mid, lineHeight: 1.5, fontWeight: sel ? 600 : 400 }}>{item.primary}</div>
+                      {item.secondary && <div style={{ fontSize: FS.small, color: T.low, lineHeight: 1.5, marginTop: 2 }}>{item.secondary}</div>}
                     </div>
                   </div>
                 );
@@ -1008,32 +750,14 @@ function ResultSection({ result: realResult }) {
 
               {selectedHabit && habitStep === 1 && (
                 <div style={{ borderTop: "1px solid rgba(0,0,0,0.07)", paddingTop: 14, marginTop: 4, marginBottom: 18 }}>
-                  <div style={{ fontSize: FS.label, color: T.muted, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>
-                    Nutrition (optional)
-                  </div>
-                  <div onClick={() => setSelectedNutrition(v => !v)} style={{
-                    display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer",
-                    padding: "11px 13px", borderRadius: 10,
-                    background: selectedNutrition ? "rgba(45,158,116,0.06)" : "rgba(0,0,0,0.02)",
-                    border: `1px solid ${selectedNutrition ? "rgba(45,158,116,0.22)" : "rgba(0,0,0,0.07)"}`,
-                    transition: "background 140ms, border 140ms",
-                  }}>
-                    <div style={{
-                      width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 1,
-                      border: `2px solid ${selectedNutrition ? CLR.green : "rgba(0,0,0,0.20)"}`,
-                      background: selectedNutrition ? CLR.green : "transparent",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      transition: "background 140ms, border 140ms",
-                    }}>
-                      {selectedNutrition && (
-                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                          <polyline points="2,6 5,9 10,3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
+                  <div style={{ fontSize: FS.label, color: T.muted, letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 600, marginBottom: 10 }}>Nutrition (optional)</div>
+                  <div onClick={() => setSelectedNutrition(v => !v)}
+                    style={{ display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer", padding: "11px 13px", borderRadius: 10, background: selectedNutrition ? "rgba(45,158,116,0.06)" : "rgba(0,0,0,0.02)", border: `1px solid ${selectedNutrition ? "rgba(45,158,116,0.22)" : "rgba(0,0,0,0.07)"}`, transition: "background 140ms, border 140ms" }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 4, flexShrink: 0, marginTop: 1, border: `2px solid ${selectedNutrition ? CLR.green : "rgba(0,0,0,0.20)"}`, background: selectedNutrition ? CLR.green : "transparent", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 140ms, border 140ms" }}>
+                      {selectedNutrition && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>}
                     </div>
                     <div style={{ fontSize: FS.body, color: selectedNutrition ? T.high : T.mid, lineHeight: 1.5, fontWeight: selectedNutrition ? 500 : 400 }}>
-                      Frischer Salat mit viel Protein{" "}
-                      <span style={{ color: T.low }}>(z.B. Huhn, Rinderhack oder Rind)</span>
+                      Frischer Salat mit viel Protein <span style={{ color: T.low }}>(z.B. Huhn, Rinderhack oder Rind)</span>
                     </div>
                   </div>
                 </div>
@@ -1050,37 +774,23 @@ function ResultSection({ result: realResult }) {
                   <div style={{ fontSize: FS.small, color: CLR.primary, fontWeight: 500, marginBottom: 14 }}>
                     ✓ {habitLabels[selectedHabit]}{selectedNutrition ? " + Salat" : ""}
                   </div>
-                  <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.6, marginBottom: 12, fontWeight: 500 }}>
-                    Wann möchtest du das machen?
-                  </div>
+                  <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.6, marginBottom: 12, fontWeight: 500 }}>Wann möchtest du das machen?</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
                     {["Heute Nachmittag", "Heute Abend"].map(opt => (
-                      <div key={opt}
-                        onClick={() => { if (habitStep === 2) setHabitTime(opt); }}
-                        style={{
-                          display: "inline-flex", alignItems: "center", cursor: habitStep === 2 ? "pointer" : "default",
-                          padding: "8px 16px", borderRadius: 20,
-                          background: habitTime === opt ? "rgba(79,140,255,0.09)" : "rgba(0,0,0,0.03)",
-                          border: `1px solid ${habitTime === opt ? "rgba(79,140,255,0.28)" : "rgba(0,0,0,0.08)"}`,
-                          fontSize: FS.small, color: habitTime === opt ? CLR.primary : T.mid,
-                          fontWeight: habitTime === opt ? 600 : 400, transition: "all 140ms",
-                        }}>
+                      <div key={opt} onClick={() => { if (habitStep === 2) setHabitTime(opt); }}
+                        style={{ display: "inline-flex", alignItems: "center", cursor: habitStep === 2 ? "pointer" : "default", padding: "8px 16px", borderRadius: 20, background: habitTime === opt ? "rgba(79,140,255,0.09)" : "rgba(0,0,0,0.03)", border: `1px solid ${habitTime === opt ? "rgba(79,140,255,0.28)" : "rgba(0,0,0,0.08)"}`, fontSize: FS.small, color: habitTime === opt ? CLR.primary : T.mid, fontWeight: habitTime === opt ? 600 : 400, transition: "all 140ms" }}>
                         {opt}
                       </div>
                     ))}
                   </div>
                   {habitStep === 2 && (
-                    <input
-                      type="text" placeholder="Oder eigene Uhrzeit eingeben…"
+                    <input type="text" placeholder="Oder eigene Uhrzeit eingeben…"
                       value={["Heute Nachmittag", "Heute Abend"].includes(habitTime) ? "" : habitTime}
                       onChange={e => setHabitTime(e.target.value)}
                       onFocus={() => { if (["Heute Nachmittag", "Heute Abend"].includes(habitTime)) setHabitTime(""); }}
-                      style={{ ...INPUT_STYLE, marginBottom: 14 }}
-                    />
+                      style={{ ...INPUT_STYLE, marginBottom: 14 }} />
                   )}
-                  {habitStep === 2 && habitTime && (
-                    <ActionButton label="Weiter" onClick={() => setHabitStep(3)} active />
-                  )}
+                  {habitStep === 2 && habitTime && <ActionButton label="Weiter" onClick={() => setHabitStep(3)} active />}
                 </div>
               )}
 
@@ -1089,21 +799,12 @@ function ResultSection({ result: realResult }) {
                   <div style={{ fontSize: FS.small, color: CLR.primary, fontWeight: 500, marginBottom: 14 }}>
                     ✓ {habitLabels[selectedHabit]}{selectedNutrition ? " + Salat" : ""} · {habitTime}
                   </div>
-                  <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.6, marginBottom: 12 }}>
-                    Wir schicken dir eine Erinnerung.
-                  </div>
-                  <input
-                    type="email" placeholder="Deine E-Mail für die Erinnerung"
+                  <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.6, marginBottom: 12 }}>Wir schicken dir eine Erinnerung.</div>
+                  <input type="email" placeholder="Deine E-Mail für die Erinnerung"
                     value={habitEmail} onChange={e => setHabitEmail(e.target.value)}
-                    style={{ ...INPUT_STYLE, marginBottom: 14 }}
-                  />
+                    style={{ ...INPUT_STYLE, marginBottom: 14 }} />
                   {habitEmail && (
-                    <ActionButton
-                      label="Für heute planen"
-                      green
-                      onClick={() => { setHabitDone(true); setHabitCommitted(true); }}
-                      active
-                    />
+                    <ActionButton label="Für heute planen" green onClick={() => setHabitDone(true)} active />
                   )}
                 </div>
               )}
@@ -1119,46 +820,21 @@ function ResultSection({ result: realResult }) {
             <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.65, marginBottom: 12 }}>
               Schau heute Abend kurz hin: Was lief gut? Was würdest du morgen anders machen?
             </div>
-            <div style={{ fontSize: FS.small, color: T.low, lineHeight: 1.65, marginBottom: 16 }}>
-              Ein paar Minuten kurz hinschauen reicht. Kein Aufwand — einfach ehrlich sein.
-            </div>
             {!checkEmailDone ? (
               <div>
-                <div style={{ fontSize: FS.small, color: T.low, marginBottom: 8 }}>
-                  Erinnerung für heute Abend:
-                </div>
+                <div style={{ fontSize: FS.small, color: T.low, marginBottom: 8 }}>Erinnerung für heute Abend:</div>
                 <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-                  <input
-                    type="email" placeholder="Deine E-Mail"
+                  <input type="email" placeholder="Deine E-Mail"
                     value={checkEmail} onChange={e => setCheckEmail(e.target.value)}
-                    style={{ ...INPUT_STYLE, flex: 1, width: "auto" }}
-                  />
-                  <button
-                    onClick={() => { if (checkEmail) setCheckEmailDone(true); }}
-                    disabled={!checkEmail}
-                    style={{
-                      height: 43, padding: "0 18px",
-                      background: checkEmail ? CLR.secondary : "rgba(0,0,0,0.05)",
-                      color: checkEmail ? "#fff" : T.muted,
-                      border: `1px solid ${checkEmail ? "transparent" : "rgba(0,0,0,0.10)"}`,
-                      fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-                      fontSize: FS.small, fontWeight: 600, borderRadius: 8,
-                      cursor: checkEmail ? "pointer" : "not-allowed",
-                      transition: "background 200ms, color 200ms, border 200ms",
-                      whiteSpace: "nowrap", opacity: checkEmail ? 1 : 0.60,
-                    }}
-                  >
+                    style={{ ...INPUT_STYLE, flex: 1, width: "auto" }} />
+                  <button onClick={() => { if (checkEmail) setCheckEmailDone(true); }} disabled={!checkEmail}
+                    style={{ height: 43, padding: "0 18px", background: checkEmail ? CLR.secondary : "rgba(0,0,0,0.05)", color: checkEmail ? "#fff" : T.muted, border: `1px solid ${checkEmail ? "transparent" : "rgba(0,0,0,0.10)"}`, fontFamily: FF, fontSize: FS.small, fontWeight: 600, borderRadius: 8, cursor: checkEmail ? "pointer" : "not-allowed", whiteSpace: "nowrap", opacity: checkEmail ? 1 : 0.60, transition: "background 200ms" }}>
                     Erinnerung erhalten
                   </button>
                 </div>
               </div>
             ) : (
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 7,
-                padding: "8px 14px", borderRadius: 20,
-                background: "rgba(156,107,255,0.08)", border: "1px solid rgba(156,107,255,0.18)",
-                fontSize: FS.small, color: CLR.secondary, fontWeight: 500,
-              }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 20, background: "rgba(156,107,255,0.08)", border: "1px solid rgba(156,107,255,0.18)", fontSize: FS.small, color: CLR.secondary, fontWeight: 500 }}>
                 ✓ Wir erinnern dich heute Abend daran.
               </div>
             )}
@@ -1168,8 +844,7 @@ function ResultSection({ result: realResult }) {
 
       <Divider />
 
-      {/* ═══ NEXT STEP ═════════════════════════════════════════ */}
-
+      {/* ═══ 6. NEXT STEP ══════════════════════════════════════ */}
       {safeResult.nextFocus && (
         <Section delay={0}>
           <div style={insightBorder(CLR.green)}>
@@ -1188,89 +863,55 @@ function ResultSection({ result: realResult }) {
         </Section>
       )}
 
-      {/* ═══ UPGRADE + SHARE ═══════════════════════════════════ */}
+      {/* ═══ 7. SHARE / CTA ════════════════════════════════════ */}
+      <div style={{ marginTop: 56, background: "rgba(0,0,0,0.025)", borderTop: "1px solid rgba(0,0,0,0.07)" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto", padding: "48px 24px 56px", textAlign: "center" }}>
 
-      <div style={{
-        marginTop: 56,
-        background: "rgba(0,0,0,0.028)",
-        borderTop:    "1px solid rgba(0,0,0,0.07)",
-        borderBottom: "1px solid rgba(0,0,0,0.07)",
-      }}>
-        <div style={{ maxWidth: 600, margin: "0 auto", padding: "48px 24px 44px" }}>
-          <div style={{
-            fontSize: 24, fontWeight: 700, color: T.high,
-            letterSpacing: "-0.02em", marginBottom: 8, lineHeight: 1.2,
-          }}>
-            Willst du tiefer gehen?
-          </div>
-          <div style={{ fontSize: FS.body, color: T.low, marginBottom: 6, lineHeight: 1.6 }}>
-            Entdecke, was wirklich möglich ist.
-          </div>
-          <div style={{ fontSize: FS.small, color: T.muted, marginBottom: 28 }}>
-            Clarity ist ein System für ein selbstbestimmtes Leben.
-          </div>
-          <button
-            onMouseEnter={() => setHoverCta(true)}
-            onMouseLeave={() => setHoverCta(false)}
-            style={{
-              display: "inline-flex", alignItems: "center", justifyContent: "center",
-              height: 52, padding: "0 32px",
-              background: hoverCta ? "#1a1a1a" : "#111",
-              color: "#fff", border: "none",
-              fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-              fontSize: FS.body, fontWeight: 600, borderRadius: 12, cursor: "pointer",
-              transition: "background 180ms, transform 140ms",
-              transform: hoverCta ? "scale(1.02)" : "scale(1)",
-              boxShadow: hoverCta ? "0 8px 28px rgba(0,0,0,0.22)" : "0 4px 20px rgba(0,0,0,0.18)",
-              marginBottom: 12,
-            }}
-          >
-            Clarity System starten
+          <div style={{ width: 40, height: 1, background: "#e2e8f0", margin: "0 auto 40px" }} />
+
+          <h2 style={{ fontSize: "clamp(22px, 5vw, 28px)", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.03em", lineHeight: 1.15, margin: "0 0 12px" }}>
+            Welcher Typ bist du?
+          </h2>
+          <p style={{ color: "#64748b", fontSize: 15, lineHeight: 1.6, maxWidth: 300, margin: "0 auto 8px" }}>
+            Clarity erkennt deinen Persönlichkeitstyp — in 10 Minuten.
+          </p>
+          <p style={{ color: "#94a3b8", fontSize: 13, margin: "0 0 32px" }}>
+            Über 1.000 Menschen haben ihren Typ bereits entdeckt.
+          </p>
+
+          <button onClick={nativeShare}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 54, padding: "0 36px", borderRadius: 999, border: "none", background: "linear-gradient(135deg, #4f46e5, #7c3aed, #db2777)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 32px rgba(99,102,241,0.30)", transition: "opacity 150ms, box-shadow 150ms" }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(99,102,241,0.40)"; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(99,102,241,0.30)"; }}>
+            {copiedLink ? "✓ Link kopiert!" : "Freunden schicken — Was sind sie?"}
           </button>
-          <div style={{ fontSize: FS.small, color: T.muted }}>7 Tage kostenlos testen</div>
-        </div>
 
-        <div style={{
-          maxWidth: 600, margin: "0 auto",
-          padding: "0 24px 48px",
-          borderTop: "1px solid rgba(0,0,0,0.06)",
-        }}>
-          <div style={{
-            fontSize: FS.label, letterSpacing: "0.15em", textTransform: "uppercase",
-            color: T.muted, fontWeight: 600,
-            paddingTop: 24, marginBottom: 16,
-          }}>
-            Teilen
-          </div>
+          <p style={{ color: "#94a3b8", fontSize: 12, marginTop: 14, lineHeight: 1.5 }}>
+            Kostenlos · Kein Account · Ergebnis in 10 Minuten
+          </p>
 
-          {shareConfirm && (
-            <div style={{ ...CARD, marginBottom: 12, maxWidth: 320 }}>
-              <div style={{ fontSize: FS.small, fontWeight: 600, color: T.high, marginBottom: 2 }}>Bild gespeichert.</div>
-              <div style={{ fontSize: FS.small, color: T.low, lineHeight: 1.6 }}>Teile dein Clarity Profil mit Freunden.</div>
-            </div>
-          )}
-          {copiedLink && (
-            <div style={{ ...CARD, marginBottom: 12, maxWidth: 320 }}>
-              <div style={{ fontSize: FS.small, fontWeight: 600, color: T.high, marginBottom: 2 }}>Link kopiert.</div>
-              <div style={{ fontSize: FS.small, color: T.low, lineHeight: 1.6 }}>Füge den Link ein, um dein Profil zu teilen.</div>
-            </div>
-          )}
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 320 }}>
-            {BTN(generating ? "Wird erstellt…" : "Profil-Bild runterladen", generateShareImage, hoverImg, setHoverImg, { disabled: generating })}
-            {BTN("Profil-Link kopieren", nativeShare, hoverNative, setHoverNative)}
+          {/* Upgrade nudge */}
+          <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", marginTop: 40, paddingTop: 36 }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: T.high, letterSpacing: "-0.02em", marginBottom: 8 }}>Willst du tiefer gehen?</div>
+            <div style={{ fontSize: FS.small, color: T.muted, marginBottom: 24 }}>Clarity ist ein System für ein selbstbestimmtes Leben.</div>
+            <button
+              onMouseEnter={() => setHoverCta(true)} onMouseLeave={() => setHoverCta(false)}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, padding: "0 28px", background: hoverCta ? "#1a1a1a" : "#111", color: "#fff", border: "none", fontFamily: FF, fontSize: FS.body, fontWeight: 600, borderRadius: 12, cursor: "pointer", transition: "background 180ms, transform 140ms, box-shadow 140ms", transform: hoverCta ? "scale(1.02)" : "scale(1)", boxShadow: hoverCta ? "0 8px 28px rgba(0,0,0,0.22)" : "0 4px 20px rgba(0,0,0,0.18)", marginBottom: 10 }}>
+              Clarity System starten
+            </button>
+            <div style={{ fontSize: FS.small, color: T.muted }}>7 Tage kostenlos testen</div>
           </div>
         </div>
       </div>
 
-      {/* Hidden export card */}
+      {/* Offscreen export card */}
       {shareWrapperMounted && (
-        <div style={{ position: "absolute", left: -9999, top: 0, pointerEvents: "none" }}>
-          <ClarityAvatarCard result={finalResult} wrapperRef={shareWrapperRef} />
+        <div style={{ position: "absolute", left: -9999, top: 0, pointerEvents: "none" }} aria-hidden="true">
+          <ShareableAvatarCard wrapperRef={shareWrapperRef} dims={blobDims} type={identityType} tagline={tagline} />
         </div>
       )}
     </div>
   );
 }
 
-export default ResultSection;
+export default ResultScreen;
