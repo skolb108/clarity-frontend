@@ -422,6 +422,20 @@ const IconRocket = () => (
   </svg>
 );
 
+function getScoreInsight(scores) {
+  const s = scores || {};
+  const action    = s.Action    ?? 0;
+  const clarity   = s.Clarity   ?? 0;
+  const energy    = s.Energy    ?? 0;
+  const direction = s.Direction ?? 0;
+
+  if (action < 4 && clarity >= 5)   return "Du denkst viel nach, aber kommst selten ins Handeln.";
+  if (energy >= 6 && direction < 4) return "Du hast viel Energie, aber sie verteilt sich ohne klaren Fokus.";
+  if (clarity >= 7 && action >= 7)  return "Du hast Klarheit und setzt konsequent um. Das ist selten.";
+  if (direction < 3)                return "Dir fehlt aktuell eine klare Richtung.";
+  return "Dein Profil zeigt Entwicklungspotenzial in mehreren Bereichen.";
+}
+
 /* ─────────────────────────────────────────────────────────────
    RESULT SCREEN
 ───────────────────────────────────────────────────────────── */
@@ -482,6 +496,7 @@ export function ResultScreen({ result: realResult }) {
   const finalResult = devProfile && DEV_PROFILES[devProfile] ? DEV_PROFILES[devProfile] : realResult;
   const safeResult  = validateResult(finalResult);
   const scores      = safeResult.scores;
+  const scoreInsight = getScoreInsight(scores);
 
   // identityType — hardened extraction
   const identityType = (() => {
@@ -548,8 +563,24 @@ export function ResultScreen({ result: realResult }) {
     const shareUrl = window.location.origin + "/p/" + slug;
     try { localStorage.setItem("clarity_" + slug, JSON.stringify(safeResult)); } catch (_) {}
     try {
-      const text = `Ich bin ein ${identityType}.\nClarity hat meinen Typ erkannt.\nWas bist du?\n→ ${shareUrl}`;
-      await navigator.clipboard.writeText(text);
+      let message = "";
+      switch (identityType) {
+        case "Explorer":
+          message = "Ich bin ein Explorer.\nIch bin noch auf der Suche.\nClarity hat das ziemlich klar erkannt.\n\nWas bist du?\n→ " + shareUrl;
+          break;
+        case "Builder":
+          message = "Ich bin ein Builder.\nIch setze um, während andere noch nachdenken.\n\nWas bist du?\n→ " + shareUrl;
+          break;
+        case "Creator":
+          message = "Ich bin ein Creator.\nIch erschaffe Dinge, weil ich nicht anders kann.\n\nWas bist du?\n→ " + shareUrl;
+          break;
+        case "Burnout Risk":
+          message = "Ich bin aktuell im Burnout Risk Bereich.\nEhrlich gesagt hat mich das getroffen.\n\nWas bist du?\n→ " + shareUrl;
+          break;
+        default:
+          message = "Ich bin ein " + identityType + ".\nClarity hat meinen Typ erkannt.\n\nWas bist du?\n→ " + shareUrl;
+      }
+      await navigator.clipboard.writeText(message);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
     } catch (_) {}
@@ -689,6 +720,9 @@ export function ResultScreen({ result: realResult }) {
 }}>
   Dein Profil zeigt: Klarheit entsteht durch Bewegung, nicht nur Denken.
 </p>
+          <p style={{ fontSize: 14, color: T.high, fontWeight: 500, marginTop: 12, textAlign: "center", maxWidth: 420, marginLeft: "auto", marginRight: "auto", lineHeight: 1.6 }}>
+            {scoreInsight}
+          </p>
         </Section>
       )}
 
