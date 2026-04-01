@@ -40,8 +40,16 @@ const DEV_PROFILES = {
   },
 };
 
-const _urlParams       = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
-const devProfileFromUrl = _urlParams.get("dev");
+let devProfileFromUrl = null;
+
+if (typeof window !== "undefined") {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    devProfileFromUrl = params.get("dev");
+  } catch (e) {
+    devProfileFromUrl = null;
+  }
+}
 
 /* ─────────────────────────────────────────────────────────────
    DESIGN TOKENS
@@ -436,6 +444,35 @@ function getScoreInsight(scores) {
   return "Dein Profil zeigt Entwicklungspotenzial in mehreren Bereichen.";
 }
 
+
+function getAdaptiveInsight(scores, pattern, summary) {
+  try {
+    const s   = scores || {};
+    const pat = typeof pattern === "string" ? pattern : "";
+    const sum = typeof summary === "string" ? summary : "";
+
+    const action    = Number(s.Action)    || 0;
+    const direction = Number(s.Direction) || 0;
+    const clarity   = Number(s.Clarity)   || 0;
+
+    if (action < 4) {
+      return pat + " Das zentrale Problem ist, dass du zu selten ins Handeln kommst.";
+    }
+
+    if (direction < 4) {
+      return pat + " Dir fehlt aktuell eine klare Richtung, was deine Energie streut.";
+    }
+
+    if (clarity >= 7 && action >= 7) {
+      return "Du hast ein starkes Fundament. " + sum;
+    }
+
+    return pat || "";
+  } catch (e) {
+    return typeof pattern === "string" ? pattern : "";
+  }
+}
+
 /* ─────────────────────────────────────────────────────────────
    RESULT SCREEN
 ───────────────────────────────────────────────────────────── */
@@ -496,7 +533,18 @@ export function ResultScreen({ result: realResult }) {
   const finalResult = devProfile && DEV_PROFILES[devProfile] ? DEV_PROFILES[devProfile] : realResult;
   const safeResult  = validateResult(finalResult);
   const scores      = safeResult.scores;
-  const scoreInsight = getScoreInsight(scores);
+  const scoreInsight   = getScoreInsight(scores);
+let adaptiveInsight = safeResult.pattern || "";
+
+try {
+  adaptiveInsight = getAdaptiveInsight(
+    scores,
+    safeResult.pattern,
+    safeResult.summary
+  );
+} catch (e) {
+  adaptiveInsight = safeResult.pattern || "";
+}
 
   // identityType — hardened extraction
   const identityType = (() => {
@@ -673,7 +721,7 @@ export function ResultScreen({ result: realResult }) {
         <Section delay={0}>
           <div style={{ ...insightBorder(CLR.primary), paddingLeft: 20 }}>
             <SectionLabel icon={<IconInsight />} color={CLR.primary}>Das zeigt sich bei dir</SectionLabel>
-            <div style={{ fontSize: 18, color: T.high, lineHeight: 1.7, fontWeight: 600 }}>{safeResult.pattern}</div>
+            <div style={{ fontSize: 18, color: T.high, lineHeight: 1.7, fontWeight: 600 }}>{typeof adaptiveInsight === "string" ? adaptiveInsight : ""}</div>
           </div>
         </Section>
       )}
