@@ -548,7 +548,8 @@ export function ResultScreen({ result: realResult }) {
     const shareUrl = window.location.origin + "/p/" + slug;
     try { localStorage.setItem("clarity_" + slug, JSON.stringify(safeResult)); } catch (_) {}
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      const text = `Ich bin ein ${identityType}.\nClarity hat meinen Typ erkannt.\nWas bist du?\n→ ${shareUrl}`;
+      await navigator.clipboard.writeText(text);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
     } catch (_) {}
@@ -580,27 +581,36 @@ export function ResultScreen({ result: realResult }) {
         {/* Identity moment */}
         <div style={{ textAlign: "center", marginBottom: 44 }}>
           <p style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8", fontWeight: 600, margin: "0 0 20px" }}>
-            Clarity hat erkannt
+            Was Clarity in deinen Antworten sieht
           </p>
           <p style={{ fontSize: "clamp(16px, 3.5vw, 20px)", fontWeight: 400, color: "#94a3b8", lineHeight: 1, margin: "0 0 6px" }}>
             Du bist ein
           </p>
-          <h1 style={{ fontSize: "clamp(52px, 13vw, 88px)", fontWeight: 900, letterSpacing: "-0.045em", lineHeight: 0.92, margin: "0 0 24px" }}>
+          <h1 style={{ fontSize: "clamp(64px, 15vw, 104px)", fontWeight: 900, letterSpacing: "-0.045em", lineHeight: 0.92, margin: "0 0 24px" }}>
             <span style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
               {identityType}
             </span>
           </h1>
-          <p style={{ fontSize: "clamp(15px, 2.5vw, 17px)", color: "#334155", lineHeight: 1.65, maxWidth: 380, margin: "0 auto", fontWeight: 400, letterSpacing: "-0.01em" }}>
-            {IDENTITY_DESCRIPTORS[identityType] || IDENTITY_DESCRIPTOR_DEFAULT}
+          <div style={{
+  fontSize: 13,
+  letterSpacing: "0.18em",
+  textTransform: "uppercase",
+  color: "#94a3b8",
+  marginTop: 0,
+  marginBottom: 16,
+  fontWeight: 600
+}}>
+  Die Momentaufnahme deiner Situation
+</div>
+          <p style={{ fontSize: "clamp(15px, 2.5vw, 17px)", color: "#334155", lineHeight: 1.65, maxWidth: 420, margin: "0 auto", fontWeight: 400, letterSpacing: "-0.01em" }}>
+            {safeResult.summary || IDENTITY_DESCRIPTORS[identityType] || IDENTITY_DESCRIPTOR_DEFAULT}
           </p>
+          <p style={{ fontSize: 13, color: "#64748b", marginTop: 12 }}>Die meisten Menschen erkennen sich hier zum ersten Mal wirklich.</p>
         </div>
 
-        {/* Blob + personal tagline */}
+        {/* Blob */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, marginBottom: 36 }}>
           <OrganicBlob dims={blobDims} size={300} />
-          <p style={{ fontSize: 16, fontStyle: "italic", color: "#64748b", textAlign: "center", maxWidth: 420, lineHeight: 1.7, margin: 0, opacity: 0.85 }}>
-            "{tagline}"
-          </p>
         </div>
 
         {/* Hero share buttons */}
@@ -611,14 +621,14 @@ export function ResultScreen({ result: realResult }) {
               style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 48, padding: "0 24px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontSize: 14, fontWeight: 600, cursor: generating ? "not-allowed" : "pointer", opacity: generating ? 0.55 : 1, fontFamily: "inherit", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", transition: "background 150ms" }}
               onMouseEnter={e => { if (!generating) e.currentTarget.style.background = "#1e293b"; }}
               onMouseLeave={e => { e.currentTarget.style.background = "#0f172a"; }}>
-              {generating ? "Erstelle Bild…" : `Mein ${identityType}-Profil speichern`}
+              {generating ? "Erstelle Bild…" : `Speichern & teilen: Ich bin ein ${identityType}`}
             </button>
             <button
               onClick={nativeShare}
               style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 48, padding: "0 24px", borderRadius: 999, border: "1.5px solid #e2e8f0", background: "transparent", color: "#475569", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", transition: "border-color 150ms, color 150ms" }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = "#94a3b8"; e.currentTarget.style.color = "#0f172a"; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#475569"; }}>
-              {copiedLink ? "✓ Link kopiert" : "Link teilen"}
+              {copiedLink ? "✓ Link kopiert" : "Finde heraus, was du bist"}
             </button>
           </div>
           {shareConfirm && (
@@ -627,24 +637,12 @@ export function ResultScreen({ result: realResult }) {
         </div>
       </div>
 
-      {/* ═══ 2. SUMMARY ══════════════════════════════════════ */}
-      {safeResult.summary && (
-        <Section delay={80}>
-          <div style={{ ...CARD }}>
-            <SectionLabel>Zusammenfassung</SectionLabel>
-            <div style={{ fontSize: 17, fontStyle: "italic", color: T.high, lineHeight: 1.65, opacity: 0.82 }}>
-              {safeResult.summary}
-            </div>
-          </div>
-        </Section>
-      )}
-
-      {/* ═══ 3. INSIGHTS ══════════════════════════════════════ */}
+      {/* ═══ 2. INSIGHTS ══════════════════════════════════════ */}
       {safeResult.pattern && (
         <Section delay={0}>
-          <div style={insightBorder(CLR.primary)}>
-            <SectionLabel icon={<IconInsight />} color={CLR.primary}>Das verborgene Muster</SectionLabel>
-            <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.65 }}>{safeResult.pattern}</div>
+          <div style={{ ...insightBorder(CLR.primary), paddingLeft: 20 }}>
+            <SectionLabel icon={<IconInsight />} color={CLR.primary}>Das zeigt sich bei dir</SectionLabel>
+            <div style={{ fontSize: 18, color: T.high, lineHeight: 1.7, fontWeight: 600 }}>{safeResult.pattern}</div>
           </div>
         </Section>
       )}
@@ -680,6 +678,17 @@ export function ResultScreen({ result: realResult }) {
               </div>
             ) : null)}
           </div>
+          <p style={{
+  fontSize: 14,
+  color: "#64748b",
+  marginTop: 16,
+  textAlign: "center",
+  maxWidth: 420,
+  marginLeft: "auto",
+  marginRight: "auto"
+}}>
+  Dein Profil zeigt: Klarheit entsteht durch Bewegung, nicht nur Denken.
+</p>
         </Section>
       )}
 
@@ -870,8 +879,9 @@ export function ResultScreen({ result: realResult }) {
           <div style={{ width: 40, height: 1, background: "#e2e8f0", margin: "0 auto 40px" }} />
 
           <h2 style={{ fontSize: "clamp(22px, 5vw, 28px)", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.03em", lineHeight: 1.15, margin: "0 0 12px" }}>
-            Welcher Typ bist du?
+            Welcher Typ bist du wirklich?
           </h2>
+          <p style={{ color: "#ef4444", fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Die meisten liegen falsch.</p>
           <p style={{ color: "#64748b", fontSize: 15, lineHeight: 1.6, maxWidth: 300, margin: "0 auto 8px" }}>
             Clarity erkennt deinen Persönlichkeitstyp — in 10 Minuten.
           </p>
