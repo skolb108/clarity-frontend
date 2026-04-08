@@ -285,23 +285,23 @@ function ShareableAvatarCard({ wrapperRef, dims = [], type = "", tagline = "" })
   const safeTag   = toSafeStr(tagline, "");
 
   return (
-    <div ref={wrapperRef} style={{ width: 400, height: 560, background: "#07070f", borderRadius: 28, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", padding: "40px 36px 36px", position: "relative", overflow: "hidden", fontFamily: "system-ui, sans-serif", boxSizing: "border-box" }}>
+    <div ref={wrapperRef} style={{ width: 400, height: 560, background: "#ffffff", borderRadius: 28, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "space-between", padding: "40px 36px 36px", position: "relative", overflow: "hidden", fontFamily: "system-ui, sans-serif", boxSizing: "border-box" }}>
       <div style={{ position: "absolute", top: -60, left: "50%", transform: "translateX(-50%)", width: 500, height: 500, borderRadius: "50%", background: `radial-gradient(circle, ${glow}20 0%, transparent 65%)`, filter: "blur(60px)", pointerEvents: "none" }} />
       <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", position: "relative", zIndex: 1 }}>
-        <span style={{ fontSize: 11, letterSpacing: "0.28em", textTransform: "uppercase", color: "rgba(255,255,255,0.22)", fontWeight: 600 }}>clarity</span>
+        <span style={{ fontSize: 11, letterSpacing: "0.28em", textTransform: "uppercase", color: "#0f172a", fontWeight: 600 }}>clarity</span>
         <span style={{ fontSize: 11, letterSpacing: "0.2em", textTransform: "uppercase", color: glow, fontWeight: 600, border: `1px solid ${glow}44`, padding: "4px 14px", borderRadius: 40 }}>Dein Profil</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, position: "relative", zIndex: 1 }}>
-        <div style={{ fontSize: 54, fontWeight: 800, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1, textAlign: "center" }}>{safeType}</div>
+        <div style={{ fontSize: 54, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.03em", lineHeight: 1, textAlign: "center" }}>{safeType}</div>
         <div style={{ position: "relative" }}>
           <div style={{ position: "absolute", inset: -40, borderRadius: "50%", background: `radial-gradient(circle, ${glow}50 0%, transparent 68%)`, filter: "blur(28px)" }} />
           <div style={{ width: 240, height: 240, borderRadius: shape1, background: `linear-gradient(135deg, ${typeof colors[0] === "string" ? colors[0] : "#6366f1"} 0%, ${typeof colors[1] === "string" ? colors[1] : "#818cf8"} 50%, ${typeof colors[2] === "string" ? colors[2] : "#a5b4fc"} 100%)`, boxShadow: `0 24px 64px ${glow}44, inset 0 1px 0 ${glow}40`, position: "relative" }}>
             <div style={{ position: "absolute", top: "12%", left: "14%", width: "38%", height: "32%", borderRadius: "50%", background: "radial-gradient(ellipse at 40% 35%, rgba(255,255,255,0.28) 0%, transparent 70%)" }} />
           </div>
         </div>
-        <div style={{ fontSize: 14, fontStyle: "italic", color: "rgba(255,255,255,0.40)", textAlign: "center", lineHeight: 1.5, maxWidth: 280, fontWeight: 300 }}>"{safeTag}"</div>
+        <div style={{ fontSize: 14, fontStyle: "italic", color: "#0f172a", textAlign: "center", lineHeight: 1.5, maxWidth: 280, fontWeight: 300 }}>"{safeTag}"</div>
       </div>
-      <div style={{ fontSize: 10, letterSpacing: "0.36em", textTransform: "uppercase", color: "rgba(255,255,255,0.14)", position: "relative", zIndex: 1 }}>clarity.ai</div>
+      <div style={{ fontSize: 10, letterSpacing: "0.36em", textTransform: "uppercase", color: "#0f172a", position: "relative", zIndex: 1 }}>clarity.ai</div>
     </div>
   );
 }
@@ -606,11 +606,16 @@ try {
   };
 
   const nativeShare = async () => {
-    const slug = safeEncodeResult(safeResult);
-    if (!slug) return;
-    const shareUrl = window.location.origin + "/p/" + slug;
-    try { localStorage.setItem("clarity_" + slug, JSON.stringify(safeResult)); } catch (_) {}
     try {
+      const res = await fetch("/api/share", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ result: safeResult }),
+      });
+      if (!res.ok) return;
+      const { id } = await res.json();
+      if (!id) return;
+      const shareUrl = window.location.origin + "/p/" + id;
       let message = "";
       switch (identityType) {
         case "Explorer":
@@ -702,13 +707,7 @@ try {
               onMouseLeave={e => { e.currentTarget.style.background = "#0f172a"; }}>
               {generating ? "Erstelle Bild…" : `Speichern & teilen: Ich bin ein ${identityType}`}
             </button>
-            <button
-              onClick={nativeShare}
-              style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 48, padding: "0 24px", borderRadius: 999, border: "1.5px solid #e2e8f0", background: "transparent", color: "#475569", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", transition: "border-color 150ms, color 150ms" }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = "#94a3b8"; e.currentTarget.style.color = "#0f172a"; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#475569"; }}>
-              {copiedLink ? "✓ Link kopiert" : "Finde heraus, was du bist"}
-            </button>
+
           </div>
           {shareConfirm && (
             <div style={{ fontSize: FS.small, color: CLR.green, fontWeight: 500 }}>✓ Bild gespeichert.</div>
@@ -983,15 +982,16 @@ try {
           </p>
 
           {/* Upgrade nudge */}
-          <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", marginTop: 40, paddingTop: 36 }}>
+          <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", marginTop: 56, paddingTop: 48 }}>
             <div style={{ fontSize: 20, fontWeight: 700, color: T.high, letterSpacing: "-0.02em", marginBottom: 8 }}>Willst du tiefer gehen?</div>
             <div style={{ fontSize: FS.small, color: T.muted, marginBottom: 24 }}>Clarity ist ein System für ein selbstbestimmtes Leben.</div>
             <button
+              onClick={() => window.location.href = "/waitlist"}
               onMouseEnter={() => setHoverCta(true)} onMouseLeave={() => setHoverCta(false)}
               style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, padding: "0 28px", background: hoverCta ? "#1a1a1a" : "#111", color: "#fff", border: "none", fontFamily: FF, fontSize: FS.body, fontWeight: 600, borderRadius: 12, cursor: "pointer", transition: "background 180ms, transform 140ms, box-shadow 140ms", transform: hoverCta ? "scale(1.02)" : "scale(1)", boxShadow: hoverCta ? "0 8px 28px rgba(0,0,0,0.22)" : "0 4px 20px rgba(0,0,0,0.18)", marginBottom: 10 }}>
               Clarity System starten
             </button>
-            <div style={{ fontSize: FS.small, color: T.muted }}>7 Tage kostenlos testen</div>
+            <div style={{ fontSize: FS.small, color: T.muted }}>Früher Zugang zum Clarity System</div>
           </div>
         </div>
       </div>

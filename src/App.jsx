@@ -1,3 +1,4 @@
+import Waitlist from "./Waitlist";
 import { useState, lazy, Suspense, memo, useRef } from "react";
 
 // ── ChatApp chunk — declared at module level so Vite emits a separate chunk.
@@ -133,6 +134,9 @@ const HeroScreen = memo(function HeroScreen({ onStart }) {
 export default function App() {
   const [chatStarted, setChatStarted] = useState(false);
   const pathname = window.location.pathname;
+  if (pathname === "/waitlist") {
+  return <Waitlist />;
+}
 
   // /p/* — public profile, skip hero and load ChatApp immediately
   if (pathname.startsWith("/p/")) {
