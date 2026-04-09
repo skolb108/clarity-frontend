@@ -124,6 +124,39 @@ const IDENTITY_DESCRIPTORS = {
 };
 const IDENTITY_DESCRIPTOR_DEFAULT = "Du bist an einem Punkt, der Klarheit braucht. Gut, dass du hier bist.";
 
+
+/* ─────────────────────────────────────────────────────────────
+   CLARITY PROFILES — structured identity content per type
+───────────────────────────────────────────────────────────── */
+
+const CLARITY_PROFILES = {
+  Explorer: {
+    hook:        "Du bist nicht verloren. Du sammelst Richtungen — und nennst das Offenheit.",
+    description: "Du interessierst dich für vieles. Entscheidungen fühlen sich wie Verlust an. Also bleibst du oft zwischen Möglichkeiten stehen.",
+    push:        "Du weißt genug, um anzufangen.",
+  },
+  Builder: {
+    hook:        "Du machst. Während andere noch überlegen, hast du schon begonnen.",
+    description: "Du denkst in Schritten. Du kommst ins Tun. Aber manchmal ohne zu prüfen, ob es die richtige Richtung ist.",
+    push:        "Du bist gut darin, Dinge fertigzustellen. Die Frage ist, ob sie es wert waren.",
+  },
+  Creator: {
+    hook:        "Du erschaffst nicht, weil du es willst. Du erschaffst, weil du nicht anders kannst.",
+    description: "Du hast einen inneren Drang, Dinge zu erschaffen. Aber Sichtbarkeit ohne Perfektion kostet dich mehr, als du zugibst.",
+    push:        "Vielleicht wartest du nicht auf die richtige Idee, sondern auf den Mut, sie zu zeigen.",
+  },
+  Optimizer: {
+    hook:        "Du siehst sofort, was nicht stimmt. Das ist deine Stärke — und dein Problem.",
+    description: "Du analysierst, verbesserst, optimierst. Aber selten hinterfragst du, ob das Ziel selbst noch das richtige ist.",
+    push:        "Du optimierst alles — außer die Richtung.",
+  },
+  Drifter: {
+    hook:        "Du bewegst dich. Aber nicht wirklich vorwärts.",
+    description: "Du bist beschäftigt, aber ohne klare Richtung. Viel passiert — aber wenig bleibt.",
+    push:        "Du weißt, dass sich etwas ändern müsste.",
+  },
+};
+
 /* ─────────────────────────────────────────────────────────────
    PRIMITIVE SAFETY UTILITIES
 ───────────────────────────────────────────────────────────── */
@@ -494,6 +527,7 @@ export function ResultScreen({ result: realResult, isPublicView = false }) {
   const [checkEmailDone,    setCheckEmailDone]     = useState(false);
   const [shareWrapperMounted, setShareWrapperMounted] = useState(false);
   const [devProfile,        setDevProfile]         = useState(devProfileFromUrl);
+  const [devType,           setDevType]            = useState(null);
   const [isMobile,          setIsMobile]           = useState(typeof window !== "undefined" ? window.innerWidth < 640 : true);
 
   const shareWrapperRef = useRef(null);
@@ -502,10 +536,12 @@ export function ResultScreen({ result: realResult, isPublicView = false }) {
   useEffect(() => {
     const h = (e) => {
       if (["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName)) return;
-      if (e.key === "1") setDevProfile("explorer_low");
-      if (e.key === "2") setDevProfile("high_performer");
-      if (e.key === "3") setDevProfile("chaotic");
-      if (e.key === "0") setDevProfile(null);
+      if (e.key === "1") { setDevProfile("explorer_low");   setDevType("Explorer");  }
+      if (e.key === "2") { setDevProfile("high_performer"); setDevType("Builder");   }
+      if (e.key === "3") { setDevProfile("chaotic");        setDevType("Creator");   }
+      if (e.key === "4") {                                  setDevType("Optimizer"); }
+      if (e.key === "5") {                                  setDevType("Drifter");   }
+      if (e.key === "0") { setDevProfile(null);             setDevType(null);        }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -546,8 +582,8 @@ try {
   adaptiveInsight = safeResult.pattern || "";
 }
 
-  // identityType — hardened extraction
-  const identityType = (() => {
+  // identityType — hardened extraction; devType overrides in dev mode
+  const identityType = devType || (() => {
     try {
       const modes = safeResult.identityModes;
       if (!Array.isArray(modes) || modes.length === 0) return "Explorer";
@@ -561,6 +597,9 @@ try {
       return "Explorer";
     } catch { return "Explorer"; }
   })();
+
+  // profile — structured identity content for this type
+  const clarityProfile = CLARITY_PROFILES[identityType] || CLARITY_PROFILES["Explorer"];
 
   // blob dimensions (maps scores → OrganicBlob props)
   const blobDims = SCORE_ORDER.map(k => ({
@@ -657,32 +696,39 @@ try {
 
         {/* Identity moment */}
         <div style={{ textAlign: "center", marginBottom: 44 }}>
-          <p style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "#94a3b8", fontWeight: 600, margin: "0 0 20px" }}>
-            Was Clarity in deinen Antworten sieht
+
+          {/* Pre-hook */}
+          <p style={{ fontSize: 13, letterSpacing: "0.04em", color: "#94a3b8", fontWeight: 500, margin: "0 0 28px", lineHeight: 1.6 }}>
+            Das trifft dich wahrscheinlich genauer, als dir gerade lieb ist.
           </p>
+
+          {/* Type label */}
           <p style={{ fontSize: "clamp(16px, 3.5vw, 20px)", fontWeight: 400, color: "#94a3b8", lineHeight: 1, margin: "0 0 6px" }}>
             Du bist ein
           </p>
-          <h1 style={{ fontSize: "clamp(64px, 15vw, 104px)", fontWeight: 900, letterSpacing: "-0.045em", lineHeight: 0.92, margin: "0 0 24px" }}>
+
+          {/* Identity word — the hero */}
+          <h1 style={{ fontSize: "clamp(64px, 15vw, 104px)", fontWeight: 900, letterSpacing: "-0.045em", lineHeight: 0.92, margin: "0 0 32px" }}>
             <span style={{ background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
               {identityType}
             </span>
           </h1>
-          <div style={{
-  fontSize: 13,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
-  color: "#94a3b8",
-  marginTop: 0,
-  marginBottom: 16,
-  fontWeight: 600
-}}>
-  Die Momentaufnahme deiner Situation
-</div>
-          <p style={{ fontSize: "clamp(15px, 2.5vw, 17px)", color: "#334155", lineHeight: 1.65, maxWidth: 420, margin: "0 auto", fontWeight: 400, letterSpacing: "-0.01em" }}>
-            {safeResult.summary || IDENTITY_DESCRIPTORS[identityType] || IDENTITY_DESCRIPTOR_DEFAULT}
+
+          {/* Hook — profile-specific, punchy */}
+          <p style={{ fontSize: "clamp(17px, 2.8vw, 20px)", color: T.high, lineHeight: 1.6, maxWidth: 400, margin: "0 auto 20px", fontWeight: 600, letterSpacing: "-0.01em" }}>
+            {clarityProfile.hook}
           </p>
-          <p style={{ fontSize: 13, color: "#64748b", marginTop: 12 }}>Die meisten Menschen erkennen sich hier zum ersten Mal wirklich.</p>
+
+          {/* Description — slightly uncomfortable truth */}
+          <p style={{ fontSize: "clamp(15px, 2.5vw, 17px)", color: T.mid, lineHeight: 1.7, maxWidth: 400, margin: "0 auto 20px", fontWeight: 400 }}>
+            {clarityProfile.description}
+          </p>
+
+          {/* Push line */}
+          <p style={{ fontSize: 14, color: CLR.primary, fontWeight: 600, margin: "0 auto", maxWidth: 380, lineHeight: 1.6 }}>
+            {clarityProfile.push}
+          </p>
+
         </div>
 
         {/* Blob */}
@@ -711,34 +757,6 @@ try {
 
       {/* ═══ 2–6. PERSONAL SECTIONS — hidden in public view ══════ */}
       {!isPublicView && (<>
-
-      {/* ═══ 2. INSIGHTS ══════════════════════════════════════ */}
-      {safeResult.pattern && (
-        <Section delay={0}>
-          <div style={{ ...insightBorder(CLR.primary), paddingLeft: 20 }}>
-            <SectionLabel icon={<IconInsight />} color={CLR.primary}>Das zeigt sich bei dir</SectionLabel>
-            <div style={{ fontSize: 18, color: T.high, lineHeight: 1.7, fontWeight: 600 }}>{typeof adaptiveInsight === "string" ? adaptiveInsight : ""}</div>
-          </div>
-        </Section>
-      )}
-
-      {safeResult.strengths?.length > 0 && (
-        <Section delay={0}>
-          <div style={insightBorder(CLR.secondary)}>
-            <SectionLabel icon={<IconShield />} color={CLR.secondary}>Deine Stärken</SectionLabel>
-            <BulletList items={safeResult.strengths} accentColor={CLR.secondary} />
-          </div>
-        </Section>
-      )}
-
-      {safeResult.energySources?.length > 0 && (
-        <Section delay={0}>
-          <div style={insightBorder(CLR.orange)}>
-            <SectionLabel icon={<IconLightning />} color={CLR.orange}>Deine Energiequellen</SectionLabel>
-            <BulletList items={safeResult.energySources} accentColor={CLR.orange} />
-          </div>
-        </Section>
-      )}
 
       <Divider />
 
@@ -929,26 +947,6 @@ try {
         </Section>
       )}
 
-      <Divider />
-
-      {/* ═══ 6. NEXT STEP ══════════════════════════════════════ */}
-      {safeResult.nextFocus && (
-        <Section delay={0}>
-          <div style={insightBorder(CLR.green)}>
-            <SectionLabel icon={<IconCompass />} color={CLR.green}>Dein nächster Fokus</SectionLabel>
-            <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.65 }}>{safeResult.nextFocus}</div>
-          </div>
-        </Section>
-      )}
-
-      {safeResult.suggestedAction && (
-        <Section delay={0}>
-          <div style={insightBorder(CLR.primary)}>
-            <SectionLabel icon={<IconRocket />} color={CLR.primary}>Empfohlene Aktion</SectionLabel>
-            <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.65 }}>{safeResult.suggestedAction}</div>
-          </div>
-        </Section>
-      )}
 
       </>)}
 
@@ -960,16 +958,16 @@ try {
             /* ── PUBLIC CTA ── */
             <>
               <h2 style={{ fontSize: "clamp(22px, 5vw, 28px)", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.03em", lineHeight: 1.15, margin: "0 0 12px" }}>
-                Finde heraus, welcher Typ du bist
+                Du denkst, du weißt, wer du bist.
               </h2>
               <p style={{ color: "#64748b", fontSize: 15, lineHeight: 1.6, maxWidth: 340, margin: "0 auto 28px" }}>
-                In wenigen Minuten bekommst du dein persönliches Clarity Profil.
+                Die meisten erkennen sich hier zum ersten Mal wirklich.
               </p>
               <button
                 onClick={() => window.location.href = "/"}
                 onMouseEnter={() => setHoverCta(true)} onMouseLeave={() => setHoverCta(false)}
                 style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 52, padding: "0 32px", background: hoverCta ? "#1a1a1a" : "#111", color: "#fff", border: "none", fontFamily: FF, fontSize: FS.body, fontWeight: 600, borderRadius: 12, cursor: "pointer", transition: "background 180ms, transform 140ms, box-shadow 140ms", transform: hoverCta ? "scale(1.02)" : "scale(1)", boxShadow: hoverCta ? "0 8px 28px rgba(0,0,0,0.22)" : "0 4px 20px rgba(0,0,0,0.18)" }}>
-                Clarity System ausprobieren
+                Finde deinen Typ
               </button>
             </>
           ) : (
@@ -1015,6 +1013,13 @@ try {
           )}
         </div>
       </div>
+
+      {/* Dev type indicator */}
+      {devType && (
+        <div style={{ position: "fixed", bottom: 10, right: 10, fontSize: 12, opacity: 0.5, fontFamily: "monospace", pointerEvents: "none" }}>
+          Dev: {identityType}
+        </div>
+      )}
 
       {/* Offscreen export card */}
       {shareWrapperMounted && (

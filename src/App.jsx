@@ -12,6 +12,16 @@ const ChatApp = lazy(() => import("./ChatFlow"));
 // download time. Safe to call multiple times — import() caches the promise.
 const prefetchChatApp = () => import("./ChatFlow");
 
+// ── HeroScreen CSS — injected once at module load ──────────────────────────────
+const HERO_CSS = `
+  .c-hero-meta { display: block; }
+`;
+if (typeof document !== "undefined") {
+  const _s = document.createElement("style");
+  _s.textContent = HERO_CSS;
+  document.head.appendChild(_s);
+}
+
 // ── HeroScreen — lives in the initial bundle, paints before any JS evaluates ──
 const HeroScreen = memo(function HeroScreen({ onStart }) {
   const [fading, setFading]   = useState(false);
@@ -60,27 +70,27 @@ const HeroScreen = memo(function HeroScreen({ onStart }) {
 
       {/* Headline */}
       <h1 style={{
-        fontSize: "clamp(40px, 9vw, 68px)",
+        fontSize: "clamp(36px, 9vw, 68px)",
         fontWeight: 700,
         letterSpacing: "-0.03em",
-        lineHeight: 1.06,
+        lineHeight: 1.08,
         color: "#000",
         marginBottom: 20,
-        maxWidth: 480,
+        maxWidth: 520,
       }}>
-        Mehr Klarheit.
+        Du glaubst, du kennst dich.<br />Stimmt nicht ganz.
       </h1>
 
       {/* Subline */}
       <p style={{
-        fontSize: "clamp(18px, 3.5vw, 20px)",
+        fontSize: "clamp(17px, 3.5vw, 20px)",
         color: "#000",
         opacity: 0.55,
         lineHeight: 1.6,
         marginBottom: 36,
         maxWidth: 360,
       }}>
-        In einem kurzen Gespräch erkennst du, was dir wirklich wichtig ist.
+        Die meisten erkennen sich hier sofort.
       </p>
 
       {/* CTA — prefetch on first pointer contact, mount on click */}
@@ -109,21 +119,21 @@ const HeroScreen = memo(function HeroScreen({ onStart }) {
           willChange: "transform",
         }}
       >
-        Gespräch starten
+        Meinen Typ finden
       </button>
 
-      {/* Microcopy */}
+      {/* Microcopy — always visible */}
       <div style={{
-        fontSize: 14, color: "#000", opacity: 0.42,
-        letterSpacing: "0.02em", lineHeight: 1.6,
+        fontSize: 13, color: "#000", opacity: 0.40,
+        letterSpacing: "0.02em", lineHeight: 1.6, textAlign: "center",
       }}>
         Kostenlos · Kein Account · ca. 10 Minuten
       </div>
 
-      {/* Trust signal */}
+      {/* Trust signal — always visible */}
       <div style={{
-        fontSize: 14, color: "#000", opacity: 0.6,
-        marginTop: 10, letterSpacing: "0.01em",
+        fontSize: 13, color: "#000", opacity: 0.55,
+        marginTop: 6, letterSpacing: "0.01em", textAlign: "center",
       }}>
         Bereits über 1.000 Gespräche geführt
       </div>
