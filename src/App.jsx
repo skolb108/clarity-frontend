@@ -1,4 +1,5 @@
 import Waitlist from "./Waitlist";
+import PublicProfile from "./PublicProfile";
 import { useState, lazy, Suspense, memo, useRef } from "react";
 
 // ── ChatApp chunk — declared at module level so Vite emits a separate chunk.
@@ -138,13 +139,10 @@ export default function App() {
   return <Waitlist />;
 }
 
-  // /p/* — public profile, skip hero and load ChatApp immediately
+  // /p/* — public profile, render PublicProfile with slug
   if (pathname.startsWith("/p/")) {
-    return (
-      <Suspense fallback={null}>
-        <ChatApp />
-      </Suspense>
-    );
+    const slug = pathname.replace("/p/", "");
+    return <PublicProfile slug={slug} />;
   }
 
   // Normal route — hero visible instantly; ChatApp mounts after fade-out

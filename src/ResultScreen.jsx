@@ -477,7 +477,7 @@ function getAdaptiveInsight(scores, pattern, summary) {
    RESULT SCREEN
 ───────────────────────────────────────────────────────────── */
 
-export function ResultScreen({ result: realResult }) {
+export function ResultScreen({ result: realResult, isPublicView = false }) {
   const [vis,               setVis]               = useState(false);
   const [barsReady,         setBarsReady]          = useState(false);
   const [generating,        setGenerating]         = useState(false);
@@ -607,15 +607,8 @@ try {
 
   const nativeShare = async () => {
     try {
-      const res = await fetch("/api/share", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ result: safeResult }),
-      });
-      if (!res.ok) return;
-      const { id } = await res.json();
-      if (!id) return;
-      const shareUrl = window.location.origin + "/p/" + id;
+      const slug     = btoa(JSON.stringify(safeResult));
+      const shareUrl = window.location.origin + "/p/" + slug;
       let message = "";
       switch (identityType) {
         case "Explorer":
@@ -633,7 +626,7 @@ try {
         default:
           message = "Ich bin ein " + identityType + ".\nClarity hat meinen Typ erkannt.\n\nWas bist du?\n→ " + shareUrl;
       }
-      await navigator.clipboard.writeText(message);
+      await navigator.clipboard.writeText(shareUrl);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
     } catch (_) {}
@@ -697,23 +690,27 @@ try {
           <OrganicBlob dims={blobDims} size={300} />
         </div>
 
-        {/* Hero share buttons */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginBottom: 64 }}>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
-            <button
-              onClick={generateShareImage} disabled={generating}
-              style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 48, padding: "0 24px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontSize: 14, fontWeight: 600, cursor: generating ? "not-allowed" : "pointer", opacity: generating ? 0.55 : 1, fontFamily: "inherit", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", transition: "background 150ms" }}
-              onMouseEnter={e => { if (!generating) e.currentTarget.style.background = "#1e293b"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "#0f172a"; }}>
-              {generating ? "Erstelle Bild…" : `Speichern & teilen: Ich bin ein ${identityType}`}
-            </button>
-
+        {/* Hero share buttons — hidden in public view */}
+        {!isPublicView && (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, marginBottom: 64 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center" }}>
+              <button
+                onClick={generateShareImage} disabled={generating}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 48, padding: "0 24px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontSize: 14, fontWeight: 600, cursor: generating ? "not-allowed" : "pointer", opacity: generating ? 0.55 : 1, fontFamily: "inherit", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", transition: "background 150ms" }}
+                onMouseEnter={e => { if (!generating) e.currentTarget.style.background = "#1e293b"; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "#0f172a"; }}>
+                {generating ? "Erstelle Bild…" : `Speichern & teilen: Ich bin ein ${identityType}`}
+              </button>
+            </div>
+            {shareConfirm && (
+              <div style={{ fontSize: FS.small, color: CLR.green, fontWeight: 500 }}>✓ Bild gespeichert.</div>
+            )}
           </div>
-          {shareConfirm && (
-            <div style={{ fontSize: FS.small, color: CLR.green, fontWeight: 500 }}>✓ Bild gespeichert.</div>
-          )}
-        </div>
+        )}
       </div>
+
+      {/* ═══ 2–6. PERSONAL SECTIONS — hidden in public view ══════ */}
+      {!isPublicView && (<>
 
       {/* ═══ 2. INSIGHTS ══════════════════════════════════════ */}
       {safeResult.pattern && (
@@ -953,46 +950,69 @@ try {
         </Section>
       )}
 
+      </>)}
+
       {/* ═══ 7. SHARE / CTA ════════════════════════════════════ */}
       <div style={{ marginTop: 56, background: "rgba(0,0,0,0.025)", borderTop: "1px solid rgba(0,0,0,0.07)" }}>
         <div style={{ maxWidth: 600, margin: "0 auto", padding: "48px 24px 56px", textAlign: "center" }}>
 
-          <div style={{ width: 40, height: 1, background: "#e2e8f0", margin: "0 auto 40px" }} />
+          {isPublicView ? (
+            /* ── PUBLIC CTA ── */
+            <>
+              <h2 style={{ fontSize: "clamp(22px, 5vw, 28px)", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.03em", lineHeight: 1.15, margin: "0 0 12px" }}>
+                Finde heraus, welcher Typ du bist
+              </h2>
+              <p style={{ color: "#64748b", fontSize: 15, lineHeight: 1.6, maxWidth: 340, margin: "0 auto 28px" }}>
+                In wenigen Minuten bekommst du dein persönliches Clarity Profil.
+              </p>
+              <button
+                onClick={() => window.location.href = "/"}
+                onMouseEnter={() => setHoverCta(true)} onMouseLeave={() => setHoverCta(false)}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 52, padding: "0 32px", background: hoverCta ? "#1a1a1a" : "#111", color: "#fff", border: "none", fontFamily: FF, fontSize: FS.body, fontWeight: 600, borderRadius: 12, cursor: "pointer", transition: "background 180ms, transform 140ms, box-shadow 140ms", transform: hoverCta ? "scale(1.02)" : "scale(1)", boxShadow: hoverCta ? "0 8px 28px rgba(0,0,0,0.22)" : "0 4px 20px rgba(0,0,0,0.18)" }}>
+                Clarity System ausprobieren
+              </button>
+            </>
+          ) : (
+            /* ── PRIVATE CTA ── */
+            <>
+              <div style={{ width: 40, height: 1, background: "#e2e8f0", margin: "0 auto 40px" }} />
 
-          <h2 style={{ fontSize: "clamp(22px, 5vw, 28px)", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.03em", lineHeight: 1.15, margin: "0 0 12px" }}>
-            Welcher Typ bist du wirklich?
-          </h2>
-          <p style={{ color: "#ef4444", fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Die meisten liegen falsch.</p>
-          <p style={{ color: "#64748b", fontSize: 15, lineHeight: 1.6, maxWidth: 300, margin: "0 auto 8px" }}>
-            Clarity erkennt deinen Persönlichkeitstyp — in 10 Minuten.
-          </p>
-          <p style={{ color: "#94a3b8", fontSize: 13, margin: "0 0 32px" }}>
-            Über 1.000 Menschen haben ihren Typ bereits entdeckt.
-          </p>
+              <h2 style={{ fontSize: "clamp(22px, 5vw, 28px)", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.03em", lineHeight: 1.15, margin: "0 0 12px" }}>
+                Welcher Typ bist du wirklich?
+              </h2>
+              <p style={{ color: "#ef4444", fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Die meisten liegen falsch.</p>
+              <p style={{ color: "#64748b", fontSize: 15, lineHeight: 1.6, maxWidth: 300, margin: "0 auto 8px" }}>
+                Clarity erkennt deinen Persönlichkeitstyp — in 10 Minuten.
+              </p>
+              <p style={{ color: "#94a3b8", fontSize: 13, margin: "0 0 32px" }}>
+                Über 1.000 Menschen haben ihren Typ bereits entdeckt.
+              </p>
 
-          <button onClick={nativeShare}
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 54, padding: "0 36px", borderRadius: 999, border: "none", background: "linear-gradient(135deg, #4f46e5, #7c3aed, #db2777)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 32px rgba(99,102,241,0.30)", transition: "opacity 150ms, box-shadow 150ms" }}
-            onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(99,102,241,0.40)"; }}
-            onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(99,102,241,0.30)"; }}>
-            {copiedLink ? "✓ Link kopiert!" : "Freunden schicken — Was sind sie?"}
-          </button>
+              <button onClick={nativeShare}
+                style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 54, padding: "0 36px", borderRadius: 999, border: "none", background: "linear-gradient(135deg, #4f46e5, #7c3aed, #db2777)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 32px rgba(99,102,241,0.30)", transition: "opacity 150ms, box-shadow 150ms" }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(99,102,241,0.40)"; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(99,102,241,0.30)"; }}>
+                {copiedLink ? "✓ Link kopiert!" : "Freunden schicken — Was sind sie?"}
+              </button>
 
-          <p style={{ color: "#94a3b8", fontSize: 12, marginTop: 14, lineHeight: 1.5 }}>
-            Kostenlos · Kein Account · Ergebnis in 10 Minuten
-          </p>
+              <p style={{ color: "#94a3b8", fontSize: 12, marginTop: 14, lineHeight: 1.5 }}>
+                Kostenlos · Kein Account · Ergebnis in 10 Minuten
+              </p>
 
-          {/* Upgrade nudge */}
-          <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", marginTop: 56, paddingTop: 48 }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: T.high, letterSpacing: "-0.02em", marginBottom: 8 }}>Willst du tiefer gehen?</div>
-            <div style={{ fontSize: FS.small, color: T.muted, marginBottom: 24 }}>Clarity ist ein System für ein selbstbestimmtes Leben.</div>
-            <button
-              onClick={() => window.location.href = "/waitlist"}
-              onMouseEnter={() => setHoverCta(true)} onMouseLeave={() => setHoverCta(false)}
-              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, padding: "0 28px", background: hoverCta ? "#1a1a1a" : "#111", color: "#fff", border: "none", fontFamily: FF, fontSize: FS.body, fontWeight: 600, borderRadius: 12, cursor: "pointer", transition: "background 180ms, transform 140ms, box-shadow 140ms", transform: hoverCta ? "scale(1.02)" : "scale(1)", boxShadow: hoverCta ? "0 8px 28px rgba(0,0,0,0.22)" : "0 4px 20px rgba(0,0,0,0.18)", marginBottom: 10 }}>
-              Clarity System starten
-            </button>
-            <div style={{ fontSize: FS.small, color: T.muted }}>Früher Zugang zum Clarity System</div>
-          </div>
+              {/* Upgrade nudge */}
+              <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", marginTop: 56, paddingTop: 48 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: T.high, letterSpacing: "-0.02em", marginBottom: 8 }}>Willst du tiefer gehen?</div>
+                <div style={{ fontSize: FS.small, color: T.muted, marginBottom: 24 }}>Clarity ist ein System für ein selbstbestimmtes Leben.</div>
+                <button
+                  onClick={() => window.location.href = "/waitlist"}
+                  onMouseEnter={() => setHoverCta(true)} onMouseLeave={() => setHoverCta(false)}
+                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, padding: "0 28px", background: hoverCta ? "#1a1a1a" : "#111", color: "#fff", border: "none", fontFamily: FF, fontSize: FS.body, fontWeight: 600, borderRadius: 12, cursor: "pointer", transition: "background 180ms, transform 140ms, box-shadow 140ms", transform: hoverCta ? "scale(1.02)" : "scale(1)", boxShadow: hoverCta ? "0 8px 28px rgba(0,0,0,0.22)" : "0 4px 20px rgba(0,0,0,0.18)", marginBottom: 10 }}>
+                  Clarity System starten
+                </button>
+                <div style={{ fontSize: FS.small, color: T.muted }}>Früher Zugang zum Clarity System</div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
