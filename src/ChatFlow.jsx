@@ -613,7 +613,10 @@ function Clarity() {
       if (!response) return;
 
       // Detect CONVERSATION_COMPLETE signal in the response
-      if (response.includes("CONVERSATION_COMPLETE")) {
+      if (
+  response.includes("CONVERSATION_COMPLETE") ||
+  response.trim().startsWith("CONVERSATION_COMPLETE")
+) {
         // Extract JSON after the token
         const jsonStart = response.indexOf("{");
         if (jsonStart !== -1) {
