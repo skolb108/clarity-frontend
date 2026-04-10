@@ -599,6 +599,16 @@ function Clarity() {
 
     // Append user bubble immediately
     const updatedMessages = [...messages, { role: "user", content: trimmed }];
+    // HARD STOP after too many turns (failsafe)
+if (updatedMessages.length >= 16) {
+  const answers = updatedMessages
+    .filter(m => m.role === "user")
+    .map((m, i) => ({ question: `Q${i + 1}`, answer: m.content }));
+
+  await runAnalysis(answers);
+  return;
+}
+    
     setMessages(updatedMessages);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
 
