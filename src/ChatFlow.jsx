@@ -7,29 +7,6 @@ const API_URL =
 // During the entire chat conversation this chunk is never downloaded.
 const ResultSection = lazy(() => import("./ResultScreen"));
 
-const QUESTIONS = [
-  "Was beschäftigt dich gerade am meisten in deinem Leben?",
-  "Was läuft gut in deinem Leben – und was fühlt sich nicht richtig an?",
-  "Wann fühlst du dich lebendig oder inspiriert?",
-  "Welche Dinge geben dir Energie?",
-  "Welche Dinge ziehen dir Energie?",
-  "Worin bist du besonders gut?",
-  "Wofür kommen andere Menschen zu dir wenn sie Hilfe brauchen?",
-  "Wenn du in drei Jahren zurückblickst was müsste passiert sein damit du zufrieden bist?",
-  "Gibt es etwas das du schon lange tun möchtest?",
-  "Was hält dich bisher davon ab?",
-  "Warum ist dir das außerdem wichtig?",
-  "Wenn du heute eine kleine Sache verändern würdest welche wäre das?",
-];
-
-// ── Intro sequence ─────────────────────────────────────────────────────────────
-const INTRO_CHUNKS = [
-  "Bevor wir anfangen eine kurze Frage.",
-  "Weißt du gerade wirklich was du in deinem Leben willst?",
-  "Viele Menschen funktionieren einfach aber haben ihre Richtung aus den Augen verloren.",
-  "Ich stelle dir ein paar kurze Fragen. Es dauert etwa 10 Minuten. Lass uns mit etwas Einfachem anfangen.",
-  QUESTIONS[0],
-];
 
 // ── Prompts ────────────────────────────────────────────────────────────────────
 
@@ -366,9 +343,6 @@ function Clarity() {
   const [result,         setResult]       = useState(null);
   const [analysing,      setAnalysing]    = useState(false);
 
-  // Frontend controls which question we're on (0-indexed)
-  const [currentQIndex, setCurrentQIndex] = useState(0);
-
   // Collected answers: [{ question, answer }]
   const answersRef = useRef([]);
 
@@ -380,7 +354,6 @@ function Clarity() {
   const [topbarOpaque,   setTopbarOpaque] = useState(false);
   const [heroFaded,      setHeroFaded]    = useState(false);
   const [sphereChatMode, setSphereChat]   = useState(false);
-  const [visibleChunks,  setVisibleChunks] = useState(1);
   const [inputReady,     setInputReady]   = useState(false);
   const [inputFocused,   setInputFocused] = useState(false);
 
@@ -405,13 +378,15 @@ function Clarity() {
   useEffect(() => {
     const handleKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "k") {
-        const dummyAnswers = QUESTIONS.map((q) => ({ question: q, answer: "Testantwort" }));
-        runAnalysis(dummyAnswers);
+        const dummyAnswers = messages
+          .filter(m => m.role === "user")
+          .map((m, i) => ({ question: `Q${i + 1}`, answer: m.content }));
+        runAnalysis(dummyAnswers.length > 0 ? dummyAnswers : [{ question: "Dev", answer: "Testantwort" }]);
       }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, []);
+  }, [messages]);
 
   // ── iOS keyboard: shift input bar when virtual keyboard opens ────────────────
   // visualViewport.height shrinks when the keyboard appears; window.innerHeight
@@ -498,40 +473,28 @@ function Clarity() {
     };
   }, [phase]);
 
-  // ── Mount effect: trigger chat transition immediately when ChatApp loads ──────
-  // Replaces the old beginTransition callback (which was called from HeroScreen).
-  // ChatApp always mounts in "chat" phase so we just start the visual transition.
+  // ── Mount effect: start visual transition, then trigger first AI message ───────
+  // The AI controls the conversation. On mount we fire an empty message so the
+  // backend system prompt generates the opening question automatically.
   useEffect(() => {
     document.getElementById("c-strips")?.classList.add("fade-out");
     setSphereChat(true);
-    setTimeout(() => {
-      startIntroSequence();
+    setTimeout(async () => {
+      try {
+        setIsTyping(true);
+        const opening = await sendMessage([]);
+        setIsTyping(false);
+        if (opening) {
+          setMessages([{ role: "assistant", content: opening }]);
+        }
+      } catch (_) {
+        setIsTyping(false);
+      }
+      setInputReady(true);
+      setTimeout(() => inputRef.current?.focus({ preventScroll: false }), 120);
     }, 600);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const startIntroSequence = () => {
-    let i = 0;
-    const revealNext = () => {
-      i++;
-      setVisibleChunks(i);
-      // No auto-scroll here — intro chunks fade in where the user is already looking.
-      // Only scroll once at the end so the first question + input are fully visible.
-      if (i < INTRO_CHUNKS.length) {
-        setTimeout(revealNext, 1000);
-      } else {
-        setTimeout(() => {
-          setInputReady(true);
-          // Let the browser handle scroll when we focus the input —
-          // this respects the keyboard height automatically on iOS.
-          setTimeout(() => {
-            inputRef.current?.focus({ preventScroll: false });
-          }, 120);
-        }, 600);
-      }
-    };
-    setTimeout(revealNext, 300);
-  };
 
   // ── Backend call ──────────────────────────────────────────────────────────
   // Simple request-response — no streaming, no AbortController.
@@ -626,57 +589,56 @@ function Clarity() {
   };
 
   // ── User submits an answer ─────────────────────────────────────────────────
+  // The AI fully controls the conversation. The frontend sends the full
+  // message history and appends whatever the AI returns.
+  // CONVERSATION_COMPLETE in the response triggers the analysis phase.
   const dispatchAnswer = async (text) => {
     if (!text.trim() || isTyping || analysing) return;
 
-    const trimmed      = text.trim();
-    const questionText = QUESTIONS[currentQIndex];
+    const trimmed = text.trim();
 
-    // Show user bubble immediately
-    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+    // Append user bubble immediately
+    const updatedMessages = [...messages, { role: "user", content: trimmed }];
+    setMessages(updatedMessages);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 80);
 
-    // Store answer
-    const updatedAnswers = [...answersRef.current, { question: questionText, answer: trimmed }];
-    answersRef.current   = updatedAnswers;
-
-    // Update signal memory — increment frequency counts for keywords in this answer
-    const words = extractKeywords(trimmed);
-    words.forEach((word) => {
-      signalsRef.current.keywords[word] = (signalsRef.current.keywords[word] || 0) + 1;
-    });
-
-    const nextIndex  = currentQIndex + 1;
-
-    // All 12 answered — run final analysis
-    if (nextIndex >= QUESTIONS.length) {
-      await runAnalysis(updatedAnswers);
-      return;
-    }
-
-    // Mid-conversation pattern insight at questions 8 and 10 (nextIndex 7 and 9)
-    const midInsight = nextIndex === 7 || nextIndex === 10;
-
-    const topSignals = getTopSignals(signalsRef.current.keywords);
-
-    const userContent = topSignals.length > 0
-      ? `Aktuelle Antwort: ${trimmed}\n\nWIEDERKEHRENDE THEMEN: ${topSignals.join(", ")}\n\nBisheriges Gespräch:\n\n${formatAnswersAsContext(updatedAnswers)}`
-      : `Aktuelle Antwort: ${trimmed}\n\nBisheriges Gespräch:\n\n${formatAnswersAsContext(updatedAnswers)}`;
-
-    const apiMessages = [
-      { role: "system", content: buildReflectionSystemPrompt(midInsight, topSignals) },
-      { role: "user",   content: userContent },
-    ];
+    // Build the API message list: only role + content for the backend
+    const apiMessages = updatedMessages.map(m => ({ role: m.role, content: m.content }));
 
     try {
       setIsTyping(true);
       const response = await sendMessage(apiMessages);
-      await new Promise((r) => setTimeout(r, 1500)); // intentional pause
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", type: midInsight ? "reflection" : undefined, content: response },
-      ]);
       setIsTyping(false);
+
+      if (!response) return;
+
+      // Detect CONVERSATION_COMPLETE signal in the response
+      if (response.includes("CONVERSATION_COMPLETE")) {
+        // Extract JSON after the token
+        const jsonStart = response.indexOf("{");
+        if (jsonStart !== -1) {
+          try {
+            const parsed = JSON.parse(response.slice(jsonStart));
+            const answers = updatedMessages
+              .filter(m => m.role === "user")
+              .map((m, i) => ({ question: `Q${i + 1}`, answer: m.content }));
+            await runAnalysis(answers, parsed);
+          } catch (e) {
+            console.error("Failed to parse CONVERSATION_COMPLETE JSON:", e);
+          }
+        }
+        return;
+      }
+
+      // Normal AI response — append and continue
+      await new Promise((r) => setTimeout(r, 1200)); // intentional reading pause
+      setMessages((prev) => [...prev, { role: "assistant", content: response }]);
+
+      setTimeout(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        inputRef.current?.focus();
+      }, 80);
+
     } catch (err) {
       console.error("AI response failed:", err);
       setIsTyping(false);
@@ -685,16 +647,6 @@ function Clarity() {
         { role: "assistant", content: "Da ist etwas schiefgelaufen. Versuch es nochmal." },
       ]);
     }
-
-    // Show next question
-    setMessages((prev) => [...prev, { role: "assistant", isQuestion: true, content: QUESTIONS[nextIndex] }]);
-    setCurrentQIndex(nextIndex);
-    setIsTyping(false);
-
-    setTimeout(() => {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-      inputRef.current?.focus();
-    }, 80);
   };
 
 
@@ -791,13 +743,8 @@ function Clarity() {
     startRecognition();
   };
 
-  // ── Derived UI values — memoized to avoid recomputing on every state change ──
-  const answersCollected = answersRef.current.length;
-  const pct         = useMemo(() => Math.min((answersCollected / 12) * 100, 100),
-    [answersCollected]);
-  const displayQNum = useMemo(() => Math.min(answersCollected + 1, 12),
-    [answersCollected]);
-  const showInput   = useMemo(
+  // ── Derived UI values ────────────────────────────────────────────────────────
+  const showInput = useMemo(
     () => phase === "chat" && inputReady && !isTyping && !analysing,
     [phase, inputReady, isTyping, analysing]
   );
@@ -832,15 +779,11 @@ function Clarity() {
         {phase === "chat" && (
           <div className="c-chat-fadein" style={{ flex: 1 }}>
 
-            {/* Sticky progress header */}
+            {/* Minimal header — AI controls the conversation, no question counter */}
             <div id="c-progress-header">
               <div id="c-progress-header-inner">
                 <div id="c-progress-meta">
                   <span id="c-progress-logo">Clarity</span>
-                  <span id="c-progress-label">Frage {displayQNum} von 12</span>
-                </div>
-                <div id="c-progress-track-new">
-                  <div id="c-progress-fill-new" style={{ width: `${pct}%` }} />
                 </div>
               </div>
             </div>
@@ -848,38 +791,7 @@ function Clarity() {
             {/* Chat messages */}
             <div id="c-chat-content">
 
-              {/* Intro sequence */}
-              <div style={{ marginBottom: 16 }}>
-                {INTRO_CHUNKS.slice(0, visibleChunks).map((chunk, i) => {
-                  const isFirstQuestion = i === INTRO_CHUNKS.length - 1;
-                  const isFirstLine     = i === 0;
-                  return isFirstQuestion ? (
-                    <p key={i} className="c-fade-up" style={{
-                      fontSize: 28, fontWeight: 600, color: "#000",
-                      lineHeight: 1.3, margin: "32px 0 24px 0",
-                    }}>
-                      {chunk}
-                    </p>
-                  ) : isFirstLine ? (
-                    <p key={i} className="c-fade-up" style={{
-                      fontSize: 18, fontWeight: 400, color: "#000",
-                      opacity: 0.45, lineHeight: 1.6, margin: "0 0 20px 0",
-                    }}>
-                      {chunk}
-                    </p>
-                  ) : (
-                    <p key={i} className="c-fade-up" style={{
-                      fontSize: 18, fontWeight: 400, color: "#000",
-                      opacity: 0.75, lineHeight: 1.6, margin: "0 0 20px 0",
-                    }}>
-                      {chunk}
-                    </p>
-                  );
-                })}
-              </div>
-
-              {/* Message list — each ChatMessage is memoized;
-                   only the newest message re-renders when state changes. */}
+              {/* Message list */}
               {messages.map((msg, i) => (
                 <ChatMessage key={i} msg={msg} />
               ))}
