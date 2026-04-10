@@ -7,6 +7,20 @@ const API_URL =
 // During the entire chat conversation this chunk is never downloaded.
 const ResultSection = lazy(() => import("./ResultScreen"));
 
+// ── Question intents — frontend controls progression, AI generates the wording ──
+const QUESTION_INTENTS = [
+  "problem",        // What feels wrong despite things going well?
+  "concrete",       // How does that show up day-to-day?
+  "change",         // What would need to change?
+  "energy",         // What gives you energy?
+  "drain",          // What drains you?
+  "strength",       // What are you genuinely good at?
+  "external_value", // What do others come to you for?
+  "future",         // What would success look like in 3 years?
+  "block",          // What's stopping you?
+  "meaning",        // Why does this matter to you?
+  "next_step",      // What's one thing you could change today?
+];
 
 // ── Prompts ────────────────────────────────────────────────────────────────────
 
@@ -343,6 +357,9 @@ function Clarity() {
   const [result,         setResult]       = useState(null);
   const [analysing,      setAnalysing]    = useState(false);
 
+  // Intent-based progression — tracks which intent we're on
+  const [questionIndex, setQuestionIndex] = useState(0);
+
   // Collected answers: [{ question, answer }]
   const answersRef = useRef([]);
 
@@ -617,7 +634,13 @@ if (updatedMessages.length >= 16) {
 
     try {
       setIsTyping(true);
-      const response = await sendMessage(apiMessages);
+      // Inject the current intent as a system hint so the AI generates
+      // the right type of question — frontend controls progression, AI controls wording.
+      const intent = QUESTION_INTENTS[questionIndex];
+      const messagesWithIntent = intent
+        ? [...apiMessages, { role: "system", content: "INTENT: " + intent }]
+        : apiMessages;
+      const response = await sendMessage(messagesWithIntent);
       setIsTyping(false);
 
       if (!response) return;
@@ -643,9 +666,20 @@ if (updatedMessages.length >= 16) {
         return;
       }
 
-      // Normal AI response — append and continue
+      // Normal AI response — append and advance intent
       await new Promise((r) => setTimeout(r, 1200)); // intentional reading pause
       setMessages((prev) => [...prev, { role: "assistant", content: response }]);
+
+      const nextIndex = questionIndex + 1;
+      if (nextIndex >= QUESTION_INTENTS.length) {
+        // All intents exhausted — trigger analysis
+        const answers = [...updatedMessages, { role: "assistant", content: response }]
+          .filter(m => m.role === "user")
+          .map((m, i) => ({ question: QUESTION_INTENTS[i] || `Q${i + 1}`, answer: m.content }));
+        await runAnalysis(answers);
+        return;
+      }
+      setQuestionIndex(nextIndex);
 
       setTimeout(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
