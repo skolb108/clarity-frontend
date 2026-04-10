@@ -533,135 +533,29 @@ function Clarity() {
     setTimeout(revealNext, 300);
   };
 
-  // ── Backend call ───────────────────────────────────────────────────────────
-  // ── Shared fetch helper — 25s AbortController timeout ───────────────────────
-  const fetchWithTimeout = async (url, body, timeoutMs = 25000) => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-        body: JSON.stringify(body),
-      });
-      clearTimeout(timer);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    } catch (err) {
-      clearTimeout(timer);
-      throw err;
-    }
+  // ── Backend call ──────────────────────────────────────────────────────────
+  // Simple request-response — no streaming, no AbortController.
+  const sendMessage = async (messages) => {
+    const res = await fetch(`${API_URL}/api/chat`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ messages }),
+    });
+    const data = await res.json();
+    console.log("sendMessage response:", data);
+    return data.content || data.reply || data.message || "";
   };
 
-  // ── Streaming reflection — SSE fetch ──────────────────────────────────────
-  // Returns a Promise<string> that resolves with the full text when [DONE] arrives.
-  //
-  // Flow:
-  //   1. ThinkingDots is already visible (setIsTyping(true) called by dispatchAnswer)
-  //   2. First token lands → hide ThinkingDots, seed an assistant message with
-  //      streaming:true so the blinking cursor appears
-  //   3. Each subsequent token appends to that message in-place (matched by id)
-  //   4. On [DONE] → set streaming:false to remove cursor, resolve with full text
-  const streamBackend = useCallback(async (apiMessages, { midInsight }) => {
-    const msgId = `stream-${Date.now()}`;
-
-    return new Promise((resolve, reject) => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => { controller.abort(); reject(new Error("stream timeout")); }, 30_000);
-
-
-fetch(`${API_URL}/api/chat/stream`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  signal: controller.signal,
-  body: JSON.stringify({ messages: apiMessages }),
-})
-        .then((res) => {
-          clearTimeout(timer);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-          const reader  = res.body.getReader();
-          const decoder = new TextDecoder();
-          let   buf     = "";       // incomplete SSE line buffer
-          let   full    = "";       // full assembled text
-          let   seeded  = false;    // has the placeholder message been added?
-
-          const pump = () =>
-            reader.read().then(({ done, value }) => {
-              if (done) {
-                // Stream closed — remove cursor, resolve
-                setMessages((prev) =>
-                  prev.map((m) => (m.id === msgId ? { ...m, streaming: false } : m))
-                );
-                resolve(full);
-                return;
-              }
-
-              buf += decoder.decode(value, { stream: true });
-
-              // SSE events are delimited by \n\n — only process complete events
-              const events = buf.split("\n\n");
-              buf = events.pop(); // keep any trailing incomplete event
-
-              for (const event of events) {
-                for (const line of event.split("\n")) {
-                  if (!line.startsWith("data: ")) continue;
-                  const raw = line.slice(6).trim();
-                  if (raw === "[DONE]") continue;
-
-                  let parsed;
-                  try { parsed = JSON.parse(raw); } catch { continue; }
-                  if (parsed.error) { reject(new Error("stream error from server")); return; }
-
-                  const token = parsed.t;
-                  if (!token) continue;
-
-                  full += token;
-
-                  if (!seeded) {
-                    // First token: swap ThinkingDots for the live message bubble
-                    seeded = true;
-                    setIsTyping(false);
-                    setMessages((prev) => [
-                      ...prev,
-                      {
-                        id:        msgId,
-                        role:      "assistant",
-                        type:      midInsight ? "reflection" : undefined,
-                        content:   token,
-                        streaming: true,
-                      },
-                    ]);
-                  } else {
-                    // Append token in-place — matched by stable id
-                    setMessages((prev) =>
-                      prev.map((m) =>
-                        m.id === msgId ? { ...m, content: m.content + token } : m
-                      )
-                    );
-                  }
-                }
-              }
-
-              pump();
-            })
-            .catch((err) => { clearTimeout(timer); reject(err); });
-
-          pump();
-        })
-        .catch((err) => { clearTimeout(timer); reject(err); });
-    });
-  }, []);
 
   // ── Analysis endpoint — /api/analyze returns guaranteed JSON ──────────────
   const callAnalysisBackend = async (messages) => {
-    const data = await fetchWithTimeout(
-      `${API_URL}/api/analyze`,
-      { messages }
-    );
+    const res  = await fetch(`${API_URL}/api/analyze`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ messages }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
     console.log("Analysis response:", data);
     // Unwrap if backend wraps result
     if (data && typeof data === "object" && !data.scores) {
@@ -763,40 +657,32 @@ fetch(`${API_URL}/api/chat/stream`, {
     // Mid-conversation pattern insight at questions 8 and 10 (nextIndex 7 and 9)
     const midInsight = nextIndex === 7 || nextIndex === 10;
 
-    setIsTyping(true); // ThinkingDots shows until the first streaming token arrives
+    const topSignals = getTopSignals(signalsRef.current.keywords);
+
+    const userContent = topSignals.length > 0
+      ? `Aktuelle Antwort: ${trimmed}\n\nWIEDERKEHRENDE THEMEN: ${topSignals.join(", ")}\n\nBisheriges Gespräch:\n\n${formatAnswersAsContext(updatedAnswers)}`
+      : `Aktuelle Antwort: ${trimmed}\n\nBisheriges Gespräch:\n\n${formatAnswersAsContext(updatedAnswers)}`;
+
+    const apiMessages = [
+      { role: "system", content: buildReflectionSystemPrompt(midInsight, topSignals) },
+      { role: "user",   content: userContent },
+    ];
 
     try {
-      const topSignals = getTopSignals(signalsRef.current.keywords);
-
-      const userContent = topSignals.length > 0
-        ? `Aktuelle Antwort: ${trimmed}\n\nWIEDERKEHRENDE THEMEN: ${topSignals.join(", ")}\n\nBisheriges Gespräch:\n\n${formatAnswersAsContext(updatedAnswers)}`
-        : `Aktuelle Antwort: ${trimmed}\n\nBisheriges Gespräch:\n\n${formatAnswersAsContext(updatedAnswers)}`;
-
-      // streamBackend replaces callBackend.
-      // ThinkingDots hides itself on the first token; message grows live.
-      // Await the promise so we don't advance to the next question mid-stream.
-      const reflection = await streamBackend(
-        [
-          { role: "system", content: buildReflectionSystemPrompt(midInsight, topSignals) },
-          { role: "user",   content: userContent },
-        ],
-        { midInsight }
-      );
-
-      if (reflection) {
-        // Reading pause — stream is complete but the user may still be reading
-        await delay(1200);
-      }
-    } catch (err) {
-      console.error("Reflection error:", err);
-      setIsTyping(false);
-      // Show error in chat, then continue to next question
+      setIsTyping(true);
+      const response = await sendMessage(apiMessages);
+      await new Promise((r) => setTimeout(r, 1500)); // intentional pause
       setMessages((prev) => [
         ...prev,
-        {
-          role:    "assistant",
-          content: "Clarity hatte gerade ein Problem. Versuche es bitte noch einmal.",
-        },
+        { role: "assistant", type: midInsight ? "reflection" : undefined, content: response },
+      ]);
+      setIsTyping(false);
+    } catch (err) {
+      console.error("AI response failed:", err);
+      setIsTyping(false);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Da ist etwas schiefgelaufen. Versuch es nochmal." },
       ]);
     }
 
@@ -811,14 +697,6 @@ fetch(`${API_URL}/api/chat/stream`, {
     }, 80);
   };
 
-  const sendMessage = useCallback(() => {
-    const t = input.trim();
-    if (!t) return;
-    setInput("");
-    finalTranscriptRef.current = "";          // reset accumulated voice text
-    if (inputRef.current) inputRef.current.style.height = "auto";
-    dispatchAnswer(t);
-  }, [input, dispatchAnswer]);
 
   // ── Voice input — continuous, accumulating across pauses ────────────────────
   //
@@ -1083,7 +961,14 @@ fetch(`${API_URL}/api/chat/stream`, {
                 e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  const t = input.trim();
+                  if (!t) return;
+                  setInput("");
+                  if (inputRef.current) inputRef.current.style.height = "auto";
+                  dispatchAnswer(t);
+                }
               }}
               placeholder="Schreib deine Antwort…"
               rows={1}
@@ -1110,7 +995,13 @@ fetch(`${API_URL}/api/chat/stream`, {
                 )}
               </button>
             )}
-            <button onClick={sendMessage} className="c-btn-circle c-btn-send" aria-label="Senden">
+            <button onClick={() => {
+                const t = input.trim();
+                if (!t) return;
+                setInput("");
+                if (inputRef.current) inputRef.current.style.height = "auto";
+                dispatchAnswer(t);
+              }} className="c-btn-circle c-btn-send" aria-label="Senden">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="8" y1="13" x2="8" y2="3"/>
                 <polyline points="4,7 8,3 12,7"/>
