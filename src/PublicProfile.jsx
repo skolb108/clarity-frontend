@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import ResultScreen from "./ResultScreen";
+import ClarityLogo from "./ClarityLogo";
 
 /* ─────────────────────────────────────────────────────────────
    decodeSlug — converts a Base64-encoded URL slug into the
@@ -85,12 +86,9 @@ function ClarityPublicProfile({ slug }) {
           maxWidth: 480, margin: "0 auto",
           padding: "120px 24px 80px", textAlign: "center",
         }}>
-          {/* Wordmark */}
-          <div style={{
-            fontSize: 11, letterSpacing: "0.42em", textTransform: "uppercase",
-            color: "#000", opacity: 0.18, marginBottom: 64,
-          }}>
-            clarity
+          {/* Logo */}
+          <div style={{ marginBottom: 64 }}>
+            <ClarityLogo size="sm" faded={true} centered={true} />
           </div>
 
           {/* Error message */}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback, memo, lazy, Suspense } from "react";
+import ClarityLogo from "./ClarityLogo";
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "https://clarity-backend-production-108.up.railway.app";
@@ -270,6 +271,11 @@ const AnalysisScreen = memo(function AnalysisScreen() {
       opacity: vis ? 1 : 0,
       transition: "opacity 400ms ease",
     }}>
+      {/* Logo */}
+      <div style={{ marginBottom: 24 }}>
+        <ClarityLogo size="sm" faded />
+      </div>
+
       {/* Pulsing gradient orb — 80px per spec */}
       <div style={{
         width: 80, height: 80, borderRadius: "50%",
@@ -284,7 +290,7 @@ const AnalysisScreen = memo(function AnalysisScreen() {
         letterSpacing: "0.02em", lineHeight: 1.6,
         textAlign: "center", maxWidth: 280,
       }}>
-        Clarity analysiert deine Antworten…
+        Clarity analysiert deine Antworten
       </div>
     </div>
   );
@@ -824,43 +830,49 @@ if (updatedMessages.length >= 16) {
         {phase === "chat" && (
           <div className="c-chat-fadein" style={{ flex: 1 }}>
 
-            {/* Progress header — question counter + bar */}
-            <div id="c-progress-header">
-              <div id="c-progress-header-inner">
-                <div id="c-progress-meta">
-                  <span id="c-progress-logo">Clarity</span>
-                  {questionIndex > 0 && (
-                    <span style={{
-                      fontSize: 12,
-                      color: "rgba(0,0,0,0.50)",
-                      marginLeft: "auto",
-                    }}>
-                      {questionIndex > QUESTION_INTENTS.length * 0.8
-                        ? "Fast geschafft."
-                        : `Frage ${questionIndex} von ${QUESTION_INTENTS.length}`
-                      }
-                    </span>
-                  )}
-                </div>
+            {/* Progress header — light, sticky, non-distracting */}
+            <div style={{
+              position:   "sticky",
+              top:        0,
+              zIndex:     50,
+              background: "rgba(248,249,251,0.80)",
+              backdropFilter: "blur(8px)",
+              WebkitBackdropFilter: "blur(8px)",
+              padding:    "12px 16px",
+            }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
+                <ClarityLogo size="sm" faded />
                 {questionIndex > 0 && (
-                  <div style={{
-                    height: 4,
-                    width: "100%",
-                    background: "rgba(0,0,0,0.08)",
-                    borderRadius: 2,
-                    overflow: "hidden",
-                    marginTop: 6,
+                  <span style={{
+                    fontSize:   12,
+                    color:      "rgba(0,0,0,0.45)",
+                    marginLeft: "auto",
                   }}>
-                    <div style={{
-                      height: "100%",
-                      width: `${Math.min((questionIndex / QUESTION_INTENTS.length) * 100, 100)}%`,
-                      background: "linear-gradient(90deg, #4f46e5, #7c3aed)",
-                      borderRadius: 2,
-                      transition: "width 400ms ease",
-                    }} />
-                  </div>
+                    {questionIndex > QUESTION_INTENTS.length * 0.8
+                      ? "Fast geschafft."
+                      : `Frage ${questionIndex} von ${QUESTION_INTENTS.length}`
+                    }
+                  </span>
                 )}
               </div>
+              {questionIndex > 0 && (
+                <div style={{
+                  height:     3,
+                  width:      "100%",
+                  background: "rgba(0,0,0,0.07)",
+                  borderRadius: 2,
+                  overflow:   "hidden",
+                  marginTop:  8,
+                }}>
+                  <div style={{
+                    height:     "100%",
+                    width:      `${Math.min((questionIndex / QUESTION_INTENTS.length) * 100, 100)}%`,
+                    background: "linear-gradient(90deg, #4f46e5, #7c3aed)",
+                    borderRadius: 2,
+                    transition: "width 400ms ease",
+                  }} />
+                </div>
+              )}
             </div>
 
             {/* Chat messages */}

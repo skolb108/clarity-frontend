@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ClarityLogo from "./ClarityLogo";
 
 export default function Waitlist() {
   const [email, setEmail] = useState("");
@@ -39,6 +40,10 @@ export default function Waitlist() {
       padding: 24
     }}>
       <div style={{ maxWidth: 420, width: "100%" }}>
+        <div style={{ marginBottom: 32 }}>
+          <ClarityLogo size="md" centered={true} />
+        </div>
+
         <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 12 }}>
           Join the Clarity Waitlist
         </h1>

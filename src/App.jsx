@@ -1,6 +1,7 @@
 import Waitlist from "./Waitlist";
 import PublicProfile from "./PublicProfile";
 import { useState, lazy, Suspense, memo, useRef } from "react";
+import ClarityLogo from "./ClarityLogo";
 
 // ── ChatApp chunk — declared at module level so Vite emits a separate chunk.
 // The import() factory is NOT called (no network request) until <ChatApp />
@@ -109,7 +110,16 @@ const HeroScreen = memo(function HeroScreen({ onStart }) {
         zIndex: 10,
       }}
     >
-      <ClarityHeader />
+      {/* Logo — centered above headline */}
+      <div style={{
+        display:        "flex",
+        justifyContent: "center",
+        alignItems:     "center",
+        marginTop:      40,
+        marginBottom:   40,
+      }}>
+        <ClarityLogo size="lg" />
+      </div>
 
       {/* Headline */}
       <h1 style={{
