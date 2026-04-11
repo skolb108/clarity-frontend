@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import DailyFeed from "./DailyFeed";
-import ClarityLogo from "./ClarityLogo";
 
 /* ─────────────────────────────────────────────────────────────
    DEV PROFILES — keyboard 1/2/3 or ?dev=key
@@ -1025,15 +1024,10 @@ try {
 
       {/* Dev badge */}
       {devProfile && DEV_PROFILES[devProfile] && (
-        <div style={{ position: "fixed", top: 12, right: 12, zIndex: 9999, padding: "6px 14px", borderRadius: 20, background: "rgba(79,140,255,0.92)", color: "#fff", fontSize: FS.label, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", fontFamily: FF, pointerEvents: "none" }}>
+        <div style={{ position: "fixed", top: 60, right: 12, zIndex: 9999, padding: "6px 14px", borderRadius: 20, background: "rgba(79,140,255,0.92)", color: "#fff", fontSize: FS.label, fontWeight: 700, letterSpacing: "0.10em", textTransform: "uppercase", fontFamily: FF, pointerEvents: "none" }}>
           DEV · {devProfile}
         </div>
       )}
-
-      {/* ═══ LOGO ══════════════════════════════════════════════ */}
-      <div style={{ marginTop: 24, marginBottom: 32 }}>
-        <ClarityLogo size="sm" faded={true} centered={true} />
-      </div>
 
       {/* ═══ 1. HERO ══════════════════════════════════════════ */}
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "56px 24px 0", ...fadeUp(0) }}>

@@ -1,7 +1,7 @@
 import Waitlist from "./Waitlist";
 import PublicProfile from "./PublicProfile";
 import { useState, lazy, Suspense, memo, useRef } from "react";
-import ClarityLogo from "./ClarityLogo";
+import TopLogo from "./TopLogo";
 
 // ── ChatApp chunk — declared at module level so Vite emits a separate chunk.
 // The import() factory is NOT called (no network request) until <ChatApp />
@@ -12,65 +12,6 @@ const ChatApp = lazy(() => import("./ChatFlow"));
 // Called on pointerdown/touchstart so the ~400ms hero fade-out doubles as
 // download time. Safe to call multiple times — import() caches the promise.
 const prefetchChatApp = () => import("./ChatFlow");
-
-// ── HeroScreen CSS — injected once at module load ──────────────────────────────
-const HERO_CSS = `
-  .c-hero-meta { display: block; }
-  .c-header {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    display: flex;
-    justify-content: center;
-    pointer-events: none;
-  }
-  .c-header-inner {
-    width: 100%;
-    max-width: 600px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 20px 24px;
-    box-sizing: border-box;
-    pointer-events: auto;
-  }
-  .c-header-logo {
-    width: 24px;
-    height: 24px;
-    object-fit: contain;
-    flex-shrink: 0;
-  }
-  .c-header-wordmark {
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: #111;
-    text-transform: uppercase;
-  }
-`;
-if (typeof document !== "undefined") {
-  const _s = document.createElement("style");
-  _s.textContent = HERO_CSS;
-  document.head.appendChild(_s);
-}
-
-// ── ClarityHeader — fixed top bar, always visible ────────────────────────────
-const ClarityHeader = memo(function ClarityHeader() {
-  return (
-    <div className="c-header" aria-hidden="true">
-      <div className="c-header-inner">
-        <img
-          src="/clarity-logo.png"
-          alt=""
-          className="c-header-logo"
-          onError={e => { e.currentTarget.style.display = "none"; }}
-        />
-        <span className="c-header-wordmark">Clarity</span>
-      </div>
-    </div>
-  );
-});
 
 // ── HeroScreen — lives in the initial bundle, paints before any JS evaluates ──
 const HeroScreen = memo(function HeroScreen({ onStart }) {
@@ -110,17 +51,6 @@ const HeroScreen = memo(function HeroScreen({ onStart }) {
         zIndex: 10,
       }}
     >
-      {/* Logo — centered above headline */}
-      <div style={{
-        display:        "flex",
-        justifyContent: "center",
-        alignItems:     "center",
-        marginTop:      40,
-        marginBottom:   40,
-      }}>
-        <ClarityLogo size="lg" />
-      </div>
-
       {/* Headline */}
       <h1 style={{
         fontSize: "clamp(36px, 9vw, 68px)",
@@ -199,23 +129,41 @@ export default function App() {
   const [chatStarted, setChatStarted] = useState(false);
   const pathname = window.location.pathname;
   if (pathname === "/waitlist") {
-  return <Waitlist />;
+  return (
+    <>
+      <TopLogo faded={false} />
+      <Waitlist />
+    </>
+  );
 }
 
   // /p/* — public profile, render PublicProfile with slug
   if (pathname.startsWith("/p/")) {
     const slug = pathname.replace("/p/", "");
-    return <PublicProfile slug={slug} />;
+    return (
+      <>
+        <TopLogo faded={false} />
+        <PublicProfile slug={slug} />
+      </>
+    );
   }
 
   // Normal route — hero visible instantly; ChatApp mounts after fade-out
   if (!chatStarted) {
-    return <HeroScreen onStart={() => setChatStarted(true)} />;
+    return (
+      <>
+        <TopLogo faded={false} />
+        <HeroScreen onStart={() => setChatStarted(true)} />
+      </>
+    );
   }
 
   return (
-    <Suspense fallback={null}>
-      <ChatApp />
-    </Suspense>
+    <>
+      <TopLogo faded={false} />
+      <Suspense fallback={null}>
+        <ChatApp />
+      </Suspense>
+    </>
   );
 }

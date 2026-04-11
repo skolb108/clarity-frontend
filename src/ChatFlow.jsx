@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useMemo, useCallback, memo, lazy, Suspense } from "react";
-import ClarityLogo from "./ClarityLogo";
 const API_URL =
   import.meta.env.VITE_API_URL ||
   "https://clarity-backend-production-108.up.railway.app";
@@ -271,11 +270,6 @@ const AnalysisScreen = memo(function AnalysisScreen() {
       opacity: vis ? 1 : 0,
       transition: "opacity 400ms ease",
     }}>
-      {/* Logo */}
-      <div style={{ marginBottom: 24 }}>
-        <ClarityLogo size="sm" faded />
-      </div>
-
       {/* Pulsing gradient orb — 80px per spec */}
       <div style={{
         width: 80, height: 80, borderRadius: "50%",
@@ -828,7 +822,7 @@ if (updatedMessages.length >= 16) {
 
         {/* ── CHAT — Part 7: fades in after hero fade-out ────────────────── */}
         {phase === "chat" && (
-          <div className="c-chat-fadein" style={{ flex: 1 }}>
+          <div className="c-chat-fadein" style={{ flex: 1, marginTop: 80 }}>
 
             {/* Progress header — light, sticky, non-distracting */}
             <div style={{
@@ -841,7 +835,6 @@ if (updatedMessages.length >= 16) {
               padding:    "12px 16px",
             }}>
               <div style={{ display: "flex", alignItems: "center" }}>
-                <ClarityLogo size="sm" faded />
                 {questionIndex > 0 && (
                   <span style={{
                     fontSize:   12,

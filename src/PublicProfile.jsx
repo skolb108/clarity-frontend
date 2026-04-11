@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import ResultScreen from "./ResultScreen";
-import ClarityLogo from "./ClarityLogo";
 
 /* ─────────────────────────────────────────────────────────────
    decodeSlug — converts a Base64-encoded URL slug into the
@@ -81,16 +80,13 @@ function ClarityPublicProfile({ slug }) {
         minHeight: "100vh", width: "100%",
         background: "linear-gradient(180deg, #f8f9fb 0%, #eef2f7 100%)",
         fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        paddingTop: 100,
+        boxSizing: "border-box",
       }}>
         <div style={{
           maxWidth: 480, margin: "0 auto",
-          padding: "120px 24px 80px", textAlign: "center",
+          padding: "20px 24px 80px", textAlign: "center",
         }}>
-          {/* Logo */}
-          <div style={{ marginBottom: 64 }}>
-            <ClarityLogo size="sm" faded={true} centered={true} />
-          </div>
-
           {/* Error message */}
           <div style={{
             fontSize: 18, color: "#000", opacity: 0.48,
@@ -125,7 +121,11 @@ function ClarityPublicProfile({ slug }) {
   }
 
   // ── SUCCESS STATE — delegate entirely to ResultScreen ─────────────────────
-  return <ResultScreen result={result} isPublicView={true} />;
+  return (
+    <div style={{ paddingTop: 100 }}>
+      <ResultScreen result={result} isPublicView={true} />
+    </div>
+  );
 }
 
 export default ClarityPublicProfile;
