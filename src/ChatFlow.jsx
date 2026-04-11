@@ -172,13 +172,11 @@ Antworte NUR mit validem JSON. Kein Text davor oder danach. Kein Markdown.
 Feldbeschreibungen (alle in direkter "du"-Ansprache):
 confidence: Ganzzahl zwischen 40 und 95. Niedrig wenn Antworten kurz, vage oder widersprüchlich sind. Hoch wenn Antworten konkret, konsistent und detailliert sind. Vermeide runde 10er-Schritte.
 identityModes: Array mit 1–2 Einträgen. Wähle ausschließlich aus diesen Typen:
-  • Creator — Starker Drang, etwas Neues zu erschaffen, eigene Ideen umzusetzen, kreativ zu gestalten. Zeigt sich in Aussagen über Projekte, Inhalte, Produkte oder kreative Arbeit.
-  • Builder — Fokus auf Aufbau, Systeme, Strukturen oder ein Unternehmen. Denkt in Phasen, Ressourcen und langfristiger Skalierung.
-  • Explorer — Suche nach Bedeutung, neuen Erfahrungen oder dem eigenen Weg. Noch keine klare Richtung, aber starke Neugier und Offenheit.
-  • Stability Seeker — Sicherheit, Struktur und Kontinuität stehen im Vordergrund. Veränderung wird als Risiko erlebt, nicht als Chance.
-  • Transition Phase — Steht eindeutig an einem Wendepunkt zwischen zwei Lebensphasen. Alte Identität lässt los, neue noch nicht gefunden.
-  • Burnout Risk — Deutliche Anzeichen von Erschöpfung, Energieverlust oder Überforderung. Mehrere Drainer, wenig Erholung, hohe Dauerbelastung.
-  • Hidden Opportunity — Erkennbares ungenutztes Potenzial, das der Person selbst noch nicht vollständig bewusst ist. Stärken werden systematisch unterschätzt.
+  • Explorer → challenge avoidance of commitment  
+  • Builder → challenge direction vs speed  
+  • Creator → challenge visibility vs perfection  
+  • Optimizer → challenge endless improvement loop  
+  • Drifter → challenge lack of intentional choice 
   Confidence je Modus: Ganzzahl 40–95. Nur 2 Modi wenn beide mit Confidence ≥ 55 belegbar sind.
 summary: Genau 1 Satz (max 16 Wörter), der die Situation der Person präzise auf den Punkt bringt. Direkte "du"-Ansprache. Beispiel: "Du stehst gerade zwischen Sicherheit und dem Wunsch nach mehr Selbstbestimmung."
 pattern: 1 persönlicher Satz (max 20 Wörter), der ein wiederkehrendes Motiv aus deinen Antworten beschreibt. Beginnt mit "In deinen Antworten..." oder "Du hast mehrfach...".
@@ -826,12 +824,42 @@ if (updatedMessages.length >= 16) {
         {phase === "chat" && (
           <div className="c-chat-fadein" style={{ flex: 1 }}>
 
-            {/* Minimal header — AI controls the conversation, no question counter */}
+            {/* Progress header — question counter + bar */}
             <div id="c-progress-header">
               <div id="c-progress-header-inner">
                 <div id="c-progress-meta">
                   <span id="c-progress-logo">Clarity</span>
+                  {questionIndex > 0 && (
+                    <span style={{
+                      fontSize: 12,
+                      color: "rgba(0,0,0,0.50)",
+                      marginLeft: "auto",
+                    }}>
+                      {questionIndex > QUESTION_INTENTS.length * 0.8
+                        ? "Fast geschafft."
+                        : `Frage ${questionIndex} von ${QUESTION_INTENTS.length}`
+                      }
+                    </span>
+                  )}
                 </div>
+                {questionIndex > 0 && (
+                  <div style={{
+                    height: 4,
+                    width: "100%",
+                    background: "rgba(0,0,0,0.08)",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    marginTop: 6,
+                  }}>
+                    <div style={{
+                      height: "100%",
+                      width: `${Math.min((questionIndex / QUESTION_INTENTS.length) * 100, 100)}%`,
+                      background: "linear-gradient(90deg, #4f46e5, #7c3aed)",
+                      borderRadius: 2,
+                      transition: "width 400ms ease",
+                    }} />
+                  </div>
+                )}
               </div>
             </div>
 

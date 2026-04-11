@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import DailyFeed from "./DailyFeed";
 
 /* ─────────────────────────────────────────────────────────────
    DEV PROFILES — keyboard 1/2/3 or ?dev=key
@@ -81,10 +82,11 @@ const T = {
 const FS = { label: 11, body: 16, small: 14 };
 
 const CARD = {
-  background:   "rgba(0,0,0,0.025)",
+  background:   "#ffffff",
   border:       "1px solid rgba(0,0,0,0.07)",
   borderRadius: 12,
   padding:      "20px 22px",
+  boxShadow:    "0 2px 12px rgba(0,0,0,0.04)",
 };
 
 const INPUT_STYLE = {
@@ -126,36 +128,58 @@ const IDENTITY_DESCRIPTOR_DEFAULT = "Du bist an einem Punkt, der Klarheit brauch
 
 
 /* ─────────────────────────────────────────────────────────────
-   CLARITY PROFILES — structured identity content per type
+   PROFILES — deterministic, frontend-controlled identity content
+   Source: Clarity Profiles.md — do not auto-generate these.
 ───────────────────────────────────────────────────────────── */
 
-const CLARITY_PROFILES = {
+const PROFILES = {
   Explorer: {
-    hook:        "Du bist nicht verloren. Du sammelst Richtungen — und nennst das Offenheit.",
-    description: "Du interessierst dich für vieles. Entscheidungen fühlen sich wie Verlust an. Also bleibst du oft zwischen Möglichkeiten stehen.",
-    push:        "Du weißt genug, um anzufangen.",
+    title:        "Explorer",
+    hook:         "Du bist nicht verloren. Du sammelst Richtungen — und nennst das Offenheit.",
+    description:  "Du interessierst dich für fast alles. Bücher, Ideen, Menschen, Möglichkeiten. Das Problem ist nicht mangelndes Interesse. Es ist das Festlegen. Jede Entscheidung fühlt sich an wie eine Tür, die sich schließt — also bleibst du im Flur.",
+    confrontation: "Du weißt genug, um anzufangen. Die Frage ist, ob du Angst vor dem Ende hast.",
   },
   Builder: {
-    hook:        "Du machst. Während andere noch überlegen, hast du schon begonnen.",
-    description: "Du denkst in Schritten. Du kommst ins Tun. Aber manchmal ohne zu prüfen, ob es die richtige Richtung ist.",
-    push:        "Du bist gut darin, Dinge fertigzustellen. Die Frage ist, ob sie es wert waren.",
+    title:        "Builder",
+    hook:         "Du machst. Während andere noch überlegen, hast du schon begonnen.",
+    description:  "Du denkst nicht in Ideen — du denkst in Schritten. Du kommst schnell ins Handeln, aber prüfst selten, ob die Richtung stimmt.",
+    confrontation: "Du bist gut darin, Dinge fertigzustellen. Schlechter darin, zu fragen, ob sie es wert waren.",
   },
   Creator: {
-    hook:        "Du erschaffst nicht, weil du es willst. Du erschaffst, weil du nicht anders kannst.",
-    description: "Du hast einen inneren Drang, Dinge zu erschaffen. Aber Sichtbarkeit ohne Perfektion kostet dich mehr, als du zugibst.",
-    push:        "Vielleicht wartest du nicht auf die richtige Idee, sondern auf den Mut, sie zu zeigen.",
+    title:        "Creator",
+    hook:         "Du erschaffst nicht, weil du es willst. Du erschaffst, weil du nicht anders kannst.",
+    description:  "Du hast einen inneren Drang zu kreieren, aber schwankst zwischen intensiven Phasen und Rückzug.",
+    confrontation: "Du wartest nicht auf die richtige Idee. Du wartest auf den Mut, sie zu zeigen.",
   },
   Optimizer: {
-    hook:        "Du siehst sofort, was nicht stimmt. Das ist deine Stärke — und dein Problem.",
-    description: "Du analysierst, verbesserst, optimierst. Aber selten hinterfragst du, ob das Ziel selbst noch das richtige ist.",
-    push:        "Du optimierst alles — außer die Richtung.",
+    title:        "Optimizer",
+    hook:         "Du siehst sofort, was nicht stimmt. Das ist deine Stärke — und dein Problem.",
+    description:  "Du verbesserst konstant alles, aber erreichst selten ein Gefühl von 'genug'.",
+    confrontation: "Du optimierst alles — außer die Frage, ob das Ziel noch richtig ist.",
   },
   Drifter: {
-    hook:        "Du bewegst dich. Aber nicht wirklich vorwärts.",
-    description: "Du bist beschäftigt, aber ohne klare Richtung. Viel passiert — aber wenig bleibt.",
-    push:        "Du weißt, dass sich etwas ändern müsste.",
+    title:        "Drifter",
+    hook:         "Du bewegst dich. Aber nicht wirklich vorwärts.",
+    description:  "Du bist beschäftigt, aber nicht bewusst gesteuert. Viel Aktivität, wenig Richtung.",
+    confrontation: "Du weißt, dass sich etwas ändern müsste. Schon länger, als du zugibst.",
   },
 };
+
+const COMPARISON = {
+  Explorer:  ["Builder", "Optimizer"],
+  Builder:   ["Explorer", "Creator"],
+  Creator:   ["Builder", "Optimizer"],
+  Optimizer: ["Creator", "Explorer"],
+  Drifter:   ["Builder", "Creator"],
+};
+
+const DISTRIBUTION = [
+  { type: "Explorer",  percentage: 42 },
+  { type: "Builder",   percentage: 23 },
+  { type: "Creator",   percentage: 18 },
+  { type: "Optimizer", percentage: 10 },
+  { type: "Drifter",   percentage:  7 },
+];
 
 /* ─────────────────────────────────────────────────────────────
    PRIMITIVE SAFETY UTILITIES
@@ -218,7 +242,16 @@ function validateResult(raw) {
    ORGANIC BLOB — helpers + CSS
 ───────────────────────────────────────────────────────────── */
 
-function getDominantGradient(dims) {
+const TYPE_COLORS = {
+  Explorer:  ["#6366f1", "#818cf8", "#a5b4fc"],
+  Builder:   ["#0ea5e9", "#38bdf8", "#7dd3fc"],
+  Creator:   ["#ec4899", "#f472b6", "#f9a8d4"],
+  Optimizer: ["#10b981", "#34d399", "#6ee7b7"],
+  Drifter:   ["#f59e0b", "#fbbf24", "#fde68a"],
+};
+
+function getDominantGradient(dims, type) {
+  if (type && TYPE_COLORS[type]) return TYPE_COLORS[type];
   if (!dims || dims.length === 0) return ["#6366f1", "#818cf8", "#a5b4fc"];
   const top = dims.reduce((a, b) => toSafeNum(a.value, 0) >= toSafeNum(b.value, 0) ? a : b);
   const palettes = {
@@ -277,8 +310,8 @@ function injectKeyframes() {
    ORGANIC BLOB
 ───────────────────────────────────────────────────────────── */
 
-function OrganicBlob({ dims = [], size = 320 }) {
-  const colors = getDominantGradient(dims);
+function OrganicBlob({ dims = [], size = 320, type = "" }) {
+  const colors = getDominantGradient(dims, type);
   const s1     = getBlobShape(dims);
   const s2     = getBlobShapeAlt(dims);
   const c0     = typeof colors[0] === "string" ? colors[0] : "#6366f1";
@@ -311,7 +344,7 @@ function OrganicBlob({ dims = [], size = 320 }) {
 ───────────────────────────────────────────────────────────── */
 
 function ShareableAvatarCard({ wrapperRef, dims = [], type = "", tagline = "" }) {
-  const colors    = getDominantGradient(dims);
+  const colors    = getDominantGradient(dims, type);
   const shape1    = getBlobShape(dims);
   const glow      = typeof colors[0] === "string" ? colors[0] : "#6366f1";
   const safeType  = toSafeStr(type, "Explorer") || "Explorer";
@@ -510,6 +543,305 @@ function getAdaptiveInsight(scores, pattern, summary) {
    RESULT SCREEN
 ───────────────────────────────────────────────────────────── */
 
+
+const TYPE_STRUGGLES = {
+  Explorer:  ["Zu viele Optionen, keine Entscheidung", "Starten ohne Abschluss"],
+  Builder:   ["Falsche Ziele effizient verfolgen", "Zu wenig Reflexion"],
+  Creator:   ["Warten statt zeigen", "Perfektion vor Output"],
+  Optimizer: ["Nie zufrieden", "Optimieren statt entscheiden"],
+  Drifter:   ["Viel Bewegung, kein Fortschritt", "Reaktiv statt bewusst"],
+};
+
+/* ─────────────────────────────────────────────────────────────
+   FOMO STRIP — live social proof + same-type struggles
+───────────────────────────────────────────────────────────── */
+
+/* ── DAILY LOOP CONSTANTS ─────────────────────────────────── */
+const DAILY_PROMPTS = [
+  "Was hast du heute vermieden, obwohl du wusstest, dass es wichtig ist?",
+  "Was war heute nur Bewegung — aber kein Fortschritt?",
+  "Wo hast du heute dich selbst ausgebremst?",
+  "Was würdest du morgen anders machen, wenn du ehrlich bist?",
+  "Was hat dir heute Energie gegeben — und warum?"
+];
+
+const IDENTITY_REINFORCEMENT = {
+  Explorer:  "Du suchst noch — aber diesmal gehst du weiter.",
+  Builder:   "Du machst — aber diesmal bewusst.",
+  Creator:   "Du hast Ideen — diesmal zeigst du sie.",
+  Optimizer: "Du verbesserst — diesmal entscheidest du.",
+  Drifter:   "Du bewegst dich — diesmal mit Richtung.",
+};
+
+/* ─────────────────────────────────────────────────────────────
+   DAILY LOOP — reflection → progress → social proof → identity → action
+───────────────────────────────────────────────────────────── */
+function DailyLoop({ type, nativeShare, copiedLink }) {
+  /* ── Date helpers — YYYY-MM-DD strings for reliable comparison ── */
+  const toYMD = (date) => {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const todayYMD     = toYMD(new Date());
+  const yesterdayYMD = toYMD(new Date(Date.now() - 86400000));
+  const todayLegacy     = new Date().toDateString();
+  const yesterdayLegacy = new Date(Date.now() - 86400000).toDateString();
+
+  /* ── Prompt — one per day, rotates at midnight ──────────── */
+  const [prompt] = useState(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("clarity_daily_prompt") || "{}");
+      if ((stored.date === todayYMD || stored.date === todayLegacy) && stored.text) return stored.text;
+      const next = DAILY_PROMPTS[Math.floor(Math.random() * DAILY_PROMPTS.length)];
+      localStorage.setItem("clarity_daily_prompt", JSON.stringify({ date: todayYMD, text: next }));
+      return next;
+    } catch { return DAILY_PROMPTS[0]; }
+  });
+
+  /* ── Commitment — true if user committed today ───────────── */
+  const [committed, setCommitted] = useState(() => {
+    try {
+      const raw = localStorage.getItem("clarity_commitment");
+      if (!raw) return false;
+      const ts = parseInt(raw, 10);
+      if (!isNaN(ts)) return toYMD(ts) === todayYMD;
+      const obj = JSON.parse(raw);
+      return obj.date === todayYMD || obj.date === todayLegacy;
+    } catch { return false; }
+  });
+
+  /* ── Streak — persisted across days ─────────────────────── */
+  const [streak, setStreak] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem("clarity_streak") || "{}");
+      const lastAction = localStorage.getItem("clarity_last_action") || "";
+      if (lastAction === todayYMD || lastAction === yesterdayYMD) return s.count || 1;
+      if (s.date === todayLegacy || s.date === yesterdayLegacy) return s.count || 1;
+      return 0;
+    } catch { return 0; }
+  });
+
+  /* ── Reflected today — "Jetzt reflektieren" clicked ─────── */
+  const [reflected, setReflected] = useState(() => {
+    try {
+      return localStorage.getItem("clarity_reflected_today") === todayYMD;
+    } catch { return false; }
+  });
+
+  const handleCommit = () => {
+    try {
+      const lastAction = localStorage.getItem("clarity_last_action") || "";
+      const prevStreak = (() => {
+        try { return JSON.parse(localStorage.getItem("clarity_streak") || "{}"); } catch { return {}; }
+      })();
+      const newCount = lastAction === yesterdayYMD
+        ? (prevStreak.count || 0) + 1
+        : lastAction === todayYMD
+          ? (prevStreak.count || 1)
+          : 1;
+      localStorage.setItem("clarity_commitment", String(Date.now()));
+      localStorage.setItem("clarity_last_action", todayYMD);
+      localStorage.setItem("clarity_streak", JSON.stringify({ count: newCount }));
+      setStreak(newCount);
+      setCommitted(true);
+    } catch { setCommitted(true); }
+  };
+
+  const handleReflect = () => {
+    try {
+      localStorage.setItem("clarity_reflected_today", todayYMD);
+    } catch {}
+    setReflected(true);
+  };
+
+  /* ── Live social proof ───────────────────────────────────── */
+  const [count, setCount] = useState(() => Math.floor(Math.random() * 9) + 6);
+  const [same,  setSame]  = useState(() => Math.floor(Math.random() * 3) + 1);
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setCount(c => Math.max(4, Math.min(24, c + (Math.random() > 0.5 ? 1 : -1))));
+      setSame(s  => Math.max(1, Math.min(8,  s + (Math.random() > 0.6 ? 1 : -1))));
+    }, 4500);
+    return () => clearInterval(iv);
+  }, []);
+
+  const struggles     = TYPE_STRUGGLES[type] || [];
+  const reinforcement = IDENTITY_REINFORCEMENT[type] || "";
+  const avatarColors  = ["#6366f1", "#ec4899", "#10b981"];
+  const avatarInitials = ["A", "M", "J"];
+
+  /* ── Render ──────────────────────────────────────────────── */
+  return (
+    <Section delay={0}>
+      <div style={{
+        border: "1px solid rgba(0,0,0,0.08)",
+        borderRadius: 16,
+        padding: "24px 22px",
+        background: "#fafafa",
+      }}>
+        {/* ── Headline ── */}
+        <SectionLabel color={CLR.primary}>Deine Reflexion heute Abend</SectionLabel>
+
+        {/* 1. Daily prompt */}
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontSize: 11, color: T.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.12em", margin: "0 0 8px" }}>
+            Frag dich heute Abend:
+          </p>
+          <p style={{ fontSize: FS.body, color: T.high, lineHeight: 1.65, margin: 0, fontStyle: "italic" }}>
+            „{prompt}"
+          </p>
+        </div>
+
+        {/* 2+3. Commit / confirmation */}
+        {committed ? (
+          <div style={{ marginBottom: 4 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 16px", borderRadius: 20, background: "rgba(45,158,116,0.07)", border: "1px solid rgba(45,158,116,0.18)", fontSize: FS.small, color: CLR.green, fontWeight: 500, marginBottom: 8 }}>
+              ✓ Erinnerung gespeichert.
+            </div>
+            <div style={{ fontSize: FS.small, color: T.muted, marginBottom: 10 }}>
+              Du hast dir vorgenommen, heute ehrlich hinzuschauen.
+            </div>
+            <button
+              onClick={reflected ? undefined : handleReflect}
+              disabled={reflected}
+              style={{
+                height: 36, padding: "0 16px",
+                background: reflected ? "rgba(45,158,116,0.07)" : "rgba(0,0,0,0.05)",
+                color:      reflected ? CLR.green : T.mid,
+                border:     reflected ? "1px solid rgba(45,158,116,0.18)" : "1px solid rgba(0,0,0,0.08)",
+                fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+                fontSize: FS.small, fontWeight: reflected ? 600 : 500,
+                borderRadius: 8,
+                cursor: reflected ? "default" : "pointer",
+                transition: "all 200ms",
+              }}>
+              {reflected ? "✓ Reflektiert" : "Jetzt reflektieren"}
+            </button>
+            {reflected && (
+              <p style={{ fontSize: 12, color: T.muted, margin: "8px 0 0", lineHeight: 1.5 }}>
+                Du hast heute hingeschaut. Das machen die wenigsten.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div style={{ marginBottom: 4 }}>
+            <ActionButton label="Ich reflektiere das heute Abend" onClick={handleCommit} active />
+          </div>
+        )}
+
+        {/* ── SECTION A: Personal progress ─────────────────── */}
+        {streak > 0 && (
+          <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", marginTop: 20, paddingTop: 16, marginBottom: 0 }}>
+            <p style={{ fontSize: 13, color: T.mid, margin: "0 0 3px", fontWeight: 500 }}>
+              🔥 {streak} {streak === 1 ? "Tag" : "Tage"} Klarheit in Folge
+            </p>
+            <p style={{ fontSize: 12, color: T.muted, margin: 0, opacity: 0.75 }}>
+              Die meisten hören genau hier auf.
+            </p>
+          </div>
+        )}
+
+        {/* ── SECTION B: Social proof ──────────────────────── */}
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", marginTop: 20, paddingTop: 16, marginBottom: 20 }}>
+          {/* Avatars + share count */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: struggles.length > 0 ? 12 : 8 }}>
+            <div style={{ display: "flex" }}>
+              {avatarColors.map((c, i) => (
+                <div key={i} style={{ width: 22, height: 22, borderRadius: "50%", background: c, border: "2px solid #fafafa", marginLeft: i > 0 ? -6 : 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#fff", fontWeight: 700, flexShrink: 0 }}>
+                  {avatarInitials[i]}
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: 12, color: T.muted, margin: 0, lineHeight: 1.4 }}>
+              <strong style={{ color: T.mid }}>{count} Menschen</strong> teilen das gerade
+              {same > 0 && <> · <strong style={{ color: T.mid }}>{same}</strong> mit deinem Typ</>}
+            </p>
+          </div>
+
+          {/* Struggles */}
+          {struggles.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <p style={{ fontSize: 11, color: T.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 6px" }}>Viele mit deinem Typ kämpfen damit:</p>
+              {struggles.map((s, i) => (
+                <p key={i} style={{ fontSize: 13, color: T.low, margin: i === 0 ? "0 0 2px" : "2px 0 0", lineHeight: 1.5 }}>
+                  → {s}
+                </p>
+              ))}
+            </div>
+          )}
+
+          {/* Social bridge + identity reinforcement */}
+          <p style={{ fontSize: FS.small, color: T.muted, margin: "0 0 6px", lineHeight: 1.55 }}>
+            Du bist nicht allein damit.
+            Aber die meisten bleiben genau hier stehen.
+          </p>
+          {reinforcement && (
+            <p style={{ fontSize: FS.small, color: CLR.primary, fontWeight: 500, margin: 0, lineHeight: 1.5 }}>
+              {reinforcement}
+            </p>
+          )}
+        </div>
+
+        {/* 7. Share CTA */}
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", paddingTop: 18 }}>
+          <p style={{ fontSize: 12, color: T.muted, margin: "0 0 12px", lineHeight: 1.55 }}>
+            Die meisten erkennen sich hier.
+            Nur wenige verändern etwas.
+          </p>
+          <button onClick={nativeShare}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 46, padding: "0 24px", borderRadius: 999, border: "none", background: "linear-gradient(135deg, #4f46e5, #7c3aed, #db2777)", color: "#fff", fontSize: FS.small, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 6px 24px rgba(99,102,241,0.25)", transition: "opacity 150ms" }}
+            onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; }}
+            onMouseLeave={e => { e.currentTarget.style.opacity = "1"; }}>
+            {copiedLink ? "✓ Link kopiert!" : "Teile Clarity mit jemandem, der dir nahe steht"}
+          </button>
+        </div>
+
+        {/* Return anchor */}
+        <p style={{ fontSize: 11, color: T.muted, marginTop: 16, opacity: 0.5 }}>
+          Wenn du morgen wiederkommst, beginnt Veränderung.
+        </p>
+
+      </div>
+    </Section>
+  );
+}
+
+const isDev = typeof window !== "undefined" && localStorage.getItem("clarity_dev") === "true";
+
+function downloadICS(habitTime) {
+  const now = new Date();
+  const eventDate = new Date(now);
+  // Try to parse a user-selected time like "Heute Abend" → 19:00, "Heute Nachmittag" → 15:00
+  if (habitTime === "Heute Abend")       eventDate.setHours(19, 0, 0, 0);
+  else if (habitTime === "Heute Nachmittag") eventDate.setHours(15, 0, 0, 0);
+  else {
+    // Try "HH:MM" format
+    const match = (habitTime || "").match(/^(\d{1,2}):(\d{2})$/);
+    if (match) eventDate.setHours(parseInt(match[1], 10), parseInt(match[2], 10), 0, 0);
+    else       eventDate.setHours(19, 0, 0, 0); // fallback
+  }
+  const formatDate = (date) =>
+    date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const content = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "BEGIN:VEVENT",
+    "SUMMARY:Clarity – Reflexion",
+    "DESCRIPTION:Was hast du heute vermieden?",
+    `DTSTART:${formatDate(eventDate)}`,
+    `DTEND:${formatDate(new Date(eventDate.getTime() + 10 * 60000))}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = "clarity-reflection.ics";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 export function ResultScreen({ result: realResult, isPublicView = false }) {
   const [vis,               setVis]               = useState(false);
   const [barsReady,         setBarsReady]          = useState(false);
@@ -520,11 +852,8 @@ export function ResultScreen({ result: realResult, isPublicView = false }) {
   const [selectedHabit,     setSelectedHabit]      = useState("");
   const [selectedNutrition, setSelectedNutrition]  = useState(false);
   const [habitTime,         setHabitTime]          = useState("");
-  const [habitEmail,        setHabitEmail]         = useState("");
   const [habitStep,         setHabitStep]          = useState(1);
   const [habitDone,         setHabitDone]          = useState(false);
-  const [checkEmail,        setCheckEmail]         = useState("");
-  const [checkEmailDone,    setCheckEmailDone]     = useState(false);
   const [shareWrapperMounted, setShareWrapperMounted] = useState(false);
   const [devProfile,        setDevProfile]         = useState(devProfileFromUrl);
   const [devType,           setDevType]            = useState(null);
@@ -542,6 +871,19 @@ export function ResultScreen({ result: realResult, isPublicView = false }) {
       if (e.key === "4") {                                  setDevType("Optimizer"); }
       if (e.key === "5") {                                  setDevType("Drifter");   }
       if (e.key === "0") { setDevProfile(null);             setDevType(null);        }
+      // CMD/CTRL + SHIFT + R → hard reset (clear all localStorage + reload)
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        localStorage.clear();
+        window.location.reload();
+      }
+      // CMD/CTRL + SHIFT + D → toggle dev mode + reload
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        const next = localStorage.getItem("clarity_dev") === "true" ? "false" : "true";
+        localStorage.setItem("clarity_dev", next);
+        window.location.reload();
+      }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
@@ -598,8 +940,10 @@ try {
     } catch { return "Explorer"; }
   })();
 
-  // profile — structured identity content for this type
-  const clarityProfile = CLARITY_PROFILES[identityType] || CLARITY_PROFILES["Explorer"];
+  // profile — single source of truth (PROFILES only)
+  const type    = devType || safeResult.identityModes?.[0]?.type || identityType || "Explorer";
+  const profile      = PROFILES[type] || PROFILES["Explorer"];
+  const compareTypes = COMPARISON[type] || [];
 
   // blob dimensions (maps scores → OrganicBlob props)
   const blobDims = SCORE_ORDER.map(k => ({
@@ -648,23 +992,17 @@ try {
     try {
       const slug     = btoa(JSON.stringify(safeResult));
       const shareUrl = window.location.origin + "/p/" + slug;
-      let message = "";
-      switch (identityType) {
-        case "Explorer":
-          message = "Ich bin ein Explorer.\nIch bin noch auf der Suche.\nClarity hat das ziemlich klar erkannt.\n\nWas bist du?\n→ " + shareUrl;
-          break;
-        case "Builder":
-          message = "Ich bin ein Builder.\nIch setze um, während andere noch nachdenken.\n\nWas bist du?\n→ " + shareUrl;
-          break;
-        case "Creator":
-          message = "Ich bin ein Creator.\nIch erschaffe Dinge, weil ich nicht anders kann.\n\nWas bist du?\n→ " + shareUrl;
-          break;
-        case "Burnout Risk":
-          message = "Ich bin aktuell im Burnout Risk Bereich.\nEhrlich gesagt hat mich das getroffen.\n\nWas bist du?\n→ " + shareUrl;
-          break;
-        default:
-          message = "Ich bin ein " + identityType + ".\nClarity hat meinen Typ erkannt.\n\nWas bist du?\n→ " + shareUrl;
-      }
+      const SHARE_COPY = {
+        Explorer:  "Ich dachte, ich bin offen.\nIn Wahrheit vermeide ich Entscheidungen.\n\nDas hat mich ziemlich getroffen.\n\nWas bist du?\n→ ",
+        Builder:   "Ich dachte, ich mache alles richtig.\nIn Wahrheit hinterfrage ich meine Richtung nicht.\n\nDas war unangenehm genau.\n\nWas bist du?\n→ ",
+        Creator:   "Ich dachte, ich brauche nur die richtige Idee.\nIn Wahrheit fehlt mir der Mut, sie zu zeigen.\n\nDas hat gesessen.\n\nWas bist du?\n→ ",
+        Optimizer: "Ich dachte, ich werde immer besser.\nIn Wahrheit komme ich nie an.\n\nDas war zu real.\n\nWas bist du?\n→ ",
+        Drifter:   "Ich dachte, ich bin einfach beschäftigt.\nIn Wahrheit entscheide ich nichts.\n\nDas war unangenehm klar.\n\nWas bist du?\n→ ",
+      };
+      const message =
+        (SHARE_COPY[identityType] ||
+          "Das hat mich härter getroffen als erwartet.\n\nWas bist du?\n→ ") +
+        shareUrl;
       await navigator.clipboard.writeText(shareUrl);
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);
@@ -698,8 +1036,11 @@ try {
         <div style={{ textAlign: "center", marginBottom: 44 }}>
 
           {/* Pre-hook */}
-          <p style={{ fontSize: 13, letterSpacing: "0.04em", color: "#94a3b8", fontWeight: 500, margin: "0 0 28px", lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13, letterSpacing: "0.04em", color: "#94a3b8", fontWeight: 500, margin: "0 0 8px", lineHeight: 1.6 }}>
             Das trifft dich wahrscheinlich genauer, als dir gerade lieb ist.
+          </p>
+          <p style={{ fontSize: 13, color: "#6366f1", fontWeight: 600, margin: "0 0 20px" }}>
+            Die meisten erkennen sich hier zum ersten Mal wirklich.
           </p>
 
           {/* Type label */}
@@ -714,26 +1055,95 @@ try {
             </span>
           </h1>
 
-          {/* Hook — profile-specific, punchy */}
-          <p style={{ fontSize: "clamp(17px, 2.8vw, 20px)", color: T.high, lineHeight: 1.6, maxWidth: 400, margin: "0 auto 20px", fontWeight: 600, letterSpacing: "-0.01em" }}>
-            {clarityProfile.hook}
+          {/* HOOK — short punchy identity statement */}
+          <p style={{ fontSize: "clamp(17px, 2.8vw, 20px)", color: T.high, lineHeight: 1.55, maxWidth: 400, margin: "0 auto 28px", fontWeight: 700, letterSpacing: "-0.01em" }}>
+            {profile.hook}
           </p>
 
-          {/* Description — slightly uncomfortable truth */}
-          <p style={{ fontSize: "clamp(15px, 2.5vw, 17px)", color: T.mid, lineHeight: 1.7, maxWidth: 400, margin: "0 auto 20px", fontWeight: 400 }}>
-            {clarityProfile.description}
-          </p>
+          {/* PERSONAL HIT — AI summary with label */}
+          {safeResult.summary && (
+            <div style={{ maxWidth: 400, margin: "0 auto 8px", textAlign: "left" }}>
+              <p style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6b7280", marginBottom: 6 }}>
+                Das zeigt sich bei dir konkret:
+              </p>
+              <p style={{ fontSize: 18, fontWeight: 500, lineHeight: 1.6, margin: 0, color: "#111827" }}>
+                {safeResult.summary}
+              </p>
+            </div>
+          )}
 
-          {/* Push line */}
-          <p style={{ fontSize: 14, color: CLR.primary, fontWeight: 600, margin: "0 auto", maxWidth: 380, lineHeight: 1.6 }}>
-            {clarityProfile.push}
-          </p>
+          {/* CONFRONTATION — the sentence that hits, boxed */}
+          <div style={{ maxWidth: 400, margin: "24px auto 0", padding: "16px 18px", borderRadius: 12, background: "#f9fafb", border: "1px solid #e5e7eb", textAlign: "left" }}>
+            <p style={{ fontSize: 12, textTransform: "uppercase", color: "#9ca3af", marginBottom: 6, margin: "0 0 6px" }}>
+              Wenn du ehrlich bist:
+            </p>
+            <p style={{ fontSize: 16, fontWeight: 600, color: "#111827", lineHeight: 1.5, margin: 0 }}>
+              {profile.confrontation}
+            </p>
+          </div>
+
+          {/* ═══ COMPARISON HOOK ════════════════════════════ */}
+          <div style={{ maxWidth: 400, margin: "40px auto 0", textAlign: "left" }}>
+            <p style={{ fontSize: 12, textTransform: "uppercase", color: "#9ca3af", marginBottom: 10 }}>
+              Andere bewegen sich anders:
+            </p>
+
+            {compareTypes.map((t) => {
+              const p = PROFILES[t];
+              if (!p) return null;
+              return (
+                <div key={t} style={{ padding: "14px 16px", borderRadius: 12, border: "1px solid #e5e7eb", marginBottom: 10, background: "#fff" }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 4, margin: "0 0 4px", color: "#111827" }}>
+                    {p.title}
+                  </p>
+                  <p style={{ fontSize: 14, color: "#374151", lineHeight: 1.5, margin: 0 }}>
+                    {p.confrontation}
+                  </p>
+                </div>
+              );
+            })}
+
+            <p style={{ marginTop: 16, fontSize: 14, fontWeight: 500, color: "#111827" }}>
+              Die Frage ist nicht nur, wer du bist.
+              Sondern auch, wer du gerade nicht bist.
+            </p>
+
+            {/* ═══ DISTRIBUTION ═══════════════════════════════ */}
+            <div style={{ marginTop: 40 }}>
+              <p style={{ fontSize: 12, textTransform: "uppercase", color: "#9ca3af", marginBottom: 10 }}>
+                So verteilen sich die Typen:
+              </p>
+
+              {DISTRIBUTION.map((item) => {
+                const isUser = item.type === type;
+                return (
+                  <div key={item.type} style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, marginBottom: 4 }}>
+                      <span style={{ fontWeight: isUser ? 600 : 400 }}>{item.type}</span>
+                      <span style={{ color: "#6b7280" }}>{item.percentage}%</span>
+                    </div>
+                    <div style={{ height: 6, borderRadius: 999, background: "#f3f4f6", overflow: "hidden" }}>
+                      <div style={{ width: item.percentage + "%", height: "100%", background: isUser ? "#6366f1" : "#d1d5db" }} />
+                    </div>
+                  </div>
+                );
+              })}
+
+              <p style={{ marginTop: 16, fontSize: 14, fontWeight: 500, color: "#111827" }}>
+                {(() => {
+                const userDist = DISTRIBUTION.find(d => d.type === type)?.percentage || 0;
+                const label = userDist > 30 ? "häufigsten" : userDist < 15 ? "seltensten" : "mittleren";
+                return `Du gehörst zu den ${label} Typen.`;
+              })()}
+              </p>
+            </div>
+          </div>
 
         </div>
 
         {/* Blob */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, marginBottom: 36 }}>
-          <OrganicBlob dims={blobDims} size={300} />
+          <OrganicBlob dims={blobDims} size={300} type={type} />
         </div>
 
         {/* Hero share buttons — hidden in public view */}
@@ -745,7 +1155,7 @@ try {
                 style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 48, padding: "0 24px", borderRadius: 999, border: "none", background: "#0f172a", color: "#fff", fontSize: 14, fontWeight: 600, cursor: generating ? "not-allowed" : "pointer", opacity: generating ? 0.55 : 1, fontFamily: "inherit", boxShadow: "0 4px 16px rgba(0,0,0,0.18)", transition: "background 150ms" }}
                 onMouseEnter={e => { if (!generating) e.currentTarget.style.background = "#1e293b"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "#0f172a"; }}>
-                {generating ? "Erstelle Bild…" : `Speichern & teilen: Ich bin ein ${identityType}`}
+                {generating ? "Erstelle Bild…" : "Das hat mich überrascht — teilen"}
               </button>
             </div>
             {shareConfirm && (
@@ -824,7 +1234,7 @@ try {
                 {habitLabels[selectedHabit]}{selectedNutrition ? " + Salat" : ""} · {habitTime}
               </div>
               <div style={{ fontSize: FS.small, color: T.muted, lineHeight: 1.6 }}>
-                Wir schicken dir eine Erinnerung an {habitEmail}.
+                Füge dir eine Erinnerung in deinen Kalender ein.
               </div>
             </div>
           ) : (
@@ -904,13 +1314,8 @@ try {
                   <div style={{ fontSize: FS.small, color: CLR.primary, fontWeight: 500, marginBottom: 14 }}>
                     ✓ {habitLabels[selectedHabit]}{selectedNutrition ? " + Salat" : ""} · {habitTime}
                   </div>
-                  <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.6, marginBottom: 12 }}>Wir schicken dir eine Erinnerung.</div>
-                  <input type="email" placeholder="Deine E-Mail für die Erinnerung"
-                    value={habitEmail} onChange={e => setHabitEmail(e.target.value)}
-                    style={{ ...INPUT_STYLE, marginBottom: 14 }} />
-                  {habitEmail && (
-                    <ActionButton label="Für heute planen" green onClick={() => setHabitDone(true)} active />
-                  )}
+                  <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.6, marginBottom: 14 }}>Füge dir eine Erinnerung in deinen Kalender ein.</div>
+                  <ActionButton label="Erinnerung im Kalender speichern" green onClick={() => { downloadICS(habitTime); setHabitDone(true); }} active />
                 </div>
               )}
             </div>
@@ -918,40 +1323,14 @@ try {
         </div>
       </Section>
 
-      {habitDone && (
-        <Section delay={0}>
-          <div style={{ ...CARD }}>
-            <SectionLabel color={CLR.secondary}>Kurzer Rückblick heute Abend</SectionLabel>
-            <div style={{ fontSize: FS.body, color: T.mid, lineHeight: 1.65, marginBottom: 12 }}>
-              Schau heute Abend kurz hin: Was lief gut? Was würdest du morgen anders machen?
-            </div>
-            {!checkEmailDone ? (
-              <div>
-                <div style={{ fontSize: FS.small, color: T.low, marginBottom: 8 }}>Erinnerung für heute Abend:</div>
-                <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-                  <input type="email" placeholder="Deine E-Mail"
-                    value={checkEmail} onChange={e => setCheckEmail(e.target.value)}
-                    style={{ ...INPUT_STYLE, flex: 1, width: "auto" }} />
-                  <button onClick={() => { if (checkEmail) setCheckEmailDone(true); }} disabled={!checkEmail}
-                    style={{ height: 43, padding: "0 18px", background: checkEmail ? CLR.secondary : "rgba(0,0,0,0.05)", color: checkEmail ? "#fff" : T.muted, border: `1px solid ${checkEmail ? "transparent" : "rgba(0,0,0,0.10)"}`, fontFamily: FF, fontSize: FS.small, fontWeight: 600, borderRadius: 8, cursor: checkEmail ? "pointer" : "not-allowed", whiteSpace: "nowrap", opacity: checkEmail ? 1 : 0.60, transition: "background 200ms" }}>
-                    Erinnerung erhalten
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "8px 14px", borderRadius: 20, background: "rgba(156,107,255,0.08)", border: "1px solid rgba(156,107,255,0.18)", fontSize: FS.small, color: CLR.secondary, fontWeight: 500 }}>
-                ✓ Wir erinnern dich heute Abend daran.
-              </div>
-            )}
-          </div>
-        </Section>
-      )}
-
-
       </>)}
 
+      {!isPublicView && <DailyLoop type={type} nativeShare={nativeShare} copiedLink={copiedLink} />}
+
+      {!isPublicView && <DailyFeed type={type} />}
+
       {/* ═══ 7. SHARE / CTA ════════════════════════════════════ */}
-      <div style={{ marginTop: 56, background: "rgba(0,0,0,0.025)", borderTop: "1px solid rgba(0,0,0,0.07)" }}>
+      <div style={{ marginTop: 40, background: "rgba(0,0,0,0.025)", borderTop: "1px solid rgba(0,0,0,0.07)" }}>
         <div style={{ maxWidth: 600, margin: "0 auto", padding: "48px 24px 56px", textAlign: "center" }}>
 
           {isPublicView ? (
@@ -971,45 +1350,18 @@ try {
               </button>
             </>
           ) : (
-            /* ── PRIVATE CTA ── */
-            <>
-              <div style={{ width: 40, height: 1, background: "#e2e8f0", margin: "0 auto 40px" }} />
-
-              <h2 style={{ fontSize: "clamp(22px, 5vw, 28px)", fontWeight: 900, color: "#0f172a", letterSpacing: "-0.03em", lineHeight: 1.15, margin: "0 0 12px" }}>
-                Welcher Typ bist du wirklich?
-              </h2>
-              <p style={{ color: "#ef4444", fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Die meisten liegen falsch.</p>
-              <p style={{ color: "#64748b", fontSize: 15, lineHeight: 1.6, maxWidth: 300, margin: "0 auto 8px" }}>
-                Clarity erkennt deinen Persönlichkeitstyp — in 10 Minuten.
-              </p>
-              <p style={{ color: "#94a3b8", fontSize: 13, margin: "0 0 32px" }}>
-                Über 1.000 Menschen haben ihren Typ bereits entdeckt.
-              </p>
-
-              <button onClick={nativeShare}
-                style={{ display: "inline-flex", alignItems: "center", gap: 8, height: 54, padding: "0 36px", borderRadius: 999, border: "none", background: "linear-gradient(135deg, #4f46e5, #7c3aed, #db2777)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 32px rgba(99,102,241,0.30)", transition: "opacity 150ms, box-shadow 150ms" }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = "0.88"; e.currentTarget.style.boxShadow = "0 12px 40px rgba(99,102,241,0.40)"; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = "1"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(99,102,241,0.30)"; }}>
-                {copiedLink ? "✓ Link kopiert!" : "Freunden schicken — Was sind sie?"}
+            /* ── PRIVATE CTA — upgrade nudge only (share lives in DailyLoop) ── */
+            <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 48 }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: T.high, letterSpacing: "-0.02em", marginBottom: 8 }}>Willst du tiefer gehen?</div>
+              <div style={{ fontSize: FS.small, color: T.muted, marginBottom: 24 }}>Clarity ist ein System für ein selbstbestimmtes Leben.</div>
+              <button
+                onClick={() => window.location.href = "/waitlist"}
+                onMouseEnter={() => setHoverCta(true)} onMouseLeave={() => setHoverCta(false)}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, padding: "0 28px", background: hoverCta ? "#1a1a1a" : "#111", color: "#fff", border: "none", fontFamily: FF, fontSize: FS.body, fontWeight: 600, borderRadius: 12, cursor: "pointer", transition: "background 180ms, transform 140ms, box-shadow 140ms", transform: hoverCta ? "scale(1.02)" : "scale(1)", boxShadow: hoverCta ? "0 8px 28px rgba(0,0,0,0.22)" : "0 4px 20px rgba(0,0,0,0.18)", marginBottom: 10 }}>
+                Clarity System starten
               </button>
-
-              <p style={{ color: "#94a3b8", fontSize: 12, marginTop: 14, lineHeight: 1.5 }}>
-                Kostenlos · Kein Account · Ergebnis in 10 Minuten
-              </p>
-
-              {/* Upgrade nudge */}
-              <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", marginTop: 56, paddingTop: 48 }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: T.high, letterSpacing: "-0.02em", marginBottom: 8 }}>Willst du tiefer gehen?</div>
-                <div style={{ fontSize: FS.small, color: T.muted, marginBottom: 24 }}>Clarity ist ein System für ein selbstbestimmtes Leben.</div>
-                <button
-                  onClick={() => window.location.href = "/waitlist"}
-                  onMouseEnter={() => setHoverCta(true)} onMouseLeave={() => setHoverCta(false)}
-                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: 48, padding: "0 28px", background: hoverCta ? "#1a1a1a" : "#111", color: "#fff", border: "none", fontFamily: FF, fontSize: FS.body, fontWeight: 600, borderRadius: 12, cursor: "pointer", transition: "background 180ms, transform 140ms, box-shadow 140ms", transform: hoverCta ? "scale(1.02)" : "scale(1)", boxShadow: hoverCta ? "0 8px 28px rgba(0,0,0,0.22)" : "0 4px 20px rgba(0,0,0,0.18)", marginBottom: 10 }}>
-                  Clarity System starten
-                </button>
-                <div style={{ fontSize: FS.small, color: T.muted }}>Früher Zugang zum Clarity System</div>
-              </div>
-            </>
+              <div style={{ fontSize: FS.small, color: T.muted }}>Früher Zugang zum Clarity System</div>
+            </div>
           )}
         </div>
       </div>
@@ -1018,6 +1370,27 @@ try {
       {devType && (
         <div style={{ position: "fixed", bottom: 10, right: 10, fontSize: 12, opacity: 0.5, fontFamily: "monospace", pointerEvents: "none" }}>
           Dev: {identityType}
+        </div>
+      )}
+
+      {/* DEV MODE badge */}
+      {isDev && (
+        <div style={{ position: "fixed", top: 10, right: 10, zIndex: 9999, padding: "4px 10px", borderRadius: 6, background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", fontFamily: "monospace", pointerEvents: "none" }}>
+          DEV MODE
+        </div>
+      )}
+
+      {/* DEV MODE — Reset Progress button */}
+      {isDev && (
+        <div style={{ position: "fixed", bottom: 36, right: 10, zIndex: 9999 }}>
+          <button
+            onClick={() => {
+              ["clarity_streak", "clarity_commitment", "clarity_daily_prompt", "clarity_last_action", "clarity_reflected_today"].forEach(k => localStorage.removeItem(k));
+              window.location.reload();
+            }}
+            style={{ padding: "5px 12px", background: "#1e293b", color: "#94a3b8", border: "none", borderRadius: 6, fontSize: 11, fontFamily: "monospace", cursor: "pointer", fontWeight: 600 }}>
+            Reset Progress
+          </button>
         </div>
       )}
 

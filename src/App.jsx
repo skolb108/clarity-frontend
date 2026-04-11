@@ -15,12 +15,61 @@ const prefetchChatApp = () => import("./ChatFlow");
 // ── HeroScreen CSS — injected once at module load ──────────────────────────────
 const HERO_CSS = `
   .c-hero-meta { display: block; }
+  .c-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .c-header-inner {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 24px;
+    box-sizing: border-box;
+    pointer-events: auto;
+  }
+  .c-header-logo {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+  .c-header-wordmark {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #111;
+    text-transform: uppercase;
+  }
 `;
 if (typeof document !== "undefined") {
   const _s = document.createElement("style");
   _s.textContent = HERO_CSS;
   document.head.appendChild(_s);
 }
+
+// ── ClarityHeader — fixed top bar, always visible ────────────────────────────
+const ClarityHeader = memo(function ClarityHeader() {
+  return (
+    <div className="c-header" aria-hidden="true">
+      <div className="c-header-inner">
+        <img
+          src="/clarity-logo.png"
+          alt=""
+          className="c-header-logo"
+          onError={e => { e.currentTarget.style.display = "none"; }}
+        />
+        <span className="c-header-wordmark">Clarity</span>
+      </div>
+    </div>
+  );
+});
 
 // ── HeroScreen — lives in the initial bundle, paints before any JS evaluates ──
 const HeroScreen = memo(function HeroScreen({ onStart }) {
@@ -60,13 +109,7 @@ const HeroScreen = memo(function HeroScreen({ onStart }) {
         zIndex: 10,
       }}
     >
-      {/* Wordmark */}
-      <div style={{
-        fontSize: 11, letterSpacing: "0.42em", textTransform: "uppercase",
-        color: "#000", opacity: 0.35, marginBottom: 52,
-      }}>
-        Clarity
-      </div>
+      <ClarityHeader />
 
       {/* Headline */}
       <h1 style={{
