@@ -27,18 +27,18 @@ export default function ClarityLogo({ size = "md", faded = false, centered = tru
           height:    px,
           objectFit: "contain",
           display:   "block",
-          filter:    faded ? "grayscale(20%)" : "none",
+          filter: faded ? "grayscale(100%) opacity(0.5)" : "none",
           flexShrink: 0,
         }}
       />
       <span
         style={{
           fontFamily:    "'Helvetica Neue', Helvetica, Arial, sans-serif",
-          fontSize,
-          fontWeight:    700,
+          fontSize: 13,
+          fontWeight:    600,
           letterSpacing: "0.08em",
-          textTransform: "uppercase",
-          color:         "#111",
+          textTransform: "normal",
+          color:         "rgba(0,0,0,0.88)",
           lineHeight:    1,
         }}
       >

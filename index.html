@@ -3,209 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <!--
-      width=device-width  — prevents Safari's 980px phantom viewport
-      initial-scale=1     — no zoom on load
-      viewport-fit=cover  — content fills the iPhone notch / Dynamic Island area
-    -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Clarity</title>
 
     <!--
-      ┌─────────────────────────────────────────────────────────────────────┐
-      │  PAINT UNBLOCKING — the three-layer strategy                        │
-      │                                                                     │
-      │  Layer 1 — body background (inline style below)                     │
-      │    Applied by the HTML parser before any CSS or JS.                 │
-      │    Prevents the white flash on first byte.                          │
-      │                                                                     │
-      │  Layer 2 — skeleton styles (inline <style> below)                   │
-      │    Full skeleton layout. Zero round-trips. No JS needed.            │
-      │    This IS the first visible paint on the screen.                   │
-      │                                                                     │
-      │  Layer 3 — index.css (non-blocking preload)                         │
-      │    Downloaded in parallel with JS.  Applied via onload callback.    │
-      │    Does NOT block first paint — skeleton shows while it loads.      │
-      │    In Vite's production build, Vite replaces the href with the      │
-      │    hashed filename automatically.                                   │
-      └─────────────────────────────────────────────────────────────────────┘
-
-      WHY index.css WAS THE CULPRIT
-      ──────────────────────────────
-      Vite's production build discovers CSS through `import './index.css'`
-      in main.jsx and generates:
-        <link rel="stylesheet" crossorigin href="/assets/index-HASH.css">
-      injected at the end of <head>.
-
-      A <link rel="stylesheet"> is render-blocking by spec — Safari will not
-      paint a single pixel (not even inline-styled elements) until that file
-      fully downloads.  On a 4G iPhone with 150ms RTT, a 300-line CSS file
-      can take 300–800ms to load.  That is the white screen.
-
-      Moving CSS out of the JS module graph and into a <link rel="preload">
-      with the onload swap trick makes it non-blocking.  The skeleton paints
-      on the very next frame after HTML is parsed (~50ms), and the full CSS
-      applies 200–400ms later with no visible jump (skeleton styles are
-      already inline).
-    -->
-
-    <!--
-      CRITICAL INLINE STYLES — skeleton only.
-      Kept inline so they are applied by the HTML parser with zero round-trips.
-      These styles vanish automatically when React mounts and replaces #root.
+      INLINE SKELETON — paints before any JS or external CSS.
+      Matches the Entry screen exactly (same background, same font)
+      so there's zero visual jump when React mounts.
     -->
     <style>
-      /* ── Body background — applied before any external resource ─────────── */
       html, body {
-        margin: 0; padding: 0;
-        background: #f8f9fb;
+        margin: 0;
+        padding: 0;
+        /* Matches the gradient drift start color in Entry.jsx */
+        background: #e8eaf6;
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
       }
-      #root { width: 100%; min-height: 100vh; }
-
-      /* ── Skeleton container ──────────────────────────────────────────────── */
-      #c-pre-skeleton {
+      #root {
+        width: 100%;
         min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        padding: 24px;
-        text-align: center;
-        box-sizing: border-box;
-        opacity: 1;
       }
 
-      /* Wordmark */
-      #c-pre-wm {
-        font-size: 11px;
-        letter-spacing: 0.42em;
-        text-transform: uppercase;
-        color: #000;
-        opacity: 0.35;
-        margin-bottom: 52px;
-      }
-
-      /* Headline */
-      #c-pre-h1 {
-        font-size: clamp(40px, 9vw, 68px);
-        font-weight: 700;
-        letter-spacing: -0.03em;
-        line-height: 1.06;
-        color: #000;
-        margin: 0 0 20px;
-        max-width: 480px;
-      }
-
-      /* Subline */
-      #c-pre-sub {
-        font-size: clamp(18px, 3.5vw, 20px);
-        color: #000;
-        opacity: 0.55;
-        line-height: 1.6;
-        margin: 0 0 36px;
-        max-width: 360px;
-      }
-
-      /* CTA button — flat blue, no animated gradient (starts after React) */
-      #c-pre-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 64px;
-        padding: 0 36px;
-        color: #fff;
-        background: #4F8CFF;
-        border: none;
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        font-size: 18px;
-        font-weight: 600;
-        border-radius: 18px;
-        cursor: pointer;
-        margin-bottom: 20px;
-        box-shadow: 0 10px 36px rgba(79, 140, 255, 0.30);
-        min-width: 220px;
-      }
-
-      /* Microcopy */
-      #c-pre-micro {
-        font-size: 14px;
-        color: #000;
-        opacity: 0.42;
-        letter-spacing: 0.02em;
-        line-height: 1.6;
-      }
-
-      /* Trust signal */
-      #c-pre-trust {
-        font-size: 14px;
-        color: #000;
-        opacity: 0.6;
-        margin-top: 10px;
-        letter-spacing: 0.01em;
+      /* Minimal pre-render skeleton — just the background, no content.
+         React replaces #root in one frame so the skeleton is invisible
+         to users on any decent connection. */
+      #c-skeleton {
+        min-height: 100vh;
+        background: #e8eaf6;
       }
     </style>
-
-    <!--
-      NON-BLOCKING CSS — the preload / onload swap pattern
-      ──────────────────────────────────────────────────────
-      1. rel="preload" as="style"
-         Tells the browser to download index.css at HIGH priority in parallel
-         with JS, without blocking the render pipeline.
-
-      2. onload="this.onload=null; this.rel='stylesheet'"
-         Once downloaded, this fires synchronously and swaps rel to
-         "stylesheet", applying the CSS without ever having blocked paint.
-         The this.onload=null guard prevents a second fire in WebKit.
-
-      3. <noscript> fallback
-         For the rare case where JS is disabled — falls back to a regular
-         blocking stylesheet so the page still looks correct.
-
-      Vite will rewrite href="/src/index.css" to the production-hashed path
-      (e.g. /assets/index-Ct5dSURP.css) during build, so this works in
-      both dev and prod without any manual filename management.
-    -->
-
-
-    <!--
-      MODULE PRELOAD — tells the browser to start downloading main.jsx and
-      its direct import graph (App.jsx) at the same time as it parses <head>,
-      rather than waiting until the parser reaches the <script> tag at the
-      bottom of <body>.  On iPhone this saves one RTT (~100–200ms).
-
-      Vite rewrites these hrefs to hashed paths during build.
-    -->
-
-
   </head>
   <body>
-    <!--
-      #root — React mounts here.
-
-      The static skeleton below renders instantly (HTML parser, no JS).
-      React 18 createRoot().render() synchronously replaces #root's innerHTML,
-      removing the skeleton and mounting the live React tree in one frame.
-    -->
     <div id="root">
-      <div id="c-pre-skeleton" aria-hidden="true">
-        <div id="c-pre-wm">Clarity</div>
-        <h1 id="c-pre-h1">Mehr Klarheit.</h1>
-        <p id="c-pre-sub">
-          In einem kurzen Gespräch erkennst du, was dir wirklich wichtig ist.
-        </p>
-        <button id="c-pre-btn" tabindex="-1">Gespräch starten</button>
-        <div id="c-pre-micro">Kostenlos · Kein Account · ca. 10 Minuten</div>
-        <div id="c-pre-trust">Bereits über 1.000 Gespräche geführt</div>
-      </div>
+      <!-- Blank skeleton — Entry screen IS the landing page now -->
+      <div id="c-skeleton"></div>
     </div>
 
-    <!--
-      Script at end of <body> — type="module" is async/deferred by spec so
-      it never blocks the skeleton paint even without defer attribute.
-      Vite rewrites src to the hashed production bundle during build.
-    -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
