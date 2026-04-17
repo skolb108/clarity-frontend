@@ -65,6 +65,7 @@ export default function Entry({ onNext }) {
           backgroundSize:   "300% 300%",
           animation:        "gradientDrift 10s ease-in-out infinite",
           pointerEvents:    "none",
+          willChange:       "transform",  /* GPU layer — prevents iOS freeze */
         }}
       />
 
