@@ -1,37 +1,16 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Clarity</title>
-
     <style>
-      /*
-        CRITICAL: overscroll-behavior: none
-        ─────────────────────────────────────
-        Prevents iOS Safari's rubber-band / pull-to-refresh gesture from
-        getting into a state where position:fixed elements freeze on screen.
-        Without this, pulling down to reload causes the fixed gradient in
-        Entry.jsx to stay rendered while the page underneath reloads,
-        making the screen appear stuck.
-
-        overscroll-behavior: none   → no bounce, no pull-to-refresh glitch
-        touch-action: manipulation  → disables double-tap zoom (faster taps)
-        -webkit-tap-highlight-color → removes grey flash on iOS tap
-
-        height: 100% on html/body + min-height: 100dvh on #root
-        ensures the app always fills exactly the visible viewport,
-        even when the iOS address bar hides/shows.
-      */
-      *, *::before, *::after {
-        box-sizing: border-box;
-      }
+      *, *::before, *::after { box-sizing: border-box; }
 
       html {
-        overscroll-behavior: none;          /* kills pull-to-refresh hang  */
-        -webkit-overflow-scrolling: auto;   /* no momentum scroll on html  */
         height: 100%;
+        overscroll-behavior: none;
       }
 
       body {
@@ -39,32 +18,25 @@
         padding: 0;
         height: 100%;
         overscroll-behavior: none;
-        background: #F7F7F6;               /* matches Entry near-white base */
         font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
+
+        /* Base color — prevents flash before React mounts */
+        background-color: #F5F5F4;
       }
 
       #root {
         width: 100%;
-        min-height: 100dvh;               /* dynamic viewport — respects iOS bar */
-        min-height: 100vh;                /* fallback for older browsers */
-      }
-
-      /* Blank pre-render — same color as Entry gradient start */
-      #c-skeleton {
         min-height: 100dvh;
         min-height: 100vh;
-        background: #F7F7F6;
       }
     </style>
   </head>
   <body>
-    <div id="root">
-      <div id="c-skeleton"></div>
-    </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

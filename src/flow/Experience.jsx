@@ -3,7 +3,8 @@ import ScreenWrapper from "../components/ScreenWrapper";
 import Entry         from "../screens/Entry";
 import MicroIntro    from "../screens/MicroIntro";
 import Question      from "../screens/Question";
-import Loading       from "../screens/Loading";
+import Loading           from "../screens/Loading";
+import GlobalBackground  from "../components/GlobalBackground";
 
 const ResultScreen = lazy(() => import("../ResultScreen"));
 
@@ -362,6 +363,8 @@ export default function Experience() {
 
   return (
     <>
+      <GlobalBackground />
+
       {/* MicroIntro is a fixed overlay — must sit OUTSIDE ScreenWrapper
           to avoid conflict with ScreenWrapper's own transition system */}
       {step === "micro" && (

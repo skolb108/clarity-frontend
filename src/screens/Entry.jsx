@@ -9,9 +9,9 @@ const ENTRY_KEYFRAMES = `
     50%       { opacity: 0.88; }
   }
   @keyframes atmosphereDrift {
-    0%   { opacity: 0.75; transform: translate(0px,  0px);  }
+    0%   { opacity: 0.70; transform: translate(0px,  0px);  }
     50%  { opacity: 0.90; transform: translate(10px, -7px); }
-    100% { opacity: 0.75; transform: translate(0px,  0px);  }
+    100% { opacity: 0.70; transform: translate(0px,  0px);  }
   }
 `;
 
@@ -51,46 +51,27 @@ export default function Entry({ onNext }) {
 
   return (
     <>
-      {/* ── Background — same color world as MicroIntro, more subtle ── */}
-
-      {/* Layer 1: near-white base */}
+      {/* Warm peach center — Entry-specific accent on top of global bg */}
       <div aria-hidden="true" style={{
         position: "fixed", inset: 0, zIndex: 0,
-        background: "#F7F7F6",
+        background: `radial-gradient(ellipse 62% 44% at 62% 44%,
+          rgba(230, 193, 148, 0.32) 0%,
+          rgba(235, 205, 162, 0.12) 48%,
+          transparent 72%
+        )`,
+        filter: "blur(20px)",
         pointerEvents: "none",
         willChange: "transform",
       }} />
 
-      {/* Layer 2: mint / cyan top-left — same family, lower opacity */}
-      <div aria-hidden="true" style={{
-        position: "fixed", inset: 0, zIndex: 1,
-        background: `radial-gradient(ellipse 80% 65% at -8% 2%,
-          rgba(175, 225, 228, 0.38) 0%,
-          rgba(155, 215, 222, 0.14) 45%,
-          transparent 72%
-        )`,
-        pointerEvents: "none",
-      }} />
-
-      {/* Layer 3: warm peach center — very soft, barely there */}
-      <div aria-hidden="true" style={{
-        position: "fixed", inset: 0, zIndex: 2,
-        background: `radial-gradient(ellipse 55% 38% at 55% 48%,
-          rgba(228, 192, 150, 0.22) 0%,
-          transparent 65%
-        )`,
-        filter: "blur(20px)",
-        pointerEvents: "none",
-      }} />
-
-      {/* Layer 4: lavender bottom — drifts slowly */}
+      {/* Drifting lavender orb — bottom-right */}
       <div aria-hidden="true" style={{
         position: "fixed", bottom: "-10%", right: "-10%",
-        width: "65%", height: "65%",
-        zIndex: 3,
+        width: "60%", height: "60%",
+        zIndex: 1,
         borderRadius: "50%",
         background: `radial-gradient(circle,
-          rgba(215, 195, 232, 0.28) 0%,
+          rgba(215, 195, 232, 0.22) 0%,
           transparent 65%
         )`,
         filter: "blur(36px)",
@@ -99,8 +80,7 @@ export default function Entry({ onNext }) {
         willChange: "transform, opacity",
       }} />
 
-      {/* ── Content ── */}
-      <ScreenContainer logoAlign="left" logoOpacity={0.42} transparent={true}>
+      <ScreenContainer logoAlign="left" logoOpacity={0.42}>
         <div
           onClick={handleTap}
           onMouseDown={() => setPressed(true)}
@@ -108,7 +88,7 @@ export default function Entry({ onNext }) {
           onMouseLeave={() => setPressed(false)}
           style={{
             position:     "relative",
-            zIndex:        4,
+            zIndex:        2,
             flex:          1,
             display:       "flex",
             flexDirection: "column",
@@ -120,74 +100,41 @@ export default function Entry({ onNext }) {
         >
           <div style={{ height: TOP_SPACER_H, flexShrink: 0 }} />
 
-          {/* Headline */}
           <div style={{ marginBottom: 28 }}>
             <div style={fadeIn(phase >= 1)}>
-              <p style={{
-                fontSize: 39, fontWeight: 700, lineHeight: 1.15,
-                letterSpacing: "-0.02em", color: "#111008",
-                margin: "0 0 6px",
-              }}>
+              <p style={{ fontSize: 39, fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", color: "#111008", margin: "0 0 6px" }}>
                 Du denkst viel.
               </p>
             </div>
-
             <div style={fadeIn(phase >= 2)}>
-              <p style={{
-                fontSize: 39, fontWeight: 700, lineHeight: 1.15,
-                letterSpacing: "-0.02em", color: "#111008",
-                margin: "0 0 20px",
-              }}>
+              <p style={{ fontSize: 39, fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", color: "#111008", margin: "0 0 20px" }}>
                 Und manchmal dreht<br />es sich im Kreis.
               </p>
             </div>
-
             <div style={fadeIn(phase >= 3)}>
-              <p style={{
-                fontSize: 39, fontWeight: 600, lineHeight: 1.2,
-                letterSpacing: "-0.015em", color: "rgba(17,16,8,0.40)",
-                margin: 0,
-              }}>
+              <p style={{ fontSize: 39, fontWeight: 600, lineHeight: 1.2, letterSpacing: "-0.015em", color: "rgba(17,16,8,0.40)", margin: 0 }}>
                 Lass uns das kurz ordnen.
               </p>
             </div>
           </div>
 
-          {/* Supporting */}
           <div style={fadeIn(phase >= 4)}>
-            <p style={{
-              fontSize: 17, fontWeight: 400, lineHeight: 1.65,
-              color: "rgba(17,16,8,0.38)", margin: "0 0 5px",
-              letterSpacing: "0.005em",
-            }}>
-              Ich stelle dir ein paar kurze Fragen —<br />
-              und am Ende wird etwas klar.
+            <p style={{ fontSize: 17, fontWeight: 400, lineHeight: 1.65, color: "rgba(17,16,8,0.38)", margin: "0 0 5px", letterSpacing: "0.005em" }}>
+              Ich stelle dir ein paar kurze Fragen —<br />und am Ende wird etwas klar.
             </p>
-            <p style={{
-              fontSize: 17, fontWeight: 500, lineHeight: 1.4,
-              color: "rgba(17,16,8,0.48)", margin: "0 0 20px",
-            }}>
+            <p style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.4, color: "rgba(17,16,8,0.48)", margin: "0 0 20px" }}>
               Für dich.
             </p>
           </div>
 
-          {/* Meta */}
           <div style={fadeIn(phase >= 5)}>
-            <p style={{
-              fontSize: 14, color: "rgba(17,16,8,0.26)",
-              margin: "0 0 32px", letterSpacing: "0.01em",
-            }}>
+            <p style={{ fontSize: 14, color: "rgba(17,16,8,0.26)", margin: "0 0 32px", letterSpacing: "0.01em" }}>
               Dauert etwa 5 Minuten · Kein Account nötig
             </p>
           </div>
 
-          {/* CTA */}
           <div style={fadeIn(phase >= 6)}>
-            <p style={{
-              fontSize: 13, color: "rgba(17,16,8,0.50)",
-              margin: 0, letterSpacing: "0.02em",
-              animation: phase >= 6 ? "ctaPulse 2.2s ease-in-out infinite" : "none",
-            }}>
+            <p style={{ fontSize: 13, color: "rgba(17,16,8,0.50)", margin: 0, letterSpacing: "0.02em", animation: phase >= 6 ? "ctaPulse 2.2s ease-in-out infinite" : "none" }}>
               Tippe, um das zu klären →
             </p>
           </div>
