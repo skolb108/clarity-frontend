@@ -1,6 +1,7 @@
-import { useState, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import ScreenWrapper from "../components/ScreenWrapper";
 import Entry         from "../screens/Entry";
+import MicroIntro    from "../screens/MicroIntro";
 import Question      from "../screens/Question";
 import Loading       from "../screens/Loading";
 
@@ -190,7 +191,20 @@ function parseQuestionResponse(raw) {
 ───────────────────────────────────────────────────────────── */
 
 export default function Experience() {
-  const [step, setStep] = useState("entry");
+  // First visit check — computed once via ref, never re-runs on re-render
+  const firstVisitRef = useRef(
+    typeof localStorage !== "undefined"
+      && !localStorage.getItem("clarity_visited")
+  );
+  const [step, setStep] = useState(firstVisitRef.current ? "micro" : "entry");
+
+  useEffect(() => {
+    // Mark as visited only after successful first render
+    if (firstVisitRef.current) {
+      localStorage.setItem("clarity_visited", "1");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [questionIndex,     setQuestionIndex]     = useState(0);
   const [currentQuestion,   setCurrentQuestion]   = useState(OPENING_QUESTION);
@@ -347,6 +361,13 @@ export default function Experience() {
   /* ─── Render ─────────────────────────────────────────── */
 
   return (
+    <>
+      {/* MicroIntro is a fixed overlay — must sit OUTSIDE ScreenWrapper
+          to avoid conflict with ScreenWrapper's own transition system */}
+      {step === "micro" && (
+        <MicroIntro onDone={() => setStep("entry")} />
+      )}
+
     <ScreenWrapper key={wrapperKey}>
 
       {step === "entry" && (
@@ -376,5 +397,6 @@ export default function Experience() {
       )}
 
     </ScreenWrapper>
+    </>
   );
 }

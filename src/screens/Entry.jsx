@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react";
 import ScreenContainer from "../components/ScreenContainer";
 
-// Smaller spacer — content sits higher, CTA visible above mobile nav bar
 const TOP_SPACER_H = "clamp(24px, 8vh, 80px)";
 
 const ENTRY_KEYFRAMES = `
   @keyframes ctaPulse {
-    0%, 100% { opacity: 0.6; }
-    50%       { opacity: 1;   }
+    0%, 100% { opacity: 0.50; }
+    50%       { opacity: 0.88; }
   }
-  @keyframes gradientDrift {
-    0%   { background-position: 0%   50%; }
-    50%  { background-position: 100% 50%; }
-    100% { background-position: 0%   50%; }
+  @keyframes atmosphereDrift {
+    0%   { opacity: 0.75; transform: translate(0px,  0px);  }
+    50%  { opacity: 0.90; transform: translate(10px, -7px); }
+    100% { opacity: 0.75; transform: translate(0px,  0px);  }
   }
 `;
 
@@ -41,10 +40,7 @@ export default function Entry({ onNext }) {
 
   const handleTap = () => {
     setPressed(true);
-    setTimeout(() => {
-      setPressed(false);
-      onNext(null);
-    }, 130);
+    setTimeout(() => { setPressed(false); onNext(null); }, 130);
   };
 
   const fadeIn = (show, yOffset = 10) => ({
@@ -55,36 +51,71 @@ export default function Entry({ onNext }) {
 
   return (
     <>
-      <div
-        aria-hidden="true"
-        style={{
-          position:        "fixed",
-          inset:            0,
-          zIndex:           0,
-          background:       "linear-gradient(135deg, #e8eaf6 0%, #f0f4ff 40%, #ede9f8 70%, #e8eaf6 100%)",
-          backgroundSize:   "300% 300%",
-          animation:        "gradientDrift 10s ease-in-out infinite",
-          pointerEvents:    "none",
-          willChange:       "transform",  /* GPU layer — prevents iOS freeze */
-        }}
-      />
+      {/* ── Background — same color world as MicroIntro, more subtle ── */}
 
-      <ScreenContainer logoAlign="left" logoOpacity={0.45}>
+      {/* Layer 1: near-white base */}
+      <div aria-hidden="true" style={{
+        position: "fixed", inset: 0, zIndex: 0,
+        background: "#F7F7F6",
+        pointerEvents: "none",
+        willChange: "transform",
+      }} />
+
+      {/* Layer 2: mint / cyan top-left — same family, lower opacity */}
+      <div aria-hidden="true" style={{
+        position: "fixed", inset: 0, zIndex: 1,
+        background: `radial-gradient(ellipse 80% 65% at -8% 2%,
+          rgba(175, 225, 228, 0.38) 0%,
+          rgba(155, 215, 222, 0.14) 45%,
+          transparent 72%
+        )`,
+        pointerEvents: "none",
+      }} />
+
+      {/* Layer 3: warm peach center — very soft, barely there */}
+      <div aria-hidden="true" style={{
+        position: "fixed", inset: 0, zIndex: 2,
+        background: `radial-gradient(ellipse 55% 38% at 55% 48%,
+          rgba(228, 192, 150, 0.22) 0%,
+          transparent 65%
+        )`,
+        filter: "blur(20px)",
+        pointerEvents: "none",
+      }} />
+
+      {/* Layer 4: lavender bottom — drifts slowly */}
+      <div aria-hidden="true" style={{
+        position: "fixed", bottom: "-10%", right: "-10%",
+        width: "65%", height: "65%",
+        zIndex: 3,
+        borderRadius: "50%",
+        background: `radial-gradient(circle,
+          rgba(215, 195, 232, 0.28) 0%,
+          transparent 65%
+        )`,
+        filter: "blur(36px)",
+        animation: "atmosphereDrift 15s ease-in-out infinite",
+        pointerEvents: "none",
+        willChange: "transform, opacity",
+      }} />
+
+      {/* ── Content ── */}
+      <ScreenContainer logoAlign="left" logoOpacity={0.42} transparent={true}>
         <div
           onClick={handleTap}
           onMouseDown={() => setPressed(true)}
           onMouseUp={() => setPressed(false)}
           onMouseLeave={() => setPressed(false)}
           style={{
-            position:      "relative",
-            zIndex:         1,
-            flex:           1,
-            display:        "flex",
-            flexDirection:  "column",
-            cursor:         "pointer",
-            userSelect:     "none",
-            transform:      pressed ? "scale(0.98)" : "scale(1)",
-            transition:     "transform 120ms ease-out",
+            position:     "relative",
+            zIndex:        4,
+            flex:          1,
+            display:       "flex",
+            flexDirection: "column",
+            cursor:        "pointer",
+            userSelect:    "none",
+            transform:     pressed ? "scale(0.985)" : "scale(1)",
+            transition:    "transform 120ms ease-out",
           }}
         >
           <div style={{ height: TOP_SPACER_H, flexShrink: 0 }} />
@@ -93,13 +124,9 @@ export default function Entry({ onNext }) {
           <div style={{ marginBottom: 28 }}>
             <div style={fadeIn(phase >= 1)}>
               <p style={{
-                fontSize:      39,
-                fontWeight:    700,
-                lineHeight:    1.15,
-                letterSpacing: "-0.02em",
-                color:         "#0f172a",
-                margin:        "0 0 6px",
-                textShadow:    "0 2px 60px rgba(165,180,252,0.2)",
+                fontSize: 39, fontWeight: 700, lineHeight: 1.15,
+                letterSpacing: "-0.02em", color: "#111008",
+                margin: "0 0 6px",
               }}>
                 Du denkst viel.
               </p>
@@ -107,13 +134,9 @@ export default function Entry({ onNext }) {
 
             <div style={fadeIn(phase >= 2)}>
               <p style={{
-                fontSize:      39,
-                fontWeight:    700,
-                lineHeight:    1.15,
-                letterSpacing: "-0.02em",
-                color:         "#0f172a",
-                margin:        "0 0 18px",
-                textShadow:    "0 2px 60px rgba(165,180,252,0.2)",
+                fontSize: 39, fontWeight: 700, lineHeight: 1.15,
+                letterSpacing: "-0.02em", color: "#111008",
+                margin: "0 0 20px",
               }}>
                 Und manchmal dreht<br />es sich im Kreis.
               </p>
@@ -121,55 +144,51 @@ export default function Entry({ onNext }) {
 
             <div style={fadeIn(phase >= 3)}>
               <p style={{
-                fontSize:      39,
-                fontWeight:    600,
-                lineHeight:    1.2,
-                letterSpacing: "-0.015em",
-                color:         "rgba(15,23,42,0.42)",
-                margin:        0,
+                fontSize: 39, fontWeight: 600, lineHeight: 1.2,
+                letterSpacing: "-0.015em", color: "rgba(17,16,8,0.40)",
+                margin: 0,
               }}>
                 Lass uns das kurz ordnen.
               </p>
             </div>
           </div>
 
-          {/* Supporting line */}
+          {/* Supporting */}
           <div style={fadeIn(phase >= 4)}>
             <p style={{
-              fontSize:      17,
-              fontWeight:    400,
-              lineHeight:    1.6,
-              color:         "rgba(15,23,42,0.40)",
-              margin:        "0 0 16px",
+              fontSize: 17, fontWeight: 400, lineHeight: 1.65,
+              color: "rgba(17,16,8,0.38)", margin: "0 0 5px",
               letterSpacing: "0.005em",
             }}>
               Ich stelle dir ein paar kurze Fragen —<br />
               und am Ende wird etwas klar.
+            </p>
+            <p style={{
+              fontSize: 17, fontWeight: 500, lineHeight: 1.4,
+              color: "rgba(17,16,8,0.48)", margin: "0 0 20px",
+            }}>
+              Für dich.
             </p>
           </div>
 
           {/* Meta */}
           <div style={fadeIn(phase >= 5)}>
             <p style={{
-              fontSize:      14,
-              color:         "rgba(15,23,42,0.28)",
-              margin:        "0 0 32px",
-              letterSpacing: "0.01em",
+              fontSize: 14, color: "rgba(17,16,8,0.26)",
+              margin: "0 0 32px", letterSpacing: "0.01em",
             }}>
               Dauert etwa 5 Minuten · Kein Account nötig
             </p>
           </div>
 
-          {/* CTA pulse */}
+          {/* CTA */}
           <div style={fadeIn(phase >= 6)}>
             <p style={{
-              fontSize:      13,
-              color:         "rgba(0,0,0,0.55)",
-              margin:        0,
-              letterSpacing: "0.02em",
-              animation:     phase >= 6 ? "ctaPulse 2s ease-in-out infinite" : "none",
+              fontSize: 13, color: "rgba(17,16,8,0.50)",
+              margin: 0, letterSpacing: "0.02em",
+              animation: phase >= 6 ? "ctaPulse 2.2s ease-in-out infinite" : "none",
             }}>
-              Tippe, um zu starten →
+              Tippe, um das zu klären →
             </p>
           </div>
         </div>
