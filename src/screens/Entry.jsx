@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import ScreenContainer from "../components/ScreenContainer";
 
-const TOP_SPACER_H = "clamp(40px, 16vh, 140px)";
+// Smaller spacer — content sits higher, CTA visible above mobile nav bar
+const TOP_SPACER_H = "clamp(24px, 8vh, 80px)";
 
-// Injected once — idle pulse on CTA + subtle gradient drift
 const ENTRY_KEYFRAMES = `
   @keyframes ctaPulse {
     0%, 100% { opacity: 0.6; }
@@ -29,12 +29,12 @@ export default function Entry({ onNext }) {
 
   useEffect(() => {
     const timers = [
-      setTimeout(() => setPhase(1), 300),   // headline
-      setTimeout(() => setPhase(2), 900),   // second line
-      setTimeout(() => setPhase(3), 1500),  // "Lass uns..."
-      setTimeout(() => setPhase(4), 2200),  // supporting lines
-      setTimeout(() => setPhase(5), 3000),  // meta (5 min / no account)
-      setTimeout(() => setPhase(6), 3800),  // CTA
+      setTimeout(() => setPhase(1), 300),
+      setTimeout(() => setPhase(2), 900),
+      setTimeout(() => setPhase(3), 1500),
+      setTimeout(() => setPhase(4), 2200),
+      setTimeout(() => setPhase(5), 3000),
+      setTimeout(() => setPhase(6), 3800),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
@@ -55,17 +55,16 @@ export default function Entry({ onNext }) {
 
   return (
     <>
-      {/* Subtle animated background — barely visible, makes screen feel alive */}
       <div
         aria-hidden="true"
         style={{
-          position:           "fixed",
-          inset:               0,
-          zIndex:              0,
-          background:          "linear-gradient(135deg, #e8eaf6 0%, #f0f4ff 40%, #ede9f8 70%, #e8eaf6 100%)",
-          backgroundSize:      "300% 300%",
-          animation:           "gradientDrift 10s ease-in-out infinite",
-          pointerEvents:       "none",
+          position:        "fixed",
+          inset:            0,
+          zIndex:           0,
+          background:       "linear-gradient(135deg, #e8eaf6 0%, #f0f4ff 40%, #ede9f8 70%, #e8eaf6 100%)",
+          backgroundSize:   "300% 300%",
+          animation:        "gradientDrift 10s ease-in-out infinite",
+          pointerEvents:    "none",
         }}
       />
 
@@ -89,8 +88,8 @@ export default function Entry({ onNext }) {
         >
           <div style={{ height: TOP_SPACER_H, flexShrink: 0 }} />
 
-          {/* ── Headline ── */}
-          <div style={{ marginBottom: 32 }}>
+          {/* Headline */}
+          <div style={{ marginBottom: 28 }}>
             <div style={fadeIn(phase >= 1)}>
               <p style={{
                 fontSize:      39,
@@ -112,10 +111,10 @@ export default function Entry({ onNext }) {
                 lineHeight:    1.15,
                 letterSpacing: "-0.02em",
                 color:         "#0f172a",
-                margin:        "0 0 20px",
+                margin:        "0 0 18px",
                 textShadow:    "0 2px 60px rgba(165,180,252,0.2)",
               }}>
-                Und manchmal dreht es sich im Kreis.
+                Und manchmal dreht<br />es sich im Kreis.
               </p>
             </div>
 
@@ -133,14 +132,14 @@ export default function Entry({ onNext }) {
             </div>
           </div>
 
-          {/* ── Supporting line ── */}
+          {/* Supporting line */}
           <div style={fadeIn(phase >= 4)}>
             <p style={{
               fontSize:      17,
               fontWeight:    400,
               lineHeight:    1.6,
               color:         "rgba(15,23,42,0.40)",
-              margin:        "0 0 20px",
+              margin:        "0 0 16px",
               letterSpacing: "0.005em",
             }}>
               Ich stelle dir ein paar kurze Fragen —<br />
@@ -148,20 +147,19 @@ export default function Entry({ onNext }) {
             </p>
           </div>
 
-          {/* ── Meta ── */}
+          {/* Meta */}
           <div style={fadeIn(phase >= 5)}>
             <p style={{
               fontSize:      14,
-              fontWeight:    400,
               color:         "rgba(15,23,42,0.28)",
-              margin:        "0 0 40px",
+              margin:        "0 0 32px",
               letterSpacing: "0.01em",
             }}>
               Dauert etwa 5 Minuten · Kein Account nötig
             </p>
           </div>
 
-          {/* ── CTA — idle pulse ── */}
+          {/* CTA pulse */}
           <div style={fadeIn(phase >= 6)}>
             <p style={{
               fontSize:      13,

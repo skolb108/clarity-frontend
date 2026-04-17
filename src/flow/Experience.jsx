@@ -277,6 +277,13 @@ export default function Experience() {
   /* ─── Answer handler ─────────────────────────────────── */
 
   const handleAnswer = async (text) => {
+    // Reset scroll position before each screen transition
+    try {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    } catch (_) {}
+
     const newAnswers = [
       ...answers,
       {

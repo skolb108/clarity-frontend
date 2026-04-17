@@ -58,7 +58,7 @@ function ProgressSlot({ questionNumber, totalQuestions }) {
 export default function Question({
   question,
   reflection   = "",
-  reaction     = null,  // { text: string, isTension: boolean } | null
+  reaction     = null,
   isReacting   = false,
   previousAnswer,
   isTyping,
@@ -66,9 +66,10 @@ export default function Question({
   totalQuestions = 12,
   onNext,
 }) {
-  const [text, setText]   = useState("");
-  const [phase, setPhase] = useState(0);
-  const textareaRef       = useRef(null);
+  const [text,      setText]      = useState("");
+  const [phase,     setPhase]     = useState(0);
+  const [isFocused, setIsFocused] = useState(false); // CTA only visible after first focus
+  const textareaRef = useRef(null);
 
   useEffect(() => {
     const style = document.createElement("style");
@@ -80,11 +81,13 @@ export default function Question({
   useEffect(() => {
     setPhase(0);
     setText("");
+    setIsFocused(false);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
     const timers = [
       setTimeout(() => setPhase(1), 80),
       setTimeout(() => setPhase(2), 300),
       setTimeout(() => setPhase(3), 600),
+      // Auto-focus but don't set isFocused — CTA stays hidden until real tap
       setTimeout(() => textareaRef.current?.focus({ preventScroll: true }), 700),
     ];
     return () => timers.forEach(clearTimeout);
@@ -123,9 +126,7 @@ export default function Question({
     ? <ProgressSlot questionNumber={questionNumber} totalQuestions={totalQuestions} />
     : null;
 
-  // ── REACTION STATE ──────────────────────────────────────
-  // Same visual style as the AI reflection above questions:
-  // indigo, 15px, normal weight, line-height 1.5
+  /* ── REACTION STATE ── */
   if (isReacting && reaction) {
     return (
       <ScreenContainer logoAlign="left" logoOpacity={0.25} headerRight={progressSlot}>
@@ -146,7 +147,7 @@ export default function Question({
     );
   }
 
-  // ── THINKING STATE ──────────────────────────────────────
+  /* ── THINKING STATE ── */
   if (isTyping) {
     return (
       <ScreenContainer logoAlign="left" logoOpacity={0.25} headerRight={progressSlot}>
@@ -160,7 +161,7 @@ export default function Question({
     );
   }
 
-  // ── NORMAL QUESTION STATE ───────────────────────────────
+  /* ── NORMAL QUESTION STATE ── */
   const hasContext = previousAnswer || reflection;
 
   return (
@@ -215,7 +216,6 @@ export default function Question({
                 </div>
               )}
 
-              {/* AI reflection — same style as reaction */}
               {reflection && (
                 <p style={{
                   fontSize:      15,
@@ -261,6 +261,8 @@ export default function Question({
             onKeyDown={handleKeyDown}
             placeholder="Deine Antwort…"
             rows={1}
+            onFocus={() => setIsFocused(true)}
+            // Keep isFocused true once set — CTA stays visible
             style={{
               width:        "100%",
               boxSizing:    "border-box",
@@ -283,13 +285,17 @@ export default function Question({
             }}
           />
 
+          {/* CTA — only visible after first focus, smooth fade-in */}
           <p style={{
             fontSize:      13,
             color:         canSubmit ? "rgba(0,0,0,0.32)" : "rgba(0,0,0,0.14)",
             margin:        "16px 0 0",
             letterSpacing: "0.02em",
             userSelect:    "none",
-            transition:    "color 300ms ease",
+            opacity:       isFocused ? 1 : 0,
+            transform:     isFocused ? "translateY(0)" : "translateY(4px)",
+            transition:    "opacity 300ms ease, transform 300ms ease, color 200ms ease",
+            pointerEvents: isFocused ? "auto" : "none",
           }}>
             Tippen für Weiter →
           </p>
