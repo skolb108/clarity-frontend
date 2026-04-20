@@ -41,10 +41,10 @@ export default function MicroIntro({ onDone }) {
 
     const timers = [
       setTimeout(() => setPhase(1),  50),    // emergence starts
-      setTimeout(() => setPhase(2),  680),   // logo fades in (slightly delayed)
-      // Phase 2 = stillness 800–1600ms — no setState, just held
-      setTimeout(() => setPhase(3),  1600),  // begin transition
-      setTimeout(() => onDone(),     2000),  // hand off
+      setTimeout(() => setPhase(2),  700),   // logo fades in
+      // Phase 2 = stillness 700–2400ms — held, visible, present
+      setTimeout(() => setPhase(3),  2400),  // begin transition
+      setTimeout(() => onDone(),     2800),  // hand off to Entry
     ];
 
     return () => {
@@ -74,11 +74,9 @@ export default function MicroIntro({ onDone }) {
       <div style={{
         position:   "absolute",
         inset:       0,
-        filter:     phase >= 1 ? "blur(0px)"  : "blur(8px)",
-        opacity:    phase >= 1 ? 1 : 0.50,
-        // Emergence: 800ms — settles cleanly before logo arrives
-        transition: "filter 800ms cubic-bezier(0.4,0,0.2,1), opacity 700ms ease",
-        willChange: "filter",
+        // No blur on full-screen div — causes reflow. Use opacity only.
+        opacity:    phase >= 1 ? 1 : 0.45,
+        transition: "opacity 800ms cubic-bezier(0.4,0,0.2,1)",
       }}>
         {/* Base */}
         <div style={{ position: "absolute", inset: 0, background: "#F5F5F4" }} />
@@ -106,7 +104,6 @@ export default function MicroIntro({ onDone }) {
             rgba(235, 205, 162, 0.22) 48%,
             transparent 72%
           )`,
-          filter:     "blur(22px)",
         }} />
 
         {/* Lavender — bottom-right, also slightly off-center */}
@@ -137,9 +134,7 @@ export default function MicroIntro({ onDone }) {
         alignItems:     "center",
         gap:             10,
         opacity:        phase >= 2 ? 1 : 0,
-        // Subtle blur→sharp as it fades in
-        filter:         phase >= 2 ? "blur(0px)" : "blur(3px)",
-        transition:     "opacity 700ms cubic-bezier(0.2,0.65,0.3,0.9), transform 700ms cubic-bezier(0.2,0.65,0.3,0.9), filter 700ms ease",
+        transition:     "opacity 700ms cubic-bezier(0.2,0.65,0.3,0.9), transform 700ms cubic-bezier(0.2,0.65,0.3,0.9)",
       }}>
         {/* Icon — pulse only during stillness, stops on exit */}
         <div style={{

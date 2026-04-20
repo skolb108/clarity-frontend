@@ -59,7 +59,6 @@ export default function Entry({ onNext }) {
           rgba(235, 205, 162, 0.12) 48%,
           transparent 72%
         )`,
-        filter: "blur(20px)",
         pointerEvents: "none",
         willChange: "transform",
       }} />
@@ -74,7 +73,6 @@ export default function Entry({ onNext }) {
           rgba(215, 195, 232, 0.22) 0%,
           transparent 65%
         )`,
-        filter: "blur(36px)",
         animation: "atmosphereDrift 15s ease-in-out infinite",
         pointerEvents: "none",
         willChange: "transform, opacity",
