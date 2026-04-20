@@ -221,6 +221,32 @@ export default function Experience() {
   // Track tier-3 usage — max 1× in the full flow
   const tier3UsedRef = useRef(false);
 
+  // DEV SHORTCUT: Cmd+Shift+D (or Ctrl+Shift+D) → jump to result screen
+  useEffect(() => {
+    const handler = (e) => {
+      // Cmd+Shift+D or Ctrl+Shift+D — avoids browser conflicts
+      const isShortcut = (e.metaKey || e.ctrlKey) && e.shiftKey
+        && (e.key === "d" || e.key === "D");
+      if (isShortcut) {
+        e.preventDefault();
+        setResult({
+          summary: "Dev-Modus aktiv.",
+          pattern: "Du testest gerade den Result Screen.",
+          strengths: ["Schnelles Testen", "Entwicklerinstinkt"],
+          energySources: ["Kaffee", "Feedback-Loops"],
+          nextFocus: "Den Result Screen fertig bauen.",
+          suggestedAction: "Scroll durch alle fünf Profile.",
+          scores: { Clarity: 72, Energy: 65, Strength: 80, Direction: 58, Action: 70 },
+          identityModes: [{ type: "Explorer", confidence: 75 }],
+        });
+        setStep("result");
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const wrapperKey = step === "question"
     ? `question-${questionIndex}`
     : step;
