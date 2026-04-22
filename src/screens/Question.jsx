@@ -135,7 +135,7 @@ export default function Question({
             fontSize:      15,
             fontWeight:    400,
             lineHeight:    1.5,
-            color:         "rgba(79,70,229,0.70)",
+            color:         "#4361EE",
             letterSpacing: "0.005em",
             margin:        0,
             animation:     "reactionIn 350ms cubic-bezier(0.2,0.65,0.3,0.9) forwards",
@@ -220,7 +220,7 @@ export default function Question({
                 <p style={{
                   fontSize:      15,
                   lineHeight:    1.5,
-                  color:         "rgba(79,70,229,0.70)",
+                  color:         "#4361EE",
                   margin:        0,
                   fontWeight:    400,
                   letterSpacing: "0.005em",
@@ -259,7 +259,7 @@ export default function Question({
             value={text}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder="Deine Antwort…"
+            placeholder={questionNumber === 1 ? "z.\u202FB. Entscheidung, Beziehung, Job\u2026" : "Deine Antwort\u2026"}
             rows={1}
             onFocus={() => setIsFocused(true)}
             // Keep isFocused true once set — CTA stays visible
@@ -299,6 +299,20 @@ export default function Question({
           }}>
             Tippen für Weiter →
           </p>
+
+          {/* Helper text — only on Q1, fades in with the textarea */}
+          {questionNumber === 1 && (
+            <p style={{
+              fontSize:   13,
+              color:      "rgba(0,0,0,0.28)",
+              margin:     "10px 0 0",
+              lineHeight: 1.5,
+              opacity:    phase >= 3 ? 1 : 0,
+              transition: "opacity 500ms ease 200ms",
+            }}>
+              Schreib einfach, was dir gerade durch den Kopf geht.
+            </p>
+          )}
         </div>
       </div>
     </ScreenContainer>

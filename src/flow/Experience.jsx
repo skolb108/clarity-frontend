@@ -19,17 +19,17 @@ const API_URL =
 const OPENING_QUESTION = "Was beschäftigt dich gerade am meisten?";
 
 const QUESTION_INTENTS = [
-  "problem",        // Q1
-  "concrete",       // Q2
-  "change",         // Q3
-  "energy",         // Q4
-  "drain",          // Q5
-  "strength",       // Q6
-  "external_value", // Q7
-  "future",         // Q8
-  "block",          // Q9
-  "meaning",        // Q10
-  "next_step",      // Q11
+  "problem",    // Q1  – Einstieg
+  "concrete",   // Q2  – greifbar machen
+  "truth",      // Q3  – erste Konfrontation 🔥
+  "avoidance",  // Q4  – was wird vermieden 🔥
+  "cost",       // Q5  – Preis sichtbar machen
+  "pattern",    // Q6  – Wiederholung erkennen
+  "external",   // Q7  – Außen vs Innen
+  "fear",       // Q8  – emotionale Tiefe
+  "decision",   // Q9  – Zwang zur Klarheit 🔥
+  "shift",      // Q10 – Perspektivwechsel
+  "next_step",  // Q11 – Handlung
 ];
 
 const TOTAL_QUESTIONS = 1 + QUESTION_INTENTS.length; // 12
@@ -59,7 +59,8 @@ const TOTAL_QUESTIONS = 1 + QUESTION_INTENTS.length; // 12
    Q11 (idx 10)→ no      ← last, triggers analysis
 ───────────────────────────────────────────────────────────── */
 
-const REACTION_SCHEDULE = new Set([2, 4, 8]);
+// Q3=truth(2), Q4=avoidance(3), Q9=decision(8)
+const REACTION_SCHEDULE = new Set([2, 3, 8]);
 
 const TIER1 = [
   "Okay.",
@@ -92,7 +93,7 @@ function pickRandom(arr) {
 function pickReaction(questionIndex, tier3Used) {
   if (!REACTION_SCHEDULE.has(questionIndex)) return null;
 
-  // Q9 (index 8): use tier 3 if not yet used, otherwise tier 2
+  // Q9 decision (index 8): use tier 3 if not yet used, otherwise tier 2
   if (questionIndex === 8) {
     const pool = tier3Used ? TIER2 : TIER3;
     return { text: pickRandom(pool), isTier3: !tier3Used };
@@ -111,11 +112,35 @@ const reactionDuration = (text) => Math.max(1500, text.length * 90);
    INTENT PROMPT
 ───────────────────────────────────────────────────────────── */
 
+// Per-intent guidance — escalating psychological depth
+const INTENT_GUIDANCE = {
+  problem:    "Lass den User das Problem benennen. Offen, neutral.",
+  concrete:   "Mach es greifbar. Was genau passiert — nicht wie es sich anfühlt.",
+  truth:      "Erste Konfrontation. Decke eine Selbsttäuschung auf. Was sagt sich der User, das nicht stimmt?",
+  avoidance:  "Was wird aktiv vermieden? Was wird nicht angesprochen, nicht entschieden, nicht zugegeben?",
+  cost:       "Mach den Preis sichtbar. Was kostet dieses Muster — Zeit, Energie, Möglichkeiten?",
+  pattern:    "Erkenne die Wiederholung. Ist das das erste Mal, oder passiert das immer wieder?",
+  external:   "Außen vs Innen. Was erwarten andere — was will der User wirklich?",
+  fear:       "Emotionale Tiefe. Was ist die eigentliche Angst dahinter?",
+  decision:   "Zwang zur Klarheit. Was weiß der User bereits — und vermeidet es trotzdem zu entscheiden?",
+  shift:      "Perspektivwechsel. Wenn das in einem Jahr so bleibt — wie fühlt sich das an?",
+  next_step:  "Konkrete Handlung. Was ist der eine nächste Schritt — heute, nicht irgendwann?",
+};
+
 const buildIntentPrompt = (intent) =>
-  `INTENT: ${intent}.
+  `INTENT: ${intent}
+FOKUS: ${INTENT_GUIDANCE[intent] || "Direkte, klare Folgefrage."}
+
+REGELN (strikt einhalten):
+1. Stelle NUR eine einzige Frage — niemals zwei Fragen in einem JSON-Feld.
+2. Die Frage ist kurz, direkt, leicht konfrontierend — kein Coaching, kein klinischer Ton.
+3. Maximal 12 Wörter. Endet mit Fragezeichen.
+4. Keine Doppelfragen. Statt "Was fühlst du? Was meinst du?" → "Was fühlt sich daran falsch an?"
+5. Reflection: 1 Satz, max 10 Wörter, rein beobachtend — kein Lob, kein Coaching.
+   Kürzer ist immer besser.
 
 Antworte NUR mit diesem JSON (kein Markdown, kein Text davor oder danach):
-{"reflection": "<1 Satz der die letzte Antwort kurz spiegelt — kein Coaching, kein Lob, rein beobachtend>", "question": "<die nächste Frage zum Intent, maximal 2 Sätze, endet mit ?>"}`;
+{"reflection": "<1 Satz, max 10 Wörter, beobachtend>", "question": "<1 Frage, max 12 Wörter, endet mit ?>"}`;
 
 /* ─────────────────────────────────────────────────────────────
    PROMPTS
