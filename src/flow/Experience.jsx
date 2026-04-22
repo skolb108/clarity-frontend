@@ -122,10 +122,50 @@ Antworte NUR mit diesem JSON (kein Markdown, kein Text davor oder danach):
 ───────────────────────────────────────────────────────────── */
 
 const ANALYSIS_SYSTEM_PROMPT = `Du analysierst die Antworten aus einem Reflexionsgespräch.
-Du erhältst die Daten als strukturiertes JSON-Objekt mit einem "answers"-Array.
+Du erhältst ein "answers"-Array mit 12 Antworten auf tiefe Reflexionsfragen.
 
-WICHTIG: Sprich die Person in allen Ausgabefeldern direkt mit "du" an.
-Verwende NIEMALS Formulierungen wie "der Nutzer", "seine Gedanken" oder Dritte-Person-Konstruktionen.
+SCHRITT 1: TYP-ERKENNUNG
+
+Lies alle Antworten und erkenne das dominante Verhaltensmuster.
+Ordne den User exakt EINEM dieser 5 Typen zu:
+
+EXPLORER
+Sammelt Optionen statt zu entscheiden. Nennt viele Möglichkeiten. Spricht über
+"vielleicht", "könnte", "wenn". Entscheidungen fühlen sich wie Verlust an.
+Schlüsselwörter: Optionen, noch nicht sicher, abwarten, erst wenn.
+
+BUILDER
+Handelt viel, hinterfragt das Wohin selten. Fokus auf Fortschritt, Umsetzung,
+Effizienz — selten auf Sinn. Schlüsselwörter: vorankommen, umsetzen, optimieren.
+
+CREATOR
+Starker innerer Drang zu erschaffen, aber Angst vor Sichtbarkeit oder Bewertung.
+Ideen vorhanden, Umsetzung blockiert. Schlüsselwörter: Ideen, zeigen, noch nicht bereit.
+
+OPTIMIZER
+Sieht sofort was nicht stimmt. Hohe Standards, schwer zufrieden. Ankommen unmöglich.
+Schlüsselwörter: besser werden, nicht gut genug, immer noch, Standards.
+
+DRIFTER
+Bewegt sich ohne Richtung. Reagiert auf Impulse. Wenig klare Entscheidungen.
+Schlüsselwörter: mal schauen, irgendwie, passiert halt, keine Ahnung.
+
+Confidence: 40–65 = unsicher, 66–80 = klar, 81–95 = eindeutig.
+
+SCHRITT 2: INSIGHT GENERIEREN
+
+"pattern": Benennt ein KONKRETES, WIEDERHOLENDES Muster aus den echten Antworten.
+Beginnt mit "Du hast mehrfach..." oder "In deinen Antworten taucht auf..."
+Verwendet echte Inhalte — keine Generalaussagen. Max 20 Wörter.
+
+"summary": Konfrontiert — beschreibt nicht.
+Formel: "Du [konkretes Verhalten] — nicht weil [falsche Erklärung], sondern weil [Wahrheit]."
+Darf sich unangenehm anfühlen. Soll sich wahr anfühlen. Max 18 Wörter.
+
+"suggestedAction": Eine konkrete Handlung für HEUTE.
+Kein Coaching-Sprech. Formulierung: "Tu X — nicht Y." Max 12 Wörter.
+
+"strengths", "energySources": Nur aus den echten Antworten ableiten — nicht erfinden.
 
 Antworte NUR mit validem JSON. Kein Text davor oder danach. Kein Markdown.
 
@@ -140,27 +180,29 @@ Antworte NUR mit validem JSON. Kein Text davor oder danach. Kein Markdown.
   "identityModes": [
     { "type": "<Explorer|Builder|Creator|Optimizer|Drifter>", "confidence": <integer 40–95> }
   ],
-  "summary":         "<1 Satz, max 16 Wörter, direkte du-Ansprache>",
-  "pattern":         "<1 Satz, max 20 Wörter, beginnt mit 'In deinen Antworten...' oder 'Du hast mehrfach...'>",
-  "strengths":       ["<Stärke>", "<Stärke>", "<Stärke>"],
-  "energySources":   ["<Ding>", "<Ding>", "<Ding>"],
-  "nextFocus":       "<1 Satz — wichtigster Fokus nächste 90 Tage>",
-  "suggestedAction": "<1 konkreter kleiner Schritt heute>"
+  "summary":         "<1 Satz, max 18 Wörter, Konfrontations-Formel>",
+  "pattern":         "<1 Satz, max 20 Wörter, beginnt mit 'Du hast mehrfach...' oder 'In deinen Antworten...'>",
+  "strengths":       ["<konkret aus Antworten>", "<konkret>", "<konkret>"],
+  "energySources":   ["<konkret aus Antworten>", "<konkret>", "<konkret>"],
+  "nextFocus":       "<1 Satz — wichtigster Fokus nächste 30 Tage>",
+  "suggestedAction": "<1 konkreter Schritt heute, max 12 Wörter>"
 }`;
 
-const SIGNAL_EXTRACTION_PROMPT = `Du analysierst die Antworten aus einem Reflexionsgespräch und extrahierst strukturierte Signale.
-Du erhältst ein JSON-Objekt mit einem "answers"-Array.
+const SIGNAL_EXTRACTION_PROMPT = `Du liest die Antworten eines Reflexionsgesprächs und 
+extrahierst die wichtigsten Signale für eine spätere Analyse.
 Antworte NUR mit validem JSON. Kein Markdown.
 
 {
-  "values":          [],
-  "motivations":     [],
-  "energySources":   [],
-  "frictions":       [],
-  "strengthSignals": []
-}
-
-Drücke jeden Punkt als kurzen deutschen Begriff aus (2–6 Wörter). Keine generischen Begriffe.`;
+  "repeated_themes":   ["<Thema das 2+ mal auftaucht>"],
+  "avoided_topics":    ["<Was umgangen, relativiert oder schnell verlassen wurde>"],
+  "energy_language":   ["<Wörter mit spürbarer Energie oder Abwehr>"],
+  "core_tension":      "<Das zentrale Spannungsfeld — was zieht in zwei Richtungen, 1 Satz>",
+  "avoidance_pattern": "<Was konkret vermieden wird und wodurch — 1 Satz>",
+  "behavioral_type_signals": {
+    "Explorer": <0–10>, "Builder": <0–10>, "Creator": <0–10>,
+    "Optimizer": <0–10>, "Drifter": <0–10>
+  }
+}`;
 
 /* ─────────────────────────────────────────────────────────────
    HELPERS

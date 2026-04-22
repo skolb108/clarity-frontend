@@ -7,14 +7,57 @@ import ResultSecondary from "./screens/ResultSecondary";
 ───────────────────────────────────────────────────────────── */
 const DEV_TYPES = ["Explorer", "Builder", "Creator", "Optimizer", "Drifter"];
 
-const DEV_RESULT = {
-  summary:         "Dev-Modus aktiv.",
-  pattern:         "Du testest gerade den Result Screen.",
-  strengths:       ["Schnelles Testen", "Entwicklerinstinkt", "Feedback-Loops"],
-  energySources:   ["Kaffee", "Direktes Feedback", "Klarer Code"],
-  nextFocus:       "Den Result Screen fertig bauen.",
-  suggestedAction: "Scroll durch alle fünf Profile.",
-  scores:          { Clarity: 72, Energy: 65, Strength: 80, Direction: 58, Action: 70 },
+const DEV_RESULTS = {
+  Explorer: {
+    summary:         "Du sammelst Optionen — nicht weil du offen bist, sondern weil Entscheiden sich wie Verlieren anfühlt.",
+    pattern:         "Du hast mehrfach erwähnt, dass du noch auf den richtigen Moment wartest.",
+    strengths:       ["Offenheit", "Reflexionsfähigkeit", "Breite Perspektive"],
+    energySources:   ["Neue Möglichkeiten", "Gespräche mit anderen", "Lesen und Lernen"],
+    nextFocus:       "Eine Entscheidung treffen und 7 Tage dranbleiben.",
+    suggestedAction: "Triff heute eine kleine Entscheidung — ohne sie zu überdenken.",
+    scores:          { Clarity: 48, Energy: 72, Strength: 65, Direction: 38, Action: 44 },
+    identityModes:   [{ type: "Explorer", confidence: 82 }],
+  },
+  Builder: {
+    summary:         "Du baust schnell — nicht weil du weißt wohin, sondern weil Stillstand sich falsch anfühlt.",
+    pattern:         "In deinen Antworten taucht auf, dass Erfolg sich leer anfühlt sobald er da ist.",
+    strengths:       ["Umsetzungsstärke", "Disziplin", "Systemdenken"],
+    energySources:   ["Sichtbarer Fortschritt", "Klare Ziele", "Effizienz"],
+    nextFocus:       "Das Warum hinter deinem Tun klären — bevor du das nächste Projekt startest.",
+    suggestedAction: "Stelle dir heute die Frage: Warum mache ich das eigentlich?",
+    scores:          { Clarity: 55, Energy: 88, Strength: 80, Direction: 36, Action: 91 },
+    identityModes:   [{ type: "Builder", confidence: 79 }],
+  },
+  Creator: {
+    summary:         "Du wartest nicht auf die richtige Idee — du wartest auf den Mut, sie zu zeigen.",
+    pattern:         "Du hast mehrfach erwähnt, dass deine Ideen noch nicht fertig genug sind.",
+    strengths:       ["Kreativität", "Tiefe", "Originalität"],
+    energySources:   ["Kreative Prozesse", "Stille", "Inspiration durch andere"],
+    nextFocus:       "Etwas zeigen, bevor es sich fertig anfühlt.",
+    suggestedAction: "Teile heute etwas — auch wenn es sich unfertig anfühlt.",
+    scores:          { Clarity: 68, Energy: 76, Strength: 84, Direction: 62, Action: 41 },
+    identityModes:   [{ type: "Creator", confidence: 85 }],
+  },
+  Optimizer: {
+    summary:         "Du verbesserst dich ständig — nicht weil du gut werden willst, sondern weil Ankommen sich leer anfühlt.",
+    pattern:         "Du hast mehrfach erwähnt, dass es immer noch etwas gibt, das nicht stimmt.",
+    strengths:       ["Präzision", "Hohe Standards", "Problemerkennung"],
+    energySources:   ["Messbare Verbesserung", "Feedback", "Klare Strukturen"],
+    nextFocus:       "Einen Bereich wählen, der gut genug ist — und ihn loslassen.",
+    suggestedAction: "Schreibe heute drei Dinge auf, die gut gelaufen sind — ohne Einschränkung.",
+    scores:          { Clarity: 74, Energy: 62, Strength: 91, Direction: 70, Action: 66 },
+    identityModes:   [{ type: "Optimizer", confidence: 88 }],
+  },
+  Drifter: {
+    summary:         "Du lässt Dinge passieren — nicht weil du gelassen bist, sondern weil Entscheiden Verantwortung bedeutet.",
+    pattern:         "In deinen Antworten taucht auf, dass du selten bewusst entscheidest.",
+    strengths:       ["Anpassungsfähigkeit", "Offenheit", "Geduld"],
+    energySources:   ["Impulse von außen", "Abwechslung", "Gespräche"],
+    nextFocus:       "Eine klare Entscheidung treffen und eine Woche dabei bleiben.",
+    suggestedAction: "Entscheide heute eine Sache bewusst — und halte daran fest.",
+    scores:          { Clarity: 32, Energy: 48, Strength: 40, Direction: 28, Action: 31 },
+    identityModes:   [{ type: "Drifter", confidence: 76 }],
+  },
 };
 
 /* ─────────────────────────────────────────────────────────────
@@ -22,44 +65,44 @@ const DEV_RESULT = {
 ───────────────────────────────────────────────────────────── */
 const PROFILES = {
   Explorer: {
-    hook:          "Du weißt längst, was du tun solltest — aber triffst die Entscheidung nicht.",
-    description:   "Du sammelst Möglichkeiten, statt eine zu wählen. Jede Entscheidung fühlt sich wie eine Tür an, die sich schließt.",
-    confrontation: "Offenheit ist deine Stärke — solange sie keine Ausrede wird, um nichts zu beenden.",
-    fomo:          "In einem Jahr bist du vielleicht noch genau hier.",
-    action:        "Triff heute eine kleine Entscheidung — ohne sie zu überdenken.",
-    identityShift: "Ich treffe Entscheidungen, auch wenn sie sich unsicher anfühlen.",
+    hook:          "Du weißt, was du tun solltest — aber du entscheidest dich nicht.",
+    description:   "Du hältst dir Optionen offen — und hältst dich damit selbst zurück.",
+    confrontation: "Du nennst es Freiheit. In Wahrheit vermeidest du das Festlegen.",
+    fomo:          "Wenn du dich nicht entscheidest, bleibt alles möglich — und nichts passiert.",
+    action:        "Triff heute eine kleine Entscheidung — und bleib dabei.",
+    identityShift: "Ich entscheide mich — auch wenn es sich unsicher anfühlt.",
   },
   Builder: {
-    hook:          "Du kommst voran — aber nicht unbedingt in die richtige Richtung.",
-    description:   "Du denkst in Schritten, nicht in Zielen. Du baust schnell — aber hinterfragst selten wohin.",
-    confrontation: "Du bist gut darin, Dinge fertigzustellen. Schlechter darin, zu fragen, ob sie es wert waren.",
-    fomo:          "Irgendwann merkst du, dass du etwas gebaut hast, das du nicht willst.",
-    action:        "Stelle dir heute: Warum mache ich das überhaupt?",
-    identityShift: "Ich hinterfrage die Richtung, bevor ich schneller werde.",
+    hook:          "Du kommst voran — aber weichst der eigentlichen Entscheidung aus.",
+    description:   "Du arbeitest viel — aber stellst selten infrage, ob es überhaupt das Richtige ist.",
+    confrontation: "Du bist produktiv. Aber nicht unbedingt ehrlich zu dir selbst.",
+    fomo:          "Du kannst lange etwas bauen, das du eigentlich gar nicht willst.",
+    action:        "Frag dich heute: Würde ich das auch anfangen, wenn ich ehrlich bin?",
+    identityShift: "Ich entscheide die Richtung — bevor ich weitermache.",
   },
   Creator: {
-    hook:          "Du erschaffst nicht, weil du es willst — du kannst nicht anders.",
-    description:   "Du hast einen inneren Drang zu kreieren, aber schwankst zwischen Intensität und Rückzug.",
-    confrontation: "Du wartest nicht auf die richtige Idee. Du wartest auf den Mut, sie zu zeigen.",
-    fomo:          "Die Idee, die du nicht zeigst, verändert nichts.",
-    action:        "Zeige heute etwas, das sich noch nicht fertig anfühlt.",
-    identityShift: "Ich zeige, was ich erschaffe — auch wenn es sich unfertig anfühlt.",
+    hook:          "Du hast etwas in dir — aber hältst es zurück.",
+    description:   "Du wartest auf den richtigen Moment, statt einfach zu zeigen, was da ist.",
+    confrontation: "Du brauchst keine bessere Idee. Du brauchst mehr Mut, sie zu zeigen.",
+    fomo:          "Was du nicht zeigst, existiert für niemanden.",
+    action:        "Zeig heute etwas, das sich noch nicht fertig anfühlt.",
+    identityShift: "Ich zeige, was in mir ist — auch wenn es nicht perfekt ist.",
   },
   Optimizer: {
-    hook:          "Du siehst sofort, was nicht stimmt. Das ist deine Stärke — und dein Problem.",
-    description:   "Du verbesserst konstant alles, aber erreichst selten ein Gefühl von 'genug'.",
-    confrontation: "Du optimierst alles — außer die Frage, ob das Ziel noch richtig ist.",
-    fomo:          "Du kommst nie an — wenn 'fertig' das Ziel bleibt.",
-    action:        "Definiere heute, wann gut gut genug ist.",
-    identityShift: "Ich entscheide das Ziel, bevor ich es optimiere.",
+    hook:          "Du verbesserst alles — außer die Richtung.",
+    description:   "Du feilst an Details, statt zu prüfen, ob das Ganze überhaupt Sinn macht.",
+    confrontation: "Du verwechselst Fortschritt mit Feinschliff.",
+    fomo:          "Du kannst ewig optimieren — und trotzdem falsch liegen.",
+    action:        "Entscheide heute, was wirklich zählt — und ignoriere den Rest.",
+    identityShift: "Ich wähle das Wesentliche — und lasse den Rest los.",
   },
   Drifter: {
-    hook:          "Du bewegst dich. Aber nicht wirklich vorwärts.",
-    description:   "Du bist beschäftigt — mit Dingen, die sich wichtig anfühlen, aber nichts hinterlassen.",
-    confrontation: "Du weißt, dass sich etwas ändern müsste. Schon länger, als du zugibst.",
-    fomo:          "Irgendwann wird aus Drift Gewohnheit. Und aus Gewohnheit Identität.",
-    action:        "Wähle heute eine Richtung und halte sie für 7 Tage.",
-    identityShift: "Ich wähle eine Richtung und bewege mich bewusst.",
+    hook:          "Du bist beschäftigt — aber gehst dem Wesentlichen aus dem Weg.",
+    description:   "Du machst Dinge, die sich nach Bewegung anfühlen — aber nichts verändern.",
+    confrontation: "Du weißt längst, dass es so nicht weitergeht.",
+    fomo:          "Wenn du so weitermachst, wird genau das dein Alltag bleiben.",
+    action:        "Wähle heute eine Richtung — und bleib für 7 Tage dabei.",
+    identityShift: "Ich entscheide mich — und gehe.",
   },
 };
 
@@ -119,6 +162,21 @@ export default function ResultScreen({ result }) {
   const [view,       setView]       = useState("primary");
   const [copiedLink, setCopiedLink] = useState(false);
   const [devType,    setDevType]    = useState(null); // keys 1-5 override identity type
+  const [logoTaps,   setLogoTaps]   = useState(0);   // mobile dev trigger: 5 taps on logo
+  const [showDevPicker, setShowDevPicker] = useState(false);
+
+  // Mobile dev trigger: tap logo 5× within 2s
+  const handleLogoTap = () => {
+    const next = logoTaps + 1;
+    setLogoTaps(next);
+    if (next >= 5) {
+      setLogoTaps(0);
+      setShowDevPicker(true);
+    }
+    // Reset counter after 2s of inactivity
+    clearTimeout(window.__clarityDevTapTimer);
+    window.__clarityDevTapTimer = setTimeout(() => setLogoTaps(0), 2000);
+  };
 
   // DEV: press 1–5 to cycle through the five profiles
   useEffect(() => {
@@ -134,7 +192,9 @@ export default function ResultScreen({ result }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const safeResult   = validateResult(result);
+  const safeResult = devType
+  ? validateResult(DEV_RESULTS[devType])
+  : validateResult(result);
   const identityType = (() => {
     try {
       const modes = safeResult.identityModes;
@@ -181,21 +241,50 @@ export default function ResultScreen({ result }) {
 
   return (
     <>
-      {devType && (
+
+      {showDevPicker && (
         <div style={{
-          position:      "fixed", bottom: 16, left: "50%",
-          transform:     "translateX(-50%)",
-          zIndex:         999,
-          background:    "rgba(15,23,42,0.85)",
-          color:          "#fff",
-          padding:        "6px 16px",
-          borderRadius:   20,
-          fontSize:       12,
-          fontFamily:     "'Helvetica Neue', Helvetica, Arial, sans-serif",
-          pointerEvents: "none",
-          letterSpacing: "0.04em",
-        }}>
-          DEV · {devType} · Taste 1–5 wechseln
+          position:   "fixed", inset: 0, zIndex: 999,
+          background: "rgba(0,0,0,0.50)",
+          display:    "flex", alignItems: "flex-end", justifyContent: "center",
+          padding:    "0 0 0",
+          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+        }} onClick={() => setShowDevPicker(false)}>
+          <div style={{
+            background: "#fff", borderRadius: "16px 16px 0 0",
+            width: "100%", maxWidth: 480, padding: "20px 24px 40px",
+            boxSizing: "border-box",
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(0,0,0,0.12)", margin: "0 auto 18px" }} />
+            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.10em", color: "rgba(0,0,0,0.35)", margin: "0 0 14px", textTransform: "uppercase" }}>
+              Dev — Profil wählen
+            </p>
+            {DEV_TYPES.map((t, i) => (
+              <button key={t} onClick={() => { setDevType(t); setView("primary"); setShowDevPicker(false); window.scrollTo({ top: 0, behavior: "instant" }); }} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                width: "100%", padding: "13px 0",
+                background: "none", border: "none", borderBottom: i < 4 ? "1px solid rgba(0,0,0,0.07)" : "none",
+                cursor: "pointer", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+              }}>
+                <span style={{ fontSize: 15, fontWeight: devType === t ? 700 : 400, color: "#0f172a" }}>{t}</span>
+                <span style={{ fontSize: 12, color: "rgba(0,0,0,0.28)" }}>{i + 1}</span>
+              </button>
+            ))}
+            {/* Reset localStorage */}
+            <button onClick={() => {
+              localStorage.clear();
+              setShowDevPicker(false);
+              alert("localStorage geleert. Seite neu laden für MicroIntro.");
+            }} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              width: "100%", padding: "13px 0", marginTop: 4,
+              background: "none", border: "none", borderTop: "1px solid rgba(0,0,0,0.07)",
+              cursor: "pointer", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            }}>
+              <span style={{ fontSize: 14, color: "rgba(200,50,50,0.80)" }}>localStorage leeren</span>
+              <span style={{ fontSize: 12, color: "rgba(0,0,0,0.28)" }}>↺</span>
+            </button>
+          </div>
         </div>
       )}
       <ResultPrimary
@@ -204,6 +293,7 @@ export default function ResultScreen({ result }) {
       safeResult={safeResult}
       onShare={handleShare}
       onGoDeep={() => setView("secondary")}
+      onLogoTap={handleLogoTap}
       copiedLink={copiedLink}
     />
     </>

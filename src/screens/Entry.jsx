@@ -106,11 +106,11 @@ export default function Entry({ onNext }) {
             </div>
             <div style={fadeIn(phase >= 2)}>
               <p style={{ fontSize: 39, fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", color: "#111008", margin: "0 0 20px" }}>
-                Und manchmal dreht<br />es sich im Kreis.
+                Aber es wird nicht klarer.
               </p>
             </div>
             <div style={fadeIn(phase >= 3)}>
-              <p style={{ fontSize: 39, fontWeight: 600, lineHeight: 1.2, letterSpacing: "-0.015em", color: "rgba(17,16,8,0.40)", margin: 0 }}>
+              <p style={{ fontSize: 39, fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", color: "rgba(17,16,8,0.40)", margin: 0 }}>
                 Lass uns das kurz ordnen.
               </p>
             </div>
@@ -132,8 +132,8 @@ export default function Entry({ onNext }) {
           </div>
 
           <div style={fadeIn(phase >= 6)}>
-            <p style={{ fontSize: 13, color: "rgba(17,16,8,0.50)", margin: 0, letterSpacing: "0.02em", animation: phase >= 6 ? "ctaPulse 2.2s ease-in-out infinite" : "none" }}>
-              Tippe, um das zu klären →
+            <p style={{ fontSize: 13, color: "rgb(67, 97, 238)", margin: 0, letterSpacing: "0.02em", animation: phase >= 6 ? "ctaPulse 2.2s ease-in-out infinite" : "none" }}>
+              Okay, lass uns das klären →
             </p>
           </div>
         </div>

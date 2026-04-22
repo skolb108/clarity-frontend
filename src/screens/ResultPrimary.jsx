@@ -1,190 +1,196 @@
 import { useState, useEffect } from "react";
 import ClarityLogo from "../components/ClarityLogo";
+import ShareOverlay from "../screens/ShareOverlay";
 
 const FF = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+const INDIGO = "#4361EE";
 
-export default function ResultPrimary({ type, profile, safeResult, onShare, onGoDeep, copiedLink }) {
-  const [vis, setVis]         = useState(false);
+function triggerHaptic() {
+  if (typeof navigator !== "undefined" && navigator.vibrate) {
+    navigator.vibrate(10);
+  }
+}
+
+export default function ResultPrimary({ type, profile, safeResult, onGoDeep, onLogoTap }) {
+  const [phase,      setPhase]      = useState(0);
   const [btnPressed, setBtnPressed] = useState(false);
+  const [exiting,    setExiting]    = useState(false);
+  const [showShare,      setShowShare]      = useState(false);
+  const [recognitionScale, setRecognitionScale] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
-    const t = setTimeout(() => setVis(true), 60);
-    return () => clearTimeout(t);
+    const t1 = setTimeout(() => setPhase(1), 300);
+    const t2 = setTimeout(() => setPhase(2), 900);
+    const t3 = setTimeout(() => setPhase(3), 1500);
+    const t4 = setTimeout(() => setPhase(4), 2100);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
   }, []);
 
-  const fadeUp = (delay = 0) => ({
-    opacity:    vis ? 1 : 0,
-    transform:  vis ? "translateY(0)" : "translateY(16px)",
-    transition: `opacity 550ms ease ${delay}ms, transform 550ms ease ${delay}ms`,
+  const mirror = safeResult?.summary || profile?.description || "";
+
+  const fade = (show, delay = 0) => ({
+    opacity:    show ? 1 : 0,
+    transform:  show ? "translateY(0)" : "translateY(18px)",
+    transition: `opacity 550ms ease-out ${delay}ms, transform 550ms ease-out ${delay}ms`,
   });
 
+  // CTA tap → "snap & release" — brief recognition moment before overlay
+  const handleCTAClick = () => {
+    if (exiting) return;
+    triggerHaptic();
+    setRecognitionScale(true);
+    setTimeout(() => {
+      setRecognitionScale(false);
+      setShowShare(true);
+    }, 480);
+  };
+
+  // "Weiter →" inside overlay → exit animation → navigate
+  const handleShareContinue = () => {
+    setShowShare(false);
+    setExiting(true);
+    setTimeout(() => onGoDeep(), 320);
+  };
+
+  const handleTouchStart = () => setBtnPressed(true);
+  const handleTouchEnd   = () => { setBtnPressed(false); handleCTAClick(); };
+  const handleMouseDown  = () => setBtnPressed(true);
+  const handleMouseUp    = () => setBtnPressed(false);
+  const handleMouseLeave = () => setBtnPressed(false);
+
   return (
-    <div style={{
-      maxWidth:       520,
-      margin:         "0 auto",
-      padding:        "48px 24px 64px",
-      minHeight:      "100vh",
-      display:        "flex",
-      flexDirection:  "column",
-      fontFamily:     FF,
-      boxSizing:      "border-box",
-      textAlign:      "center",
-    }}>
+    <>
+      {showShare && (
+        <ShareOverlay
+          profile={profile}
+          type={type}
+          onContinue={handleShareContinue}
+          onClose={() => setShowShare(false)}
+        />
+      )}
 
-      {/* Logo */}
-      <div style={{ ...fadeUp(0), marginBottom: 32, opacity: vis ? 0.35 : 0 }}>
-        <ClarityLogo size="sm" centered={true} />
-      </div>
+      <div style={{
+        maxWidth:      430,
+        margin:        "0 auto",
+        padding:       "0 28px 80px",
+        boxSizing:     "border-box",
+        minHeight:     "100vh",
+        fontFamily:    FF,
+        display:       "flex",
+        flexDirection: "column",
+        opacity:    exiting ? 0 : 1,
+        // recognitionScale: brief 1→1.02 "this hits" moment before overlay
+        transform:  exiting
+          ? "scale(0.97) translateY(-10px)"
+          : recognitionScale ? "scale(1.02)" : "scale(1) translateY(0)",
+        transition: exiting
+          ? "opacity 300ms ease-in, transform 300ms ease-in"
+          : recognitionScale ? "transform 300ms ease-out" : "transform 300ms ease-out",
+        willChange: "opacity, transform",
+      }}>
 
-      {/* Type label */}
-      <div style={{ ...fadeUp(100), marginBottom: 24 }}>
-        <span style={{
-          fontSize:      11,
-          fontWeight:    600,
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color:         "rgba(0,0,0,0.28)",
-        }}>
-          {type}
-        </span>
-      </div>
-
-      {/* Main hook — big, bold, the core insight */}
-      <div style={{ ...fadeUp(180), marginBottom: 32 }}>
-        <p style={{
-          fontSize:      "clamp(34px, 7.5vw, 48px)",
-          fontWeight:    800,
-          lineHeight:    1.1,
-          letterSpacing: "-0.025em",
-          color:         "#0f172a",
-          margin:        0,
-        }}>
-          {profile.hook}
-        </p>
-      </div>
-
-      {/* Pattern — the mirror sentence */}
-      <div style={{ ...fadeUp(280), marginBottom: 8 }}>
-        <p style={{
-          fontSize:   17,
-          fontWeight: 400,
-          lineHeight: 1.6,
-          color:      "rgba(0,0,0,0.50)",
-          margin:     0,
-        }}>
-          {safeResult.pattern || profile.description}
-        </p>
-      </div>
-
-      {/* FOMO */}
-      <div style={{ ...fadeUp(340), marginBottom: 40 }}>
-        <p style={{
-          fontSize:   14,
-          fontWeight: 400,
-          lineHeight: 1.5,
-          color:      "rgba(0,0,0,0.32)",
-          margin:     0,
-        }}>
-          {profile.fomo}
-        </p>
-      </div>
-
-      {/* Nächster Schritt */}
-      <div style={{ ...fadeUp(400), marginBottom: 48 }}>
-        <p style={{
-          fontSize:      10,
-          fontWeight:    600,
-          letterSpacing: "0.14em",
-          textTransform: "uppercase",
-          color:         "rgba(0,0,0,0.28)",
-          margin:        "0 0 10px",
-        }}>
-          Dein nächster Schritt
-        </p>
-        <p style={{
-          fontSize:   18,
-          fontWeight: 700,
-          lineHeight: 1.4,
-          color:      "#0f172a",
-          margin:     0,
-        }}>
-          {safeResult.suggestedAction || profile.action}
-        </p>
-      </div>
-
-      {/* Identity shift — italic quote */}
-      <div style={{ ...fadeUp(480), marginBottom: 56 }}>
-        <p style={{
-          fontSize:   17,
-          fontStyle:  "italic",
-          lineHeight: 1.55,
-          color:      "rgba(0,0,0,0.45)",
-          margin:     0,
-        }}>
-          "{profile.identityShift}"
-        </p>
-      </div>
-
-      {/* Share CTA */}
-      <div style={{ ...fadeUp(560), marginBottom: 12 }}>
-        <button
-          onClick={() => { setBtnPressed(true); onShare(); setTimeout(() => setBtnPressed(false), 300); }}
+        {/* Logo — 5× tap opens dev picker on mobile */}
+        <div
+          onClick={onLogoTap}
           style={{
-            width:         "100%",
-            height:        56,
-            background:    "#0f172a",
-            color:         "#fff",
-            border:        "none",
-            borderRadius:  14,
-            fontSize:      16,
-            fontWeight:    600,
-            fontFamily:    FF,
-            cursor:        "pointer",
-            letterSpacing: "0.01em",
-            transform:     btnPressed ? "scale(0.97)" : "scale(1)",
-            transition:    "transform 120ms ease",
+            paddingTop:   44,
+            marginBottom: 60,
+            opacity:      phase >= 1 ? 0.55 : 0,
+            transition:   "opacity 600ms ease-out 100ms",
+            cursor:       "default",
+            userSelect:   "none",
+            WebkitTapHighlightColor: "transparent",
           }}
         >
-          {copiedLink ? "Link kopiert ✓" : "Das trifft — teilen"}
-        </button>
-      </div>
+          <ClarityLogo size="sm" centered={false} />
+        </div>
 
-      {/* Social proof */}
-      <div style={{ ...fadeUp(600), marginBottom: 4 }}>
-        <p style={{ fontSize: 13, color: "rgba(0,0,0,0.28)", margin: 0 }}>
-          12 Menschen teilen das gerade
-        </p>
-      </div>
-
-      {/* Microtext */}
-      <div style={{ ...fadeUp(620), marginBottom: 48 }}>
-        <p style={{ fontSize: 12, color: "rgba(0,0,0,0.22)", margin: 0 }}>
-          Die meisten erkennen sich. Wenige verändern sich.
-        </p>
-      </div>
-
-      {/* Tiefer gehen */}
-      <div style={fadeUp(660)}>
-        <button
-          onClick={onGoDeep}
-          style={{
-            background:    "none",
-            border:        "none",
-            cursor:        "pointer",
-            fontFamily:    FF,
-            padding:       0,
-            textAlign:     "center",
-          }}
-        >
-          <p style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", margin: "0 0 4px" }}>
-            Tiefer gehen
+        {/* ① HOOK */}
+        <div style={{ ...fade(phase >= 1), marginBottom: 32 }}>
+          <p style={{
+            fontSize:      "clamp(39px, 8vw, 42px)",
+            fontWeight:    800,
+            lineHeight:    1.15,
+            letterSpacing: "-0.02em",
+            color:         "#111008",
+            margin:        0,
+          }}>
+            {profile.hook}
           </p>
-          <p style={{ fontSize: 13, color: "rgba(0,0,0,0.35)", margin: 0 }}>
-            Clarity kann dich im Alltag begleiten.
+        </div>
+
+        {/* ② MICRO MIRROR */}
+        <div style={{ ...fade(phase >= 2), marginBottom: 36 }}>
+          <p style={{
+            fontSize:   17,
+            fontWeight: 400,
+            lineHeight: 1.65,
+            color:      "rgba(15,23,42,0.62)",
+            margin:     0,
+          }}>
+            {mirror}
           </p>
-        </button>
+        </div>
+
+        {/* ③ IDENTITY SHIFT */}
+        <div style={{ ...fade(phase >= 3), marginBottom: 0 }}>
+          <div style={{ borderLeft: `3px solid ${INDIGO}`, paddingLeft: 18 }}>
+            <p style={{
+              fontSize:   17,
+              fontWeight: 600,
+              lineHeight: 1.55,
+              color:      "#0f172a",
+              margin:     0,
+            }}>
+              „{profile.identityShift}"
+            </p>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, minHeight: 48 }} />
+
+        {/* ④ CTA */}
+        <div style={fade(phase >= 4)}>
+          <button
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+            onClick={handleCTAClick}
+            style={{
+              width:         "100%",
+              padding:       "17px 24px",
+              background:    INDIGO,
+              color:         "#fff",
+              border:        "none",
+              borderRadius:  13,
+              fontSize:      16,
+              fontWeight:    700,
+              letterSpacing: "-0.01em",
+              cursor:        "pointer",
+              fontFamily:    FF,
+              transform:     btnPressed ? "scale(0.98)" : "scale(1)",
+              transition:    "transform 150ms ease-out",
+              WebkitTapHighlightColor: "transparent",
+              userSelect:    "none",
+              touchAction:   "manipulation",
+            }}
+          >
+            Weiter — ich will Klarheit →
+          </button>
+          <p style={{
+            textAlign:  "center",
+            fontSize:   12,
+            color:      "rgba(0,0,0,0.32)",
+            margin:     "10px 0 0",
+            fontWeight: 500,
+          }}>
+            Kein Account. Keine E-Mail.
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
