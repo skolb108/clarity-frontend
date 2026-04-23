@@ -3,8 +3,10 @@ import ResultPrimary   from "./screens/ResultPrimary";
 import ResultSecondary from "./screens/ResultSecondary";
 
 /* ─────────────────────────────────────────────────────────────
-   DEV PROFILES — cycle with keys 1–5 in result screen
+   DEV PROFILES — keyboard shortcuts 1–5, dev builds only
 ───────────────────────────────────────────────────────────── */
+const IS_DEV = import.meta.env.DEV;
+
 const DEV_TYPES = ["Explorer", "Builder", "Creator", "Optimizer", "Drifter"];
 
 const DEV_RESULTS = {
@@ -61,7 +63,7 @@ const DEV_RESULTS = {
 };
 
 /* ─────────────────────────────────────────────────────────────
-   PROFILES — deterministic, frontend-controlled identity content
+   PROFILES — deterministic frontend content
 ───────────────────────────────────────────────────────────── */
 const PROFILES = {
   Explorer: {
@@ -111,10 +113,6 @@ const PROFILES = {
 ───────────────────────────────────────────────────────────── */
 const SCORE_ORDER = ["Clarity", "Energy", "Strength", "Direction", "Action"];
 
-function toSafeNum(v, fallback = 0) {
-  try { const n = Number(v); return isFinite(n) ? n : fallback; } catch { return fallback; }
-}
-
 function validateResult(raw) {
   const base = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
   const rawScores = base.scores && typeof base.scores === "object" ? base.scores : {};
@@ -133,7 +131,7 @@ function validateResult(raw) {
   return {
     summary:         typeof base.summary         === "string" ? base.summary         : "",
     pattern:         typeof base.pattern         === "string" ? base.pattern         : "",
-    strengths:       Array.isArray(base.strengths)     ? base.strengths.filter(s => typeof s === "string")     : [],
+    strengths:       Array.isArray(base.strengths)     ? base.strengths.filter(s => typeof s === "string") : [],
     energySources:   Array.isArray(base.energySources) ? base.energySources.filter(s => typeof s === "string") : [],
     nextFocus:       typeof base.nextFocus        === "string" ? base.nextFocus        : "",
     suggestedAction: typeof base.suggestedAction  === "string" ? base.suggestedAction  : "",
@@ -143,7 +141,7 @@ function validateResult(raw) {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   SHARE COPY — per identity type
+   SHARE COPY
 ───────────────────────────────────────────────────────────── */
 const SHARE_COPY = {
   Explorer:  "Ich dachte, ich bin offen.\nIn Wahrheit vermeide ich Entscheidungen.\n\nDas hat mich getroffen.\n\nWas bist du?\n→ ",
@@ -155,31 +153,16 @@ const SHARE_COPY = {
 
 /* ─────────────────────────────────────────────────────────────
    RESULT SCREEN — Controller
-   Manages primary/secondary navigation.
-   Keeps PublicProfile.jsx interface intact (accepts result prop).
 ───────────────────────────────────────────────────────────── */
 export default function ResultScreen({ result }) {
   const [view,       setView]       = useState("primary");
   const [copiedLink, setCopiedLink] = useState(false);
-  const [devType,    setDevType]    = useState(null); // keys 1-5 override identity type
-  const [logoTaps,   setLogoTaps]   = useState(0);   // mobile dev trigger: 5 taps on logo
-  const [showDevPicker, setShowDevPicker] = useState(false);
+  // Dev type override — only active in development builds
+  const [devType, setDevType] = useState(null);
 
-  // Mobile dev trigger: tap logo 5× within 2s
-  const handleLogoTap = () => {
-    const next = logoTaps + 1;
-    setLogoTaps(next);
-    if (next >= 5) {
-      setLogoTaps(0);
-      setShowDevPicker(true);
-    }
-    // Reset counter after 2s of inactivity
-    clearTimeout(window.__clarityDevTapTimer);
-    window.__clarityDevTapTimer = setTimeout(() => setLogoTaps(0), 2000);
-  };
-
-  // DEV: press 1–5 to cycle through the five profiles
+  // DEV ONLY: keyboard shortcuts 1–5 to cycle profiles
   useEffect(() => {
+    if (!IS_DEV) return;
     const handler = (e) => {
       const idx = parseInt(e.key, 10);
       if (idx >= 1 && idx <= 5) {
@@ -187,14 +170,21 @@ export default function ResultScreen({ result }) {
         setView("primary");
         window.scrollTo({ top: 0, behavior: "instant" });
       }
+      // Cmd+Shift+D → jump to result with Explorer profile
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === "d" || e.key === "D")) {
+        e.preventDefault();
+        setDevType("Explorer");
+        setView("primary");
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const safeResult = devType
-  ? validateResult(DEV_RESULTS[devType])
-  : validateResult(result);
+  const safeResult   = IS_DEV && devType
+    ? validateResult(DEV_RESULTS[devType])
+    : validateResult(result);
+
   const identityType = (() => {
     try {
       const modes = safeResult.identityModes;
@@ -206,21 +196,18 @@ export default function ResultScreen({ result }) {
     } catch { return "Explorer"; }
   })();
 
-  const type    = devType || identityType;
+  const type    = (IS_DEV && devType) ? devType : identityType;
   const profile = PROFILES[type] || PROFILES["Explorer"];
 
-  /* ── Share: copy public profile link to clipboard ── */
+  // Share
   const handleShare = async () => {
     try {
       const slug     = btoa(unescape(encodeURIComponent(JSON.stringify(result))));
       const shareUrl = window.location.origin + "/p/" + slug;
       const message  = (SHARE_COPY[type] || "Das hat mich getroffen.\n\nWas bist du?\n→ ") + shareUrl;
-
       if (navigator.share) {
-        try {
-          await navigator.share({ title: "Mein Clarity Profil", text: message, url: shareUrl });
-          return;
-        } catch (_) {}
+        try { await navigator.share({ title: "Mein Clarity Profil", text: message, url: shareUrl }); return; }
+        catch (_) {}
       }
       await navigator.clipboard.writeText(shareUrl);
       setCopiedLink(true);
@@ -240,62 +227,13 @@ export default function ResultScreen({ result }) {
   }
 
   return (
-    <>
-
-      {showDevPicker && (
-        <div style={{
-          position:   "fixed", inset: 0, zIndex: 999,
-          background: "rgba(0,0,0,0.50)",
-          display:    "flex", alignItems: "flex-end", justifyContent: "center",
-          padding:    "0 0 0",
-          fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-        }} onClick={() => setShowDevPicker(false)}>
-          <div style={{
-            background: "#fff", borderRadius: "16px 16px 0 0",
-            width: "100%", maxWidth: 480, padding: "20px 24px 40px",
-            boxSizing: "border-box",
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(0,0,0,0.12)", margin: "0 auto 18px" }} />
-            <p style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.10em", color: "rgba(0,0,0,0.35)", margin: "0 0 14px", textTransform: "uppercase" }}>
-              Dev — Profil wählen
-            </p>
-            {DEV_TYPES.map((t, i) => (
-              <button key={t} onClick={() => { setDevType(t); setView("primary"); setShowDevPicker(false); window.scrollTo({ top: 0, behavior: "instant" }); }} style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                width: "100%", padding: "13px 0",
-                background: "none", border: "none", borderBottom: i < 4 ? "1px solid rgba(0,0,0,0.07)" : "none",
-                cursor: "pointer", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-              }}>
-                <span style={{ fontSize: 15, fontWeight: devType === t ? 700 : 400, color: "#0f172a" }}>{t}</span>
-                <span style={{ fontSize: 12, color: "rgba(0,0,0,0.28)" }}>{i + 1}</span>
-              </button>
-            ))}
-            {/* Reset localStorage */}
-            <button onClick={() => {
-              localStorage.clear();
-              setShowDevPicker(false);
-              alert("localStorage geleert. Seite neu laden für MicroIntro.");
-            }} style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              width: "100%", padding: "13px 0", marginTop: 4,
-              background: "none", border: "none", borderTop: "1px solid rgba(0,0,0,0.07)",
-              cursor: "pointer", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif",
-            }}>
-              <span style={{ fontSize: 14, color: "rgba(200,50,50,0.80)" }}>localStorage leeren</span>
-              <span style={{ fontSize: 12, color: "rgba(0,0,0,0.28)" }}>↺</span>
-            </button>
-          </div>
-        </div>
-      )}
-      <ResultPrimary
+    <ResultPrimary
       type={type}
       profile={profile}
       safeResult={safeResult}
       onShare={handleShare}
       onGoDeep={() => setView("secondary")}
-      onLogoTap={handleLogoTap}
       copiedLink={copiedLink}
     />
-    </>
   );
 }

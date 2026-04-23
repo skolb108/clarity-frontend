@@ -11,7 +11,7 @@ function triggerHaptic() {
   }
 }
 
-export default function ResultPrimary({ type, profile, safeResult, onGoDeep, onLogoTap }) {
+export default function ResultPrimary({ type, profile, safeResult, onGoDeep }) {
   const [phase,      setPhase]      = useState(0);
   const [btnPressed, setBtnPressed] = useState(false);
   const [exiting,    setExiting]    = useState(false);
@@ -90,19 +90,13 @@ export default function ResultPrimary({ type, profile, safeResult, onGoDeep, onL
         willChange: "opacity, transform",
       }}>
 
-        {/* Logo — 5× tap opens dev picker on mobile */}
-        <div
-          onClick={onLogoTap}
-          style={{
-            paddingTop:   44,
-            marginBottom: 60,
-            opacity:      phase >= 1 ? 0.55 : 0,
-            transition:   "opacity 600ms ease-out 100ms",
-            cursor:       "default",
-            userSelect:   "none",
-            WebkitTapHighlightColor: "transparent",
-          }}
-        >
+        {/* Logo */}
+        <div style={{
+          paddingTop:   44,
+          marginBottom: 60,
+          opacity:      phase >= 1 ? 0.55 : 0,
+          transition:   "opacity 600ms ease-out 100ms",
+        }}>
           <ClarityLogo size="sm" centered={false} />
         </div>
 
