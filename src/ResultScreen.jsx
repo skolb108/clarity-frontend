@@ -140,23 +140,10 @@ function validateResult(raw) {
   };
 }
 
-/* ─────────────────────────────────────────────────────────────
-   SHARE COPY
-───────────────────────────────────────────────────────────── */
-const SHARE_COPY = {
-  Explorer:  "Ich dachte, ich bin offen.\nIn Wahrheit vermeide ich Entscheidungen.\n\nDas hat mich getroffen.\n\nWas bist du?\n→ ",
-  Builder:   "Ich dachte, ich mache alles richtig.\nIn Wahrheit hinterfrage ich die Richtung nicht.\n\nDas war unangenehm genau.\n\nWas bist du?\n→ ",
-  Creator:   "Ich dachte, ich brauche nur die richtige Idee.\nIn Wahrheit fehlt mir der Mut, sie zu zeigen.\n\nDas hat gesessen.\n\nWas bist du?\n→ ",
-  Optimizer: "Ich dachte, ich werde immer besser.\nIn Wahrheit komme ich nie an.\n\nDas war zu real.\n\nWas bist du?\n→ ",
-  Drifter:   "Ich dachte, ich bin einfach beschäftigt.\nIn Wahrheit entscheide ich nichts.\n\nDas war unangenehm klar.\n\nWas bist du?\n→ ",
-};
 
-/* ─────────────────────────────────────────────────────────────
-   RESULT SCREEN — Controller
-───────────────────────────────────────────────────────────── */
+
 export default function ResultScreen({ result }) {
   const [view,       setView]       = useState("primary");
-  const [copiedLink, setCopiedLink] = useState(false);
   // Dev type override — only active in development builds
   const [devType, setDevType] = useState(null);
 
@@ -199,22 +186,6 @@ export default function ResultScreen({ result }) {
   const type    = (IS_DEV && devType) ? devType : identityType;
   const profile = PROFILES[type] || PROFILES["Explorer"];
 
-  // Share
-  const handleShare = async () => {
-    try {
-      const slug     = btoa(unescape(encodeURIComponent(JSON.stringify(result))));
-      const shareUrl = window.location.origin + "/p/" + slug;
-      const message  = (SHARE_COPY[type] || "Das hat mich getroffen.\n\nWas bist du?\n→ ") + shareUrl;
-      if (navigator.share) {
-        try { await navigator.share({ title: "Mein Clarity Profil", text: message, url: shareUrl }); return; }
-        catch (_) {}
-      }
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-    } catch (_) {}
-  };
-
   if (view === "secondary") {
     return (
       <ResultSecondary
@@ -231,9 +202,7 @@ export default function ResultScreen({ result }) {
       type={type}
       profile={profile}
       safeResult={safeResult}
-      onShare={handleShare}
       onGoDeep={() => setView("secondary")}
-      copiedLink={copiedLink}
     />
   );
 }
