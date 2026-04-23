@@ -41,7 +41,11 @@ export default function Stats() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API_URL}/api/stats?key=${encodeURIComponent(k)}`);
+      const res = await fetch(`${API_URL}/api/stats`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ key: k }),
+      });
       if (res.status === 401) { setError("Falscher Key."); setLoading(false); return; }
       const json = await res.json();
       setData(json);
@@ -51,10 +55,9 @@ export default function Stats() {
     setLoading(false);
   };
 
-  // Auto-load if key in URL: /stats?key=xxx
   useEffect(() => {
-    const k = new URLSearchParams(window.location.search).get("key");
-    if (k) { setKey(k); load(k); }
+    window.scrollTo({ top: 0, behavior: "instant" });
+    document.title = "Stats · Clarity";
   }, []);
 
   const t = data?.totals || {};
