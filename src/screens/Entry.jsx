@@ -106,34 +106,34 @@ export default function Entry({ onNext }) {
             </div>
             <div style={fadeIn(phase >= 2)}>
               <p style={{ fontSize: 39, fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", color: "#111008", margin: "0 0 20px" }}>
-                Und manchmal dreht<br />es sich im Kreis.
+                Aber es wird nicht klarer.
               </p>
             </div>
             <div style={fadeIn(phase >= 3)}>
-              <p style={{ fontSize: 39, fontWeight: 600, lineHeight: 1.2, letterSpacing: "-0.015em", color: "rgba(17,16,8,0.40)", margin: 0 }}>
+              <p style={{ fontSize: 39, fontWeight: 600, lineHeight: 1.2, letterSpacing: "-0.02em", color: "#0f172a99", margin: 0 }}>
                 Lass uns das kurz ordnen.
               </p>
             </div>
           </div>
 
           <div style={fadeIn(phase >= 4)}>
-            <p style={{ fontSize: 17, fontWeight: 400, lineHeight: 1.65, color: "rgba(17,16,8,0.38)", margin: "0 0 5px", letterSpacing: "0.005em" }}>
+            <p style={{ fontSize: 17, fontWeight: 400, lineHeight: 1.65, color: "#0f172a99", margin: "0 0 5px", letterSpacing: "-0.02" }}>
               Ich stelle dir ein paar kurze Fragen —<br />und am Ende wird etwas klar.
             </p>
-            <p style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.4, color: "rgba(17,16,8,0.48)", margin: "0 0 20px" }}>
+            <p style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.65, color: "#0f172a99", margin: "0 0 20px", letterSpacing: "-0.02em" }}>
               Für dich.
             </p>
           </div>
 
           <div style={fadeIn(phase >= 5)}>
-            <p style={{ fontSize: 14, color: "rgba(17,16,8,0.26)", margin: "0 0 32px", letterSpacing: "0.01em" }}>
+            <p style={{ fontSize: 14, lineHeight: 1.65, color: "rgba(17, 16, 8, 0.33)", margin: "0 0 32px", letterSpacing: "-0.02em" }}>
               Dauert etwa 5 Minuten · Kein Account nötig
             </p>
           </div>
 
           <div style={fadeIn(phase >= 6)}>
-            <p style={{ fontSize: 13, color: "rgba(17,16,8,0.50)", margin: 0, letterSpacing: "0.02em", animation: phase >= 6 ? "ctaPulse 2.2s ease-in-out infinite" : "none" }}>
-              Tippe, um das zu klären →
+            <p style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.65, color: "#4361ee", margin: 0, letterSpacing: "-0.02em", animation: phase >= 6 ? "ctaPulse 2.2s ease-in-out infinite" : "none" }}>
+              Okay, lass uns das klären →
             </p>
           </div>
 
@@ -144,9 +144,9 @@ export default function Entry({ onNext }) {
               onClick={e => e.stopPropagation()}
               style={{
                 fontSize:       11,
-                color:          "rgba(17,16,8,0.22)",
+                color:          "rgba(17, 16, 8, 0.27)",
                 textDecoration: "none",
-                letterSpacing:  "0.02em",
+                letterSpacing:  "-0.02em",
               }}
             >
               Datenschutz
