@@ -5,6 +5,7 @@ import MicroIntro    from "../screens/MicroIntro";
 import Question      from "../screens/Question";
 import Loading           from "../screens/Loading";
 import GlobalBackground  from "../components/GlobalBackground";
+import { track }         from "../track.js";
 
 const ResultScreen = lazy(() => import("../ResultScreen"));
 
@@ -265,11 +266,17 @@ export default function Experience() {
       && !localStorage.getItem("clarity_visited")
   );
   const [step, setStep] = useState(firstVisitRef.current ? "micro" : "entry");
+  const trackedStartRef = useRef(false);
 
   useEffect(() => {
     // Mark as visited only after successful first render
     if (firstVisitRef.current) {
       localStorage.setItem("clarity_visited", "1");
+    }
+    // Track flow start once per session
+    if (!trackedStartRef.current) {
+      trackedStartRef.current = true;
+      track("flow_start");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -375,6 +382,7 @@ export default function Experience() {
 
       await delay(2000);
       setResult(parsed);
+      track("flow_complete");
       setStep("result");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
@@ -410,6 +418,9 @@ export default function Experience() {
     setPreviousAnswer(text);
 
     const nextIndex = questionIndex + 1;
+
+    // Track answered question
+    track(`question_${questionIndex + 1}`);
 
     // Last question → straight to analysis, no reaction
     if (nextIndex > QUESTION_INTENTS.length) {

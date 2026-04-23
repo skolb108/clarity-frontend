@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { toPng } from "html-to-image";
 import ClarityLogo from "../components/ClarityLogo";
+import { track }    from "../track.js";
 
 const FF = "'Helvetica Neue', Helvetica, Arial, sans-serif";
 const INDIGO = "#4361EE";
@@ -41,6 +42,7 @@ export default function ShareOverlay({ profile, type, onContinue, onClose }) {
   const cardRef = useRef(null);
 
   useEffect(() => {
+    track("share_opened");
     const t1 = setTimeout(() => setVis(true),    30);
     const t2 = setTimeout(() => setBtnVis(true), 180);
     return () => { clearTimeout(t1); clearTimeout(t2); };
@@ -56,6 +58,7 @@ export default function ShareOverlay({ profile, type, onContinue, onClose }) {
   const handleShare = async () => {
     if (sharing) return;
     triggerHaptic();
+    track("share_tapped");
     setSharing(true);
 
     const shareText =
