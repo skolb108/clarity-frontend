@@ -101,39 +101,31 @@ export default function Entry({ onNext }) {
           <div style={{ marginBottom: 28 }}>
             <div style={fadeIn(phase >= 1)}>
               <p style={{ fontSize: 39, fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", color: "#111008", margin: "0 0 6px" }}>
-                Du denkst viel.
-              </p>
-            </div>
-            <div style={fadeIn(phase >= 2)}>
-              <p style={{ fontSize: 39, fontWeight: 700, lineHeight: 1.15, letterSpacing: "-0.02em", color: "#111008", margin: "0 0 20px" }}>
-                Aber es wird nicht klarer.
+                Irgendetwas beschäftigt dich.
               </p>
             </div>
             <div style={fadeIn(phase >= 3)}>
               <p style={{ fontSize: 39, fontWeight: 600, lineHeight: 1.2, letterSpacing: "-0.02em", color: "#0f172a99", margin: 0 }}>
-                Lass uns das kurz ordnen.
+                Sonst wärst du nicht hier.
               </p>
             </div>
           </div>
 
           <div style={fadeIn(phase >= 4)}>
             <p style={{ fontSize: 17, fontWeight: 400, lineHeight: 1.65, color: "#0f172a99", margin: "0 0 5px", letterSpacing: "-0.02" }}>
-              Ich stelle dir ein paar kurze Fragen —<br />und am Ende wird etwas klar.
-            </p>
-            <p style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.65, color: "#0f172a99", margin: "0 0 20px", letterSpacing: "-0.02em" }}>
-              Für dich.
+              Ich stelle dir ein paar Fragen — <br></br> und spreche aus, was du vielleicht schon weißt.
             </p>
           </div>
 
           <div style={fadeIn(phase >= 5)}>
             <p style={{ fontSize: 14, lineHeight: 1.65, color: "rgba(17, 16, 8, 0.33)", margin: "0 0 32px", letterSpacing: "-0.02em" }}>
-              Dauert etwa 5 Minuten · Kein Account nötig
+              Dauert 5 Minuten · Kein Account nötig
             </p>
           </div>
 
           <div style={fadeIn(phase >= 6)}>
             <p style={{ fontSize: 17, fontWeight: 500, lineHeight: 1.65, color: "#4361ee", margin: 0, letterSpacing: "-0.02em", animation: phase >= 6 ? "ctaPulse 2.2s ease-in-out infinite" : "none" }}>
-              Okay, lass uns das klären →
+              Los →
             </p>
           </div>
 
