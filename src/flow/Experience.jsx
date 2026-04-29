@@ -19,21 +19,24 @@ const API_URL =
 
 const OPENING_QUESTION = "Was beschäftigt dich gerade am meisten?";
 
-const QUESTION_INTENTS = [
-  "problem",    // Q1  – Einstieg
-  "concrete",   // Q2  – greifbar machen
-  "truth",      // Q3  – erste Konfrontation 🔥
-  "avoidance",  // Q4  – was wird vermieden 🔥
-  "cost",       // Q5  – Preis sichtbar machen
-  "pattern",    // Q6  – Wiederholung erkennen
-  "external",   // Q7  – Außen vs Innen
-  "fear",       // Q8  – emotionale Tiefe
-  "decision",   // Q9  – Zwang zur Klarheit 🔥
-  "shift",      // Q10 – Perspektivwechsel
-  "next_step",  // Q11 – Handlung
+const QUESTION_FLOW = [
+  "entry",
+  "entry",
+
+  "structure",
+  "structure",
+  "structure",
+
+  "tension",
+  "tension",
+  "tension",
+  "tension",
+
+  "decision",
+  "decision"
 ];
 
-const TOTAL_QUESTIONS = 1 + QUESTION_INTENTS.length; // 12
+const TOTAL_QUESTIONS = 1 + QUESTION_FLOW.length;
 
 /* ─────────────────────────────────────────────────────────────
    MICRO-REACTIONS
@@ -73,7 +76,6 @@ const TIER1 = [
 
 const TIER2 = [
   "Ich verstehe.",
-  "Das nehme ich mit.",
   "Ich höre dich.",
   "Das ergibt Sinn.",
   "Okay, ich bin bei dir.",
@@ -84,7 +86,6 @@ const TIER2 = [
 const TIER3 = [
   "Das klingt nicht leicht.",
   "Ich verstehe, was du meinst.",
-  "Das geht tiefer.",
 ];
 
 function pickRandom(arr) {
@@ -115,33 +116,128 @@ const reactionDuration = (text) => Math.max(1500, text.length * 90);
 
 // Per-intent guidance — escalating psychological depth
 const INTENT_GUIDANCE = {
-  problem:    "Lass den User das Problem benennen. Offen, neutral.",
-  concrete:   "Mach es greifbar. Was genau passiert — nicht wie es sich anfühlt.",
-  truth:      "Erste Konfrontation. Decke eine Selbsttäuschung auf. Was sagt sich der User, das nicht stimmt?",
-  avoidance:  "Was wird aktiv vermieden? Was wird nicht angesprochen, nicht entschieden, nicht zugegeben?",
-  cost:       "Mach den Preis sichtbar. Was kostet dieses Muster — Zeit, Energie, Möglichkeiten?",
-  pattern:    "Erkenne die Wiederholung. Ist das das erste Mal, oder passiert das immer wieder?",
-  external:   "Außen vs Innen. Was erwarten andere — was will der User wirklich?",
-  fear:       "Emotionale Tiefe. Was ist die eigentliche Angst dahinter?",
-  decision:   "Zwang zur Klarheit. Was weiß der User bereits — und vermeidet es trotzdem zu entscheiden?",
-  shift:      "Perspektivwechsel. Wenn das in einem Jahr so bleibt — wie fühlt sich das an?",
-  next_step:  "Konkrete Handlung. Was ist der eine nächste Schritt — heute, nicht irgendwann?",
+  entry: `
+- konkret
+- leicht zugänglich
+- keine Konfrontation
+`,
+
+  structure: `
+- Muster erkennen
+- erste Spannung
+- Verhalten greifbar machen
+`,
+
+  tension: `
+- Widerspruch aufdecken
+- leicht unangenehm
+- konfrontierend
+- geht unter die Oberfläche
+`,
+
+  decision: `
+- Klarheit erzwingen
+- Richtung
+- konkrete Entscheidung oder Handlung
+`,
 };
 
 const buildIntentPrompt = (intent) =>
   `INTENT: ${intent}
-FOKUS: ${INTENT_GUIDANCE[intent] || "Direkte, klare Folgefrage."}
 
-REGELN (strikt einhalten):
-1. Stelle NUR eine einzige Frage — niemals zwei Fragen in einem JSON-Feld.
-2. Die Frage ist kurz, direkt, leicht konfrontierend — kein Coaching, kein klinischer Ton.
-3. Maximal 12 Wörter. Endet mit Fragezeichen.
-4. Keine Doppelfragen. Statt "Was fühlst du? Was meinst du?" → "Was fühlt sich daran falsch an?"
-5. Reflection: 1 Satz, max 10 Wörter, rein beobachtend — kein Lob, kein Coaching.
-   Kürzer ist immer besser.
+DU BEFINDEST DICH IN DIESER PHASE DES GESPRÄCHS.
 
-Antworte NUR mit diesem JSON (kein Markdown, kein Text davor oder danach):
-{"reflection": "<1 Satz, max 10 Wörter, beobachtend>", "question": "<1 Frage, max 12 Wörter, endet mit ?>"}`;
+Du MUSST dich strikt an die Bedeutung dieses Intents halten.
+
+Wenn deine Frage nicht zu dieser Phase passt:
+→ neu schreiben, bis sie passt.
+
+BEDEUTUNG:
+${INTENT_GUIDANCE[intent] || ""}
+
+━━━━━━━━━━━━━━━━━━━━━━━
+REGELN
+━━━━━━━━━━━━━━━━━━━━━━━
+
+REFLECTION:
+- 1 Satz
+- max 18–20 Wörter
+- darf leicht interpretieren (nur basierend auf Antwort)
+- verbindet mindestens 2 Elemente
+- zeigt Spannung oder Muster
+- kein Coaching, kein Lob
+
+FRAGE:
+- genau 1 Frage
+- max 15 Wörter
+- muss direkt aus der Reflection entstehen
+- muss konkret sein (kein abstraktes Gelaber)
+- darf leicht konfrontierend sein
+
+Wenn die Antwort vage, kurz oder ausweichend ist:
+- stelle eine KONKRETERE Frage
+- bringe den User zurück in eine echte Situation
+- vermeide abstrakte Fragen
+
+Beispiel:
+Statt: "Warum ist das so?"
+→ "Wann hast du das zuletzt konkret gemerkt?"
+
+━━━━━━━━━━━━━━━━━━━━━━━
+KRITISCH
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Die Intensität MUSS sich steigern:
+
+entry → ruhig  
+structure → klar  
+tension → unangenehm  
+decision → eindeutig  
+
+Wenn intent = tension:
+
+- die Frage MUSS eine Spannung öffnen
+- sie darf leicht unangenehm sein
+- sie darf direkt sein
+
+Wenn sie sich neutral oder sicher anfühlt:
+→ falsch formuliert, neu formulieren, bis sie unangenehm oder spannungsvoll ist.
+
+Wenn es sinnvoll ist:
+
+Beziehe dich konkret auf etwas, das der User vorher gesagt hat.
+
+Nicht allgemein:
+"du hast vorhin gesagt..."
+
+Sondern konkret:
+"Du hast gesagt, dass du unsicher bist — wann merkst du das besonders?"
+
+━━━━━━━━━━━━━━━━━━━━━━━
+VERBOTEN
+━━━━━━━━━━━━━━━━━━━━━━━
+
+- generische Fragen
+- abstrakte Fragen
+- "Was denkst du?" / "Warum ist das wichtig?"
+- Wiederholen ohne Bedeutung
+
+━━━━━━━━━━━━━━━━━━━━━━━
+BEISPIELE (Referenz)
+━━━━━━━━━━━━━━━━━━━━━━━
+
+"Was möchtest du gerade nicht aussprechen?"
+"Wovor schützt dich das gerade?"
+"Was weißt du längst, tust es aber nicht?"
+
+━━━━━━━━━━━━━━━━━━━━━━━
+
+Antworte NUR mit JSON:
+
+{
+  "reflection": "...",
+  "question": "..."
+}`;
 
 /* ─────────────────────────────────────────────────────────────
    PROMPTS
@@ -246,10 +342,34 @@ function parseQuestionResponse(raw) {
     const end   = clean.lastIndexOf("}");
     if (start === -1 || end === -1) throw new Error("no json");
     const parsed = JSON.parse(clean.slice(start, end + 1));
-    return {
-      reflection: typeof parsed.reflection === "string" ? parsed.reflection.trim() : "",
-      question:   typeof parsed.question   === "string" ? parsed.question.trim()   : raw,
-    };
+
+    let reflection = typeof parsed.reflection === "string" ? parsed.reflection.trim() : "";
+    let question   = typeof parsed.question   === "string" ? parsed.question.trim()   : raw;
+
+    // Guard: if AI packed reflection into question (no separate reflection field),
+    // try to split on last "?" — everything before last sentence ending in "?" is the question,
+    // leading declarative sentence(s) become the reflection.
+    if (!reflection && question) {
+      const lastQ = question.lastIndexOf("?");
+      if (lastQ > 0) {
+        // Find the sentence boundary before the last question
+        const before = question.slice(0, lastQ);
+        const sentEnd = Math.max(before.lastIndexOf(". "), before.lastIndexOf("! "), before.lastIndexOf(".\n"));
+        if (sentEnd > 20) {
+          // Split: declarative part → reflection, question part → question
+          reflection = question.slice(0, sentEnd + 1).trim();
+          question   = question.slice(sentEnd + 1).trim();
+        }
+      }
+    }
+
+    // Guard: reflection must not be a question itself
+    if (reflection.trim().endsWith("?")) {
+      question   = reflection + " " + question;
+      reflection = "";
+    }
+
+    return { reflection, question: question || raw };
   } catch {
     return { reflection: "", question: raw };
   }
@@ -326,32 +446,15 @@ export default function Experience() {
     : step;
 
   /* ─── API ─────────────────────────────────────────────── */
-
-  const sendMessage = async (msgs) => {
-    const res  = await fetch(`${API_URL}/api/chat`, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ messages: msgs }),
-    });
-    const data = await res.json();
-    return data.content || data.reply || data.message || "";
-  };
-
-  const callAnalysisBackend = async (msgs) => {
-    const res  = await fetch(`${API_URL}/api/analyze`, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ messages: msgs }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data && typeof data === "object" && !data.scores) {
-      if (data.result && typeof data.result === "object") return data.result;
-      if (typeof data.reply   === "string") return JSON.parse(data.reply);
-      if (typeof data.message === "string") return JSON.parse(data.message);
-    }
-    return data;
-  };
+const sendMessage = async (msgs) => {
+  const res = await fetch(`${API_URL}/api/chat`, {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ messages: msgs }),
+  });
+  const data = await res.json();
+  return data.content || data.reply || data.message || "";
+};
 
   /* ─── Analysis ───────────────────────────────────────── */
 
@@ -362,10 +465,15 @@ export default function Experience() {
 
       let signalsBlock = null;
       try {
-        const raw = await callAnalysisBackend([
-          { role: "system", content: SIGNAL_EXTRACTION_PROMPT },
-          { role: "user",   content: `Hier sind die Antworten:\n\n${contextBlock}` },
-        ]);
+        const _res1 = await fetch(`${API_URL}/api/analyze`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: [
+            { role: "system", content: SIGNAL_EXTRACTION_PROMPT },
+            { role: "user",   content: `Hier sind die Antworten:\n\n${contextBlock}` },
+          ]}),
+        });
+        if (!_res1.ok) throw new Error(`HTTP ${_res1.status}`);
+        const raw = await _res1.json();
         signalsBlock = JSON.stringify(raw, null, 2);
       } catch (e) {
         console.warn("Signal extraction failed:", e.message);
@@ -375,10 +483,15 @@ export default function Experience() {
         ? `ANTWORTEN:\n\n${contextBlock}\n\nEXTRAHIERTE SIGNALE:\n\n${signalsBlock}`
         : `Hier sind die Antworten:\n\n${contextBlock}`;
 
-      const parsed = await callAnalysisBackend([
-        { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
-        { role: "user",   content: userContent },
-      ]);
+      const _res2 = await fetch(`${API_URL}/api/analyze`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [
+          { role: "system", content: ANALYSIS_SYSTEM_PROMPT },
+          { role: "user",   content: userContent },
+        ]}),
+      });
+      if (!_res2.ok) throw new Error(`HTTP ${_res2.status}`);
+      const parsed = await _res2.json();
 
       await delay(2000);
       setResult(parsed);
@@ -403,7 +516,7 @@ export default function Experience() {
     const newAnswers = [
       ...answers,
       {
-        intent: questionIndex === 0 ? "initial" : QUESTION_INTENTS[questionIndex - 1],
+        intent: questionIndex === 0 ? "initial" : QUESTION_FLOW[questionIndex - 1],
         answer: text,
       },
     ];
@@ -423,7 +536,7 @@ export default function Experience() {
     track(`question_${questionIndex + 1}`);
 
     // Last question → straight to analysis, no reaction
-    if (nextIndex > QUESTION_INTENTS.length) {
+    if (nextIndex > QUESTION_FLOW.length) {
       await runAnalysis(newAnswers);
       return;
     }
@@ -444,7 +557,7 @@ export default function Experience() {
     setQuestionIndex(nextIndex);
     setCurrentReflection("");
 
-    const intentPrompt = buildIntentPrompt(QUESTION_INTENTS[nextIndex - 1]);
+    const intentPrompt = buildIntentPrompt(QUESTION_FLOW[nextIndex - 1]);
 
     try {
       const raw = await sendMessage([
@@ -453,11 +566,11 @@ export default function Experience() {
       ]);
       const { reflection, question } = parseQuestionResponse(raw);
       setCurrentReflection(reflection);
-      setCurrentQuestion(question || QUESTION_INTENTS[nextIndex - 1]);
+      setCurrentQuestion(question || QUESTION_FLOW[nextIndex - 1]);
     } catch (e) {
       console.error("Failed to get next question:", e);
       setCurrentReflection("");
-      setCurrentQuestion(QUESTION_INTENTS[nextIndex - 1]);
+      setCurrentQuestion(QUESTION_FLOW[nextIndex - 1]);
     } finally {
       setIsTyping(false);
     }

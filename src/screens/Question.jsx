@@ -218,12 +218,12 @@ export default function Question({
 
               {reflection && (
                 <p style={{
-                  fontSize:      15,
-                  lineHeight:    1.5,
+                  fontSize:      21,
+                  fontWeight:    600,
+                  lineHeight:    1.2,
+                  letterSpacing: "-0.02em",
                   color:         "#4361EE",
                   margin:        0,
-                  fontWeight:    400,
-                  letterSpacing: "0.005em",
                 }}>
                   {reflection}
                 </p>
